@@ -1,0 +1,96 @@
+/* Page layout */
+.page {
+  background-color: transparent; /* 👈 let global background image show */
+  min-height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 2rem;
+}
+
+
+/* Card container */
+.card {
+  background-color: #011428;
+  color: #fefefe;
+  padding: 2.5rem;
+  border-radius: 16px;
+  width: 100%;
+  max-width: 480px;
+  box-shadow: 0 0 20px rgba(0, 0, 0, 0.3);
+  font-family: 'Segoe UI', sans-serif;
+}
+
+/* Header text */
+.card h1 {
+  font-size: 1.75rem;
+  font-weight: bold;
+  text-align: center;
+  margin-bottom: 1rem;
+}
+
+/* Subtext paragraph */
+.subtext {
+  text-align: center;
+  color: #c5c5c5;
+  font-size: 0.9rem;
+  margin-bottom: 2rem;
+  line-height: 1.5;
+}
+
+/* Colored words */
+.green {
+  color: #00c853;
+  font-weight: bold;
+}
+
+.blue {
+  color: #2196f3;
+  font-weight: bold;
+}
+
+.red {
+  color: #e53935;
+  font-weight: bold;
+}
+
+/* Form layout */
+form {
+  display: flex;
+  flex-direction: column;
+}
+
+/* Labels */
+form label {
+  margin-bottom: 0.3rem;
+  margin-top: 1rem;
+  font-weight: bold;
+}
+
+/* Inputs */
+form input {
+  padding: 0.65rem;
+  background-color: #000a15;
+  color: #fefefe;
+  border: none;
+  border-radius: 8px;
+  font-size: 1rem;
+}
+
+/* Button */
+form button {
+  margin-top: 2rem;
+  padding: 0.75rem;
+  background-color: #faa02e;
+  color: #000;
+  font-weight: bold;
+  border: none;
+  border-radius: 10px;
+  cursor: pointer;
+  font-size: 1rem;
+  transition: background-color 0.3s ease;
+}
+
+form button:hover {
+  background-color: #fcb64a;
+}
