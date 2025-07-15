@@ -1,6 +1,8 @@
 :root {
   --background: #ffffff;
   --foreground: #171717;
+  --accent: #fca311;       /* Official orange */
+  --accent-hover: #ffb347; /* Brighter hover orange */
 }
 
 @media (prefers-color-scheme: dark) {
@@ -53,24 +55,312 @@ a {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  min-height: calc(100vh - 80px); /* leave space for header */
+  min-height: calc(100vh - 80px);
   padding: 2rem;
+  color: white;
+  font-family: sans-serif;
+  max-width: 1024px;
+  margin: 0 auto;
+}
+
+/* ========== Page Header ========== */
+.page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin: 2rem 0 1.5rem;
+  padding: 0 1rem;
+}
+
+.page-header-centered {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 2rem;
 }
 
 /* ========== Create Token Button ========== */
 .create-token-btn {
-  margin-top: 2rem;
-  padding: 0.75rem 1.5rem;
-  background-color: #faa02e;
+  background-color: var(--accent);
   color: #000;
-  font-weight: bold;
+  padding: 0.75rem 1.5rem;
   border: none;
   border-radius: 10px;
-  cursor: pointer;
+  font-weight: bold;
   font-size: 1rem;
+  cursor: pointer;
   transition: background-color 0.3s ease;
 }
 
 .create-token-btn:hover {
-  background-color: #fcb64a;
+  background-color: var(--accent-hover);
+}
+
+/* ========== Updated Search Bar with Icon on Right ========== */
+.search-bar-group {
+  position: relative;
+  width: 100%;
+  max-width: 540px;
+  height: 48px;
+}
+
+.search-input {
+  width: 100%;
+  height: 100%;
+  padding-right: 3rem;
+  padding-left: 1rem;
+  border-radius: 14px;
+  border: 1px solid #333;
+   background-color: rgba(48, 82, 115, 0.6);
+  color: white;
+  font-size: 1rem;
+}
+
+.search-input::placeholder {
+  color: #aaa;
+}
+
+.search-addon {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  width: 40px;
+  height: 40px;
+  background-color: #0076ff; /* Blue square */
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.1rem;
+  box-shadow: 0 0 4px rgba(0, 0, 0, 0.3);
+  pointer-events: none;
+}
+
+
+
+/* ========== Tabs ========== */
+.tabs {
+  display: flex;
+  gap: 1rem;
+  margin: 1rem 0;
+}
+
+.tabs button {
+  background: transparent;
+  border: none;
+  color: white;
+  font-weight: bold;
+  padding: 0.5rem 1rem;
+  border-bottom: 2px solid transparent;
+  cursor: pointer;
+  font-size: 1rem;
+}
+
+.tabs button.active {
+  border-bottom: 2px solid var(--accent);
+}
+
+.sort-controls {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 1rem;
+}
+
+.sort-select {
+  background-color: rgba(33, 79, 120, 0.35);
+  color: white;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  padding: 0.6rem 1.2rem;
+  border-radius: 1.5rem;
+  font-size: 1rem;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg fill='white' height='20' viewBox='0 0 24 24' width='20' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M7 10l5 5 5-5H7z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 0.8rem center;
+  background-size: 1rem;
+  padding-right: 2.5rem;
+}
+
+/* Wider version for longer text like 'Sort: Current Revenue Locked' */
+.sort-select.wide {
+  min-width: 16rem;
+}
+
+
+/* ========== Token Grid Container ========== */
+.token-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 2rem;
+  justify-items: center;
+  margin-top: 2rem;
+  width: 100%;
+  max-width: 1200px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+/* ========== Token Card Styling ========== */
+
+.token-card {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  width: 300px;
+  height: 430px;
+  margin: 0 auto;
+}
+
+.token-card-box {
+  background: linear-gradient(to bottom, #001c34, #002b57);
+  padding: 2rem;
+  border-radius: 0.5rem;
+  border: 2px solid orange;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 230px;
+}
+
+.token-card {
+  transition: transform 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
+  background-color: transparent; /* default state */
+}
+
+.token-card:hover {
+  transform: scale(1.03);
+  background-color: rgba(135, 206, 250, 0.1); /* light transparent blue */
+  box-shadow: 0 4px 12px rgba(173, 216, 230, 0.08); /* optional soft shadow */
+  cursor: pointer;
+}
+
+
+
+.token-symbol {
+  font-size: 1.6rem;
+  font-weight: bold;
+  color: white;
+  display: flex;
+  align-items: center;
+  gap: 0.2rem;
+}
+
+.btc-symbol {
+  color: #ffa500;
+  font-weight: bold;
+}
+
+/* === Metadata & Watchlist Section === */
+.token-card-meta {
+  width: 100%;
+  padding-top: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  font-size: 0.95rem;
+}
+
+.meta-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.4rem;
+}
+
+.meta-row.holders-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: nowrap;
+}
+
+.label {
+  color: #ccc;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.value.holders {
+  color: #00ff66;
+  font-weight: 500;
+  white-space: nowrap;
+  font-family: monospace;
+  font-size: 0.95rem;
+}
+
+.value.sats {
+  color: #ffc42a;
+  white-space: nowrap;
+  font-family: monospace;
+  font-size: 0.95rem;
+}
+
+.wallet-btn {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 0.5rem 0;
+  padding: 0.6rem 1rem;
+  background-color: orange;
+  color: black;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 1rem;
+  font-weight: 600;
+  justify-content: center;
+}
+
+.wallet-btn:hover {
+  background-color: darkorange;
+}
+
+.wallet-icon {
+  height: 20px;
+  width: 20px;
+  display: block;
+}
+
+.wallet-label {
+  position: relative;
+  top: -1px; /* Adjust this for vertical centering */
+}
+
+.cancel-btn {
+  background-color: #fff;
+  color: #000;
+  margin-top: 1rem;
+}
+/* === Fix wallet modal button alignment and sizing === */
+.wallet-btn {
+  width: 220px; /* Force same width for all wallet buttons */
+  margin-left: auto;
+  margin-right: auto;
+}
+
+/* Center the cancel button */
+.cancel-btn {
+  display: block;
+  width: 220px;
+  margin: 1rem auto 0 auto;
+  text-align: center;
+}
+/* Assuming you have a global CSS file */
+.current-price-container {
+  margin-top: 20px;
+  display: flex;
+  justify-content: center;
+}
+
+.price-badge {
+  background-color: #4caf50; /* Green background */
+  border-radius: 30px; /* Oval shape */
+  padding: 10px 20px;
+  font-size: 18px;
+  color: white;
+  display: flex;
+  align-items: center;
 }

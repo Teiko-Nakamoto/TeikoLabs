@@ -9,14 +9,25 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "@stacks/auth": "^7.1.0",
+    "@stacks/blockchain-api-client": "^8.11.3",
+    "@stacks/common": "^7.0.2",
     "@stacks/connect": "^8.1.9",
+    "@stacks/network": "^7.0.2",
+    "@stacks/transactions": "^7.1.0",
+    "@supabase/supabase-js": "^2.50.5",
+    "lightweight-charts": "^5.0.8",
     "next": "15.3.5",
     "react": "^19.0.0",
-    "react-dom": "^19.0.0"
+    "react-dom": "^19.0.0",
+    "sats-connect": "^3.5.0"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3",
+    "@types/node": "^24.0.13",
+    "@types/react": "^19.1.8",
     "eslint": "^9",
-    "eslint-config-next": "15.3.5"
+    "eslint-config-next": "15.3.5",
+    "typescript": "^5.8.3"
   }
 }

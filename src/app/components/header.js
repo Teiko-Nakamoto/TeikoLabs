@@ -1,44 +1,27 @@
 'use client';
 import Link from 'next/link';
-import { useState, useEffect } from 'react';
-import {
-  connectWallet,
-  getUserSession,
-  disconnectWallet,
-} from '@/wallet-connect/wallet-connect';
-import './Header.css';
+import { useState, useRef } from 'react';
+import '../components/header.css';
+import ConnectWallet from './ConnectWallet';
+import HowItWorks from './HowItWorks'; // ✅ Import popup component
 
-export default function Header({ onAddressChange }) {
+export default function Header() {
   const [showPopup, setShowPopup] = useState(false);
-  const [userAddress, setUserAddress] = useState(null);
-
-  useEffect(() => {
-    const session = getUserSession();
-    if (session.isUserSignedIn()) {
-      const data = session.loadUserData();
-      setUserAddress(data.profile.stxAddress.testnet);
-      if (onAddressChange) onAddressChange(data.profile.stxAddress.testnet);
-    }
-  }, []);
+  const [showHowItWorks, setShowHowItWorks] = useState(false); // ✅ Control modal
+  const walletRef = useRef(null);
 
   const handleCopy = () => {
     navigator.clipboard.writeText('teikonakamoto@tutamail.com');
     alert('Email address copied to clipboard!');
   };
 
-  const handleConnect = () => {
-    connectWallet(() => {
-      const session = getUserSession();
-      const data = session.loadUserData();
-      setUserAddress(data.profile.stxAddress.testnet);
-      if (onAddressChange) onAddressChange(data.profile.stxAddress.testnet);
-    });
-  };
-
-  const handleDisconnect = () => {
-    disconnectWallet();
-    setUserAddress(null);
-    if (onAddressChange) onAddressChange(null);
+  const handleViewProfile = () => {
+    const saved = localStorage.getItem('connectedAddress');
+    if (saved) {
+      window.location.href = '/profile';
+    } else {
+      walletRef.current?.openConnectModal();
+    }
   };
 
   return (
@@ -69,39 +52,23 @@ export default function Header({ onAddressChange }) {
 
         <nav className="nav-links">
           <div className="center-link">
-            <Link href="/how-it-works" className="nav-link">How It Works</Link>
+            {/* ✅ Show popup instead of navigating */}
+            <span onClick={() => setShowHowItWorks(true)} className="nav-link">
+              How It Works
+            </span>
           </div>
           <div className="language-profile">
             <span className="nav-link nav-link-inline">
               <img src="/icons/globe.svg" alt="Language" className="icon" />
               English
             </span>
-            <span
-              onClick={() => {
-                if (userAddress) {
-                  window.location.href = '/profile';
-                } else {
-                  handleConnect();
-                }
-              }}
-              className="nav-link"
-            >
+            <span onClick={handleViewProfile} className="nav-link">
               View Profile
             </span>
           </div>
 
-          <button
-            onClick={() => {
-              if (userAddress) {
-                handleDisconnect();
-              } else {
-                handleConnect();
-              }
-            }}
-            className="connect-button hover-underline"
-          >
-            {userAddress ? `Disconnect (${userAddress.slice(0, 6)}...)` : 'Connect Wallet'}
-          </button>
+          {/* ✅ Wallet button with ref */}
+          <ConnectWallet ref={walletRef} />
         </nav>
       </header>
 
@@ -114,6 +81,9 @@ export default function Header({ onAddressChange }) {
           </div>
         </div>
       )}
+
+      {/* ✅ Render How It Works popup */}
+      {showHowItWorks && <HowItWorks onClose={() => setShowHowItWorks(false)} />}
     </>
   );
 }

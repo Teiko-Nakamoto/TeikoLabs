@@ -1,0 +1,82 @@
+/* token-chart.css */
+
+.chart-page {
+  padding: 2rem;
+  background-color: transparent;
+  color: #fff;
+  min-height: 100vh;
+}
+
+.chart-heading {
+  text-align: center;
+  font-size: 2rem;
+  margin-bottom: 1rem;
+}
+
+.controls {
+  display: flex;
+  justify-content: center;
+  gap: 1rem;
+  margin-bottom: 2rem;
+}
+
+.controls button {
+  background-color: #1a1a1a;
+  color: #fff;
+  border: 1px solid #444;
+  padding: 0.5rem 1rem;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.controls button.active {
+  background-color: #4da6ff;
+  border-color: #4da6ff;
+}
+
+.chart-box-placeholder {
+  display: flex;
+  justify-content: center;
+  align-items: flex-end;
+  height: 300px;
+  background-color: rgba(255, 255, 255, 0.05);
+  border: 1px solid #333;
+  margin: 0 auto;
+  width: 100%;
+  max-width: 800px;
+  padding: 1rem;
+  border-radius: 10px;
+}
+
+.candlestick-chart {
+  display: flex;
+  align-items: flex-end;
+  gap: 10px;
+  height: 100%;
+  width: 100%;
+  justify-content: center;
+}
+
+.candle {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.wick {
+  width: 2px;
+  background-color: #ccc;
+  margin-bottom: 2px;
+}
+
+.body {
+  width: 10px;
+}
+
+.body.bull {
+  background-color: #00ff88;
+}
+
+.body.bear {
+  background-color: #ff4d4d;
+}
