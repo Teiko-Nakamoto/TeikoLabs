@@ -2,7 +2,7 @@
 import Link from 'next/link';
 import { useState, useRef } from 'react';
 import '../components/header.css';
-import ConnectWallet from './ConnectWallet';
+import ConnectWallet from './connectwallet';
 import HowItWorks from './HowItWorks'; // ✅ Import popup component
 
 export default function Header() {
