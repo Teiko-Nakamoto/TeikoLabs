@@ -1,19 +1,13 @@
 'use client';
 
-// =============================
-// Imports
-// =============================
 import './trade-token.css';
 import Header from '../components/header';
 import TransactionToast from '../components/TransactionToast';
 import TradeActions from '../components/TradeActions';
 import { useState } from 'react';
-import { supabase } from '../utils/supabaseClient'; // ✅ Import Supabase client
+import { supabase } from '../utils/supabaseClient';
 
-// =============================
-// Utility: Polling transaction status
-// =============================
-
+// Helper: Polls blockchain until transaction is confirmed
 async function waitForConfirmation(txId, timeout = 60000, interval = 3000) {
   const start = Date.now();
 
@@ -41,10 +35,7 @@ async function waitForConfirmation(txId, timeout = 60000, interval = 3000) {
   throw new Error('⏰ Timed out waiting for transaction confirmation');
 }
 
-// =============================
-// Main Trade Token Page Component
-// =============================
-
+// Main Page Component
 export default function TradeTokenPage() {
   const [toast, setToast] = useState({ message: '', txId: null });
 
@@ -52,19 +43,18 @@ export default function TradeTokenPage() {
   const dexContract = 'plum-aardvark-dex';
   const tokenContract = 'plum-aardvark';
 
-  // ✅ Save transaction to Supabase after confirmation
-  const saveTransaction = async (txId, type, tokenAmount, stxAmount, outcome) => {
+  // ✅ Only insert raw transaction data
+  const saveTransaction = async (txId, fullData) => {
     const { error } = await supabase.from('trades')
       .upsert([
         {
           tx_id: txId,
-          type,
-          token_amount: tokenAmount,
-          stx_amount: stxAmount,
+          stx_fee: parseInt(fullData.fee_rate || '0'),
+          full_data: fullData,
           created_at: new Date().toISOString()
         }
       ], {
-        onConflict: 'tx_id' // ✅ tx_id is the primary key (or unique)
+        onConflict: 'tx_id'
       });
 
     if (error) {
@@ -74,8 +64,8 @@ export default function TradeTokenPage() {
     }
   };
 
-  // ✅ Handles toast and Supabase insert after confirmation
-  const handleToastAndPoll = async ({ message, txId, type, tokenAmount, stxAmount }) => {
+  // ✅ Handle toast + blockchain confirmation + storage
+  const handleToastAndPoll = async ({ message, txId }) => {
     setToast({ message, txId });
 
     try {
@@ -87,7 +77,7 @@ export default function TradeTokenPage() {
         txId
       });
 
-      await saveTransaction(txId, type, tokenAmount, stxAmount, outcome);
+      await saveTransaction(txId, data);
     } catch (err) {
       console.error('❌ Confirmation error:', err);
       setToast({ message: '❌ Transaction confirmation failed', txId });
