@@ -5,9 +5,8 @@ import Header from '../components/header';
 import TransactionToast from '../components/TransactionToast';
 import TradeActions from '../components/TradeActions';
 import { useState } from 'react';
-import { supabase } from '../utils/supabaseClient';
 
-// Helper: Polls blockchain until transaction is confirmed
+// Poll Hiro until the transaction is confirmed
 async function waitForConfirmation(txId, timeout = 60000, interval = 3000) {
   const start = Date.now();
 
@@ -16,26 +15,19 @@ async function waitForConfirmation(txId, timeout = 60000, interval = 3000) {
       const res = await fetch(`https://api.testnet.hiro.so/extended/v1/tx/${txId}`);
       const data = await res.json();
 
-      if (data.tx_status === 'success') {
-        console.log('✅ Transaction confirmed on-chain!');
-        return data;
-      } else if (data.tx_status === 'abort' || data.tx_status === 'failed') {
-        console.error('❌ Transaction failed on-chain:', data.tx_status);
-        return data;
-      } else {
-        console.log('⏳ Waiting for confirmation...');
-      }
+      if (data.tx_status === 'success') return data;
+      if (data.tx_status === 'abort' || data.tx_status === 'failed') return data;
     } catch (err) {
-      console.error('🚨 Error checking transaction status:', err);
+      console.error('🚨 Error checking tx status:', err);
     }
 
-    await new Promise((resolve) => setTimeout(resolve, interval));
+    await new Promise(res => setTimeout(res, interval));
   }
 
   throw new Error('⏰ Timed out waiting for transaction confirmation');
 }
 
-// Main Page Component
+// Main Page
 export default function TradeTokenPage() {
   const [toast, setToast] = useState({ message: '', txId: null });
 
@@ -43,41 +35,21 @@ export default function TradeTokenPage() {
   const dexContract = 'plum-aardvark-dex';
   const tokenContract = 'plum-aardvark';
 
-  // ✅ Only insert raw transaction data
-  const saveTransaction = async (txId, fullData) => {
-    const { error } = await supabase.from('trades')
-      .upsert([
-        {
-          tx_id: txId,
-          stx_fee: parseInt(fullData.fee_rate || '0'),
-          full_data: fullData,
-          created_at: new Date().toISOString()
-        }
-      ], {
-        onConflict: 'tx_id'
-      });
-
-    if (error) {
-      console.error('❌ Error saving transaction:', error.message);
-    } else {
-      console.log('✅ Transaction saved to Supabase.');
-    }
-  };
-
-  // ✅ Handle toast + blockchain confirmation + storage
   const handleToastAndPoll = async ({ message, txId }) => {
     setToast({ message, txId });
 
     try {
-      const data = await waitForConfirmation(txId);
-      const outcome = data.tx_status;
+      const confirmed = await waitForConfirmation(txId);
 
       setToast({
-        message: outcome === 'success' ? '✅ Transaction confirmed!' : '❌ Transaction failed',
-        txId
+        message: confirmed.tx_status === 'success'
+          ? '✅ Transaction confirmed!'
+          : '❌ Transaction failed',
+        txId,
       });
 
-      await saveTransaction(txId, data);
+      // ✅ Trigger backend sync after confirmation
+      await fetch('/api/fetch-dex-transactions');
     } catch (err) {
       console.error('❌ Confirmation error:', err);
       setToast({ message: '❌ Transaction confirmation failed', txId });
