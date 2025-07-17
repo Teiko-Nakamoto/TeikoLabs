@@ -4,64 +4,30 @@ import { useState } from 'react';
 import { request } from '@stacks/connect';
 import { uintCV, contractPrincipalCV } from '@stacks/transactions';
 
-// ✅ New: call backend API route instead of frontend fetch
-async function callBackendSync() {
-  try {
-    const res = await fetch('/api/fetch-dex-transactions');
-    const data = await res.json();
-    console.log('📥 API Sync result:', data);
-  } catch (err) {
-    console.error('❌ API Sync failed:', err);
-  }
-}
-
-// ✅ Polls the Hiro API until tx is confirmed or timeout occurs
-async function waitForConfirmation(txId, timeout = 60000, interval = 3000) {
-  const start = Date.now();
-
-  while (Date.now() - start < timeout) {
-    try {
-      const res = await fetch(`https://api.testnet.hiro.so/extended/v1/tx/${txId}`);
-      const data = await res.json();
-
-      if (data.tx_status === 'success') return data;
-      if (data.tx_status === 'abort' || data.tx_status === 'failed') return data;
-    } catch (err) {
-      console.error('⛔ Error checking status:', err);
-    }
-    await new Promise(res => setTimeout(res, interval));
-  }
-  throw new Error('⏰ Confirmation timeout');
-}
+// This component is responsible ONLY for sending the transaction to the blockchain.
+// It should NOT wait for confirmation or call the backend.
 
 export default function TradeActions({ contractAddress, dexContract, tokenContract, setToast }) {
-  const [amount, setAmount] = useState('');
+  const [amount, setAmount] = useState(''); // Track user input amount
 
-  const extractTxId = (response) =>
-    response?.txId || response?.txid || response?.result?.txid || response?.result?.txId || null;
-
-  const handleInputChange = (e) => setAmount(e.target.value);
-
-  const handleTxFlow = async (txId, label) => {
-    setToast({ message: `✅ ${label} transaction submitted`, txId });
-
-    try {
-      const confirmed = await waitForConfirmation(txId);
-      if (confirmed.tx_status === 'success') {
-        setToast({ message: `✅ ${label} confirmed on-chain`, txId });
-
-        // ✅ Replaced: call backend API to avoid CORS + rate limit issues
-        await callBackendSync();
-      } else {
-        setToast({ message: `❌ ${label} failed`, txId });
-      }
-    } catch (err) {
-      setToast({ message: `❌ ${label} confirmation timeout`, txId });
-    }
+  // Extract txId from different response formats
+  const extractTxId = (response) => {
+    console.log('🧾 TX Response:', response); // Helpful for debugging
+    return (
+      response?.txId ||
+      response?.txid ||
+      response?.result?.txid ||
+      response?.result?.txId ||
+      null
+    );
   };
 
+  // Handle input field change
+  const handleInputChange = (e) => setAmount(e.target.value);
+
+  // Sends the Buy transaction to the user's wallet
   const callBuyFunction = async () => {
-    const microStx = parseInt(amount * 1e6);
+    const microStx = parseInt(amount * 1e6); // Convert STX to micro-STX
     try {
       const response = await request('stx_callContract', {
         contract: `${contractAddress}.${dexContract}`,
@@ -74,15 +40,20 @@ export default function TradeActions({ contractAddress, dexContract, tokenContra
         postConditions: [],
         network: 'testnet',
       });
+
       const txId = extractTxId(response);
-      handleTxFlow(txId, 'Buy');
+
+      // ✅ Tell the parent page the txId so it can handle confirmation and backend calls
+      setToast({ message: '✅ Buy transaction submitted', txId });
     } catch (err) {
+      console.error('❌ Buy transaction failed:', err);
       setToast({ message: '❌ Buy transaction failed', txId: null });
     }
   };
 
+  // Sends the Sell transaction to the user's wallet
   const callSellFunction = async () => {
-    const tokenAmount = parseInt(amount * 1e6);
+    const tokenAmount = parseInt(amount * 1e6); // Convert to micro-tokens
     try {
       const response = await request('stx_callContract', {
         contract: `${contractAddress}.${dexContract}`,
@@ -95,13 +66,18 @@ export default function TradeActions({ contractAddress, dexContract, tokenContra
         postConditions: [],
         network: 'testnet',
       });
+
       const txId = extractTxId(response);
-      handleTxFlow(txId, 'Sell');
+
+      // ✅ Tell the parent page the txId so it can handle confirmation and backend calls
+      setToast({ message: '✅ Sell transaction submitted', txId });
     } catch (err) {
+      console.error('❌ Sell transaction failed:', err);
       setToast({ message: '❌ Sell transaction failed', txId: null });
     }
   };
 
+  // UI layout for trade actions
   return (
     <div className="trade-box">
       <label htmlFor="amount">Enter Amount</label>
