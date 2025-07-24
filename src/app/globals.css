@@ -364,3 +364,24 @@ a {
   display: flex;
   align-items: center;
 }
+.tab-toggle {
+  display: flex;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+  justify-content: center;
+}
+
+.tab-toggle button {
+  padding: 0.5rem 1rem;
+  background: transparent;
+  color: white;
+  border: 1px solid #ffae00;
+  border-radius: 5px;
+  cursor: pointer;
+  font-weight: bold;
+}
+
+.tab-toggle button.active {
+  background-color: #ffae00;
+  color: black;
+}

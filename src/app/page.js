@@ -1,53 +1,53 @@
 'use client';
+
 import Link from 'next/link';
 import Header from './components/header';
 import './globals.css';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import {
+  getRevenueBalance,
+  getLiquidityBalance,
+  getTokenSymbol,
+} from './utils/fetchTokenData';
 
 export default function HomePage() {
   const [activeTab, setActiveTab] = useState('featured');
-  const [sortBy, setSortBy] = useState('revenue');
-  const [order, setOrder] = useState('asc');
-  const [searchTerm, setSearchTerm] = useState('');
+  const [tokenSymbol, setTokenSymbol] = useState('--');
+  const [revenue, setRevenue] = useState('--');
+  const [liquidity, setLiquidity] = useState('--');
 
-  const tokens = [
-    { name: 'SATS', revenue: '210000', holders: 420000, liquidity: '100000000' },
-    { name: 'ORDI', revenue: '90000', holders: 180000, liquidity: '300000000' },
-    { name: 'TEIKO', revenue: '0', holders: 500000, liquidity: '0' },
-    { name: 'MAS', revenue: '0', holders: 1000000, liquidity: '0' },
-    { name: 'EGOLD', revenue: '0', holders: 300000, liquidity: '0' },
-  ];
+  useEffect(() => {
+    const fetchAll = async () => {
+      const symbol = await getTokenSymbol();
+      const rev = await getRevenueBalance();
+      const liq = await getLiquidityBalance();
 
-  const filteredTokens = tokens
-    .filter(token =>
-      token.name.toLowerCase().includes(searchTerm.toLowerCase())
-    )
-    .sort((a, b) => {
-      let valA, valB;
+      setTokenSymbol(symbol ? symbol.toUpperCase() : '--');
+      setRevenue(rev !== null ? rev.toLocaleString() : '--');
+      setLiquidity(liq !== null ? liq.toLocaleString() : '--');
+    };
 
-      switch (sortBy) {
-        case 'name':
-          valA = a.name.toLowerCase();
-          valB = b.name.toLowerCase();
-          return order === 'asc' ? valA.localeCompare(valB) : valB.localeCompare(valA);
-        case 'holders':
-          valA = a.holders;
-          valB = b.holders;
-          break;
-        case 'revenue':
-          valA = parseFloat(a.revenue);
-          valB = parseFloat(b.revenue);
-          break;
-        case 'liquidity':
-          valA = parseFloat(a.liquidity);
-          valB = parseFloat(b.liquidity);
-          break;
-        default:
-          return 0;
-      }
+    fetchAll();
+  }, []);
 
-      return order === 'asc' ? valA - valB : valB - valA;
-    });
+  const realToken = {
+    revenue,
+    holders: 500000,
+    liquidity,
+  };
+
+  const featuredTokens = [realToken, { comingSoon: true }, { comingSoon: true }];
+  const allTokens = Array(9).fill({ comingSoon: true });
+  const practiceTokens = [realToken];
+
+  let displayedCards = [];
+  if (activeTab === 'featured') {
+    displayedCards = featuredTokens;
+  } else if (activeTab === 'all') {
+    displayedCards = allTokens;
+  } else if (activeTab === 'practice') {
+    displayedCards = practiceTokens;
+  }
 
   return (
     <>
@@ -55,50 +55,59 @@ export default function HomePage() {
       <main className="home-page">
         <div className="page-header-centered">
           <h1>Live Bitcoin Token Market</h1>
-          {/* <Link href="/create-token">
-            <button className="create-token-btn">Create Token</button>
-          </Link> */}
         </div>
 
         <div className="top-controls">
-          {/* Search bar, tabs, sort controls (unchanged) */}
+          <div className="tab-toggle">
+            <button className={activeTab === 'featured' ? 'active' : ''} onClick={() => setActiveTab('featured')}>
+              Featured
+            </button>
+            <button className={activeTab === 'all' ? 'active' : ''} onClick={() => setActiveTab('all')}>
+              All Tokens
+            </button>
+            <button className={activeTab === 'practice' ? 'active' : ''} onClick={() => setActiveTab('practice')}>
+              Practice Trading
+            </button>
+          </div>
         </div>
 
         <div className="token-grid">
-          {filteredTokens.map((token, idx) => {
-            const tokenCard = (
-              <div key={idx} className="token-card">
-                <div className="token-card-box">
-                  <span className="token-symbol">
-                    <span className="btc-symbol">₿</span> {token.name}
-                  </span>
-                </div>
-
-                <div className="token-card-meta">
-                  <div className="meta-row holders-row">
-                    <div className="label-value-group">
-                      <span className="label">Holders:</span>
-                      <span className="value holders">{token.holders.toLocaleString()}</span>
-                    </div>
+          {displayedCards.map((token, idx) => {
+            if (token.comingSoon) {
+              return (
+                <div key={`coming-soon-${idx}`} className="token-card coming-soon">
+                  <div className="token-card-box">
+                    <span className="token-symbol">🚧 Coming Soon</span>
                   </div>
-                  <p>
-                    <span className="label">Current Revenue Locked:</span>{' '}
-                    <span className="value sats">{parseInt(token.revenue).toLocaleString()} SATs</span>
-                  </p>
-                  <p>
-                    <span className="label">Current Liquidity Held:</span>{' '}
-                    <span className="value sats">{parseInt(token.liquidity).toLocaleString()} SATs</span>
-                  </p>
                 </div>
-              </div>
-            );
+              );
+            }
 
-            return token.name === 'TEIKO' ? (
-              <Link href="/trade-token" key={idx} style={{ textDecoration: 'none', color: 'inherit' }}>
-                {tokenCard}
+            return (
+              <Link
+                href="/test-page"
+                key={`token-${idx}`}
+                style={{ textDecoration: 'none', color: 'inherit' }}
+              >
+                <div className="token-card">
+                  <div className="token-card-box">
+                    <span className="token-symbol">
+                      <span className="btc-symbol">₿</span> {tokenSymbol}
+                    </span>
+                  </div>
+
+                  <div className="token-card-meta">
+                    <p>
+                      <span className="label">Revenue Locked:</span>{' '}
+                      <span className="value sats">⚡ {token.revenue} sats</span>
+                    </p>
+                    <p>
+                      <span className="label">Liquidity Held:</span>{' '}
+                      <span className="value sats">⚡ {token.liquidity} sats</span>
+                    </p>
+                  </div>
+                </div>
               </Link>
-            ) : (
-              tokenCard
             );
           })}
         </div>

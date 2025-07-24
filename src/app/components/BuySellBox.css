@@ -1,0 +1,155 @@
+.buy-sell-box {
+  background-color: #081420;
+  border-radius: 6px;
+  padding: 20px;
+  width: 100%;
+  max-width: 320px;
+  color: #eee;
+  font-family: Arial, sans-serif;
+}
+
+.tab-row {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 20px;
+}
+
+.tab-button {
+  flex: 1;
+  padding: 10px 0;
+  border: none;
+  color: #fff;
+  font-weight: bold;
+  border-radius: 4px;
+  cursor: pointer;
+  background-color: #132936;
+  transition: background-color 0.3s ease;
+}
+
+/* Updated to proper green for buy */
+.tab-button.buy {
+  background-color: #26a69a; /* brighter green */
+}
+
+/* Updated to clear red for sell */
+.tab-button.sell {
+  background-color: #ef5350; /* red */
+}
+
+.tab-button:hover.buy {
+  background-color: #1e8c81; /* darker green hover */
+}
+
+.tab-button:hover.sell {
+  background-color: #d8433f; /* darker red hover */
+}
+
+/* For active state, if you use 'active' class */
+.tab-button.active.buy {
+  background-color: #26a69a;
+}
+
+.tab-button.active.sell {
+  background-color: #ef5350;
+}
+
+.current-balance {
+  margin-bottom: 10px;
+  font-size: 14px;
+  color: #ccc;
+  font-weight: 600;
+}
+
+.input-label {
+  display: block;
+  font-size: 14px;
+  margin-bottom: 8px;
+}
+
+.sats-input {
+  width: 100%;
+  padding: 10px;
+  border-radius: 6px;
+  border: 1px solid #444;
+  background-color: #0b2230;
+  color: #eee;
+  font-size: 16px;
+  margin-bottom: 10px;
+  box-sizing: border-box;
+}
+
+.quick-buttons {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.quick-button {
+  flex: 1;
+  border: none;
+  border-radius: 4px;
+  padding: 8px 0;
+  cursor: pointer;
+  font-weight: 600;
+  background-color: #132936;
+  color: #26a69a; /* green */
+  transition: background-color 0.3s ease;
+}
+
+.quick-button.sell {
+  color: #ef5350; /* red */
+}
+
+.quick-button:hover.buy {
+  background-color: #1e8c81;
+  color: white;
+}
+
+.quick-button:hover.sell {
+  background-color: #d8433f;
+  color: white;
+}
+
+.info-text {
+  font-size: 12px;
+  color: #888;
+  margin-bottom: 15px;
+}
+
+.info-text a {
+  color: #00a7b0;
+  text-decoration: none;
+}
+
+.buy-button {
+  width: 100%;
+  padding: 12px;
+  border: none;
+  color: #fff;
+  font-weight: bold;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 16px;
+  transition: background-color 0.3s ease;
+}
+
+/* Updated green and red for buy/sell buttons */
+.buy-button.buy {
+  background-color: #26a69a;
+}
+
+.buy-button.sell {
+  background-color: #ef5350;
+}
+
+.buy-button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.error-message {
+  margin-top: 15px;
+  color: red;
+  font-weight: bold;
+  font-size: 14px;
+}

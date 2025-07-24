@@ -1,0 +1,73 @@
+(impl-trait 'ST2SHP0RSX5ST9HTKJM4JF6SGQ686P4GJGF2XHHTX.sip-010-trait-ft-standard.sip-010-trait)
+
+;; ---- Constants ----
+(define-constant CONTRACT_OWNER 'ST37918Q7NBZ52AMV133VTY5C864KVK0S2HZ3CGA4)
+(define-constant TOKEN_NAME "dearcyan")
+(define-constant TOKEN_SYMBOL "DCY")
+(define-constant TOKEN_DECIMALS u8)
+(define-constant MAX_SUPPLY u2100000000000000) ;; 21 million * 10^8
+(define-constant DEX_CONTRACT 'ST37918Q7NBZ52AMV133VTY5C864KVK0S2HZ3CGA4.dear-cyan-dex)
+
+;; ---- Errors ----
+(define-constant ERR_UNAUTHORIZED (err u100))
+(define-constant ERR_ALREADY_MINTED (err u101))
+
+;; ---- Token Definition ----
+(define-fungible-token dear-cyan MAX_SUPPLY)
+
+;; ---- Metadata + Mint State ----
+(define-data-var token-uri (optional (string-utf8 256)) none)
+(define-data-var minted bool false)
+
+;; ---- SIP-010 Read-Only Functions ----
+(define-read-only (get-balance (who principal))
+  (ok (ft-get-balance dear-cyan who))
+)
+
+(define-read-only (get-total-supply)
+  (ok (ft-get-supply dear-cyan))
+)
+
+(define-read-only (get-name)
+  (ok TOKEN_NAME)
+)
+
+(define-read-only (get-symbol)
+  (ok TOKEN_SYMBOL)
+)
+
+(define-read-only (get-decimals)
+  (ok TOKEN_DECIMALS)
+)
+
+(define-read-only (get-token-uri)
+  (ok (var-get token-uri))
+)
+
+;; ---- SIP-010 Transfer Function ----
+(define-public (transfer (amount uint) (from principal) (to principal) (memo (optional (buff 34))))
+  (begin
+    (asserts! (is-eq from tx-sender) ERR_UNAUTHORIZED)
+    (ft-transfer? dear-cyan amount from to)
+  )
+)
+
+;; ---- Optional Metadata Setter ----
+(define-public (set-token-uri (value (string-utf8 256)))
+  (begin
+    (asserts! (is-eq tx-sender CONTRACT_OWNER) ERR_UNAUTHORIZED)
+    (var-set token-uri (some value))
+    (ok true)
+  )
+)
+
+;; ---- One-Time Mint to DEX Contract ----
+(define-public (mint-entire-supply-to-dex)
+  (begin
+    (asserts! (is-eq tx-sender CONTRACT_OWNER) ERR_UNAUTHORIZED)
+    (asserts! (is-eq (var-get minted) false) ERR_ALREADY_MINTED)
+    (try! (ft-mint? dear-cyan MAX_SUPPLY DEX_CONTRACT))
+    (var-set minted true)
+    (ok true)
+  )
+)
