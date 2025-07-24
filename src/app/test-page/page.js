@@ -13,6 +13,7 @@ export default function TestPage() {
   const [estimatedResult, setEstimatedResult] = useState(null);
   const [errorMessage, setErrorMessage] = useState('');  // State to hold error message
   const [isRefreshing, setIsRefreshing] = useState(false);  // To control "Hold on, refreshing" popup
+  const [isClient, setIsClient] = useState(false); // Flag to check if client-side
 
   const [trades, setTrades] = useState([]);
   const [tradesPerCandle, setTradesPerCandle] = useState(1);
@@ -43,23 +44,35 @@ export default function TestPage() {
     fetchTrades();
   }, []);
 
+  // useEffect to check if we're on the client-side
   useEffect(() => {
-    // Only access localStorage client-side
     if (typeof window !== 'undefined') {
+      setIsClient(true); // Set the client-side flag after mount
+    }
+  }, []);
+
+  // UseEffect to access localStorage only on the client-side
+  useEffect(() => {
+    if (isClient) {
       const storedTab = localStorage.getItem('tab');
       const storedAmount = localStorage.getItem('amount');
       if (storedTab) setTab(storedTab);
       if (storedAmount) setAmount(storedAmount);
     }
-  }, []);  // This effect runs once on mount
+  }, [isClient]);
 
+  // useEffect to store values in localStorage whenever they change
   useEffect(() => {
-    // Store the `tab` and `amount` to localStorage whenever they change
-    if (typeof window !== 'undefined') {
+    if (isClient) {
       localStorage.setItem('tab', tab);
       localStorage.setItem('amount', amount);
     }
-  }, [tab, amount]); // Re-run this effect when `tab` or `amount` changes
+  }, [tab, amount, isClient]);
+
+  // Show loading state until the page is rendered client-side
+  if (!isClient) {
+    return <div>Loading...</div>;
+  }
 
   return (
     <div className="test-page">
