@@ -8,9 +8,8 @@ import TradeHistory from '../components/tradehistory';
 import { supabase } from '../utils/supabaseClient';
 
 export default function TestPage() {
-  // Initialize state from localStorage, defaulting to 'buy' for tab and '' for amount
-  const [tab, setTab] = useState(() => localStorage.getItem('tab') || 'buy');
-  const [amount, setAmount] = useState(() => localStorage.getItem('amount') || '');
+  const [tab, setTab] = useState('buy'); // Default tab value
+  const [amount, setAmount] = useState(''); // Default amount value
   const [estimatedResult, setEstimatedResult] = useState(null);
   const [errorMessage, setErrorMessage] = useState('');  // State to hold error message
   const [isRefreshing, setIsRefreshing] = useState(false);  // To control "Hold on, refreshing" popup
@@ -45,9 +44,21 @@ export default function TestPage() {
   }, []);
 
   useEffect(() => {
+    // Only access localStorage client-side
+    if (typeof window !== 'undefined') {
+      const storedTab = localStorage.getItem('tab');
+      const storedAmount = localStorage.getItem('amount');
+      if (storedTab) setTab(storedTab);
+      if (storedAmount) setAmount(storedAmount);
+    }
+  }, []);  // This effect runs once on mount
+
+  useEffect(() => {
     // Store the `tab` and `amount` to localStorage whenever they change
-    localStorage.setItem('tab', tab);
-    localStorage.setItem('amount', amount);
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('tab', tab);
+      localStorage.setItem('amount', amount);
+    }
   }, [tab, amount]); // Re-run this effect when `tab` or `amount` changes
 
   return (
