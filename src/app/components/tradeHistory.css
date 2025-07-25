@@ -17,9 +17,8 @@
   border-radius: 8px;
   overflow: hidden;
   box-shadow: 0 0 10px rgba(0,0,0,0.1);
+  width: 100%; /* Ensure it takes up the full width */
 }
-
-
 
 .trade-history-table thead tr {
   background-color: #f5f5f5;
@@ -59,9 +58,8 @@
   color: #e74c3c; /* nice red */
   font-weight: 600;
 }
-/* Color the text green for buys */
 
-
+/* TxID cell styles */
 .txid-cell {
   display: flex;
   align-items: center;
@@ -94,11 +92,11 @@
 .pagination-container {
   margin-top: 16px;
   display: flex;
-  justify-content: space-between;
+  justify-content: space-between; /* Keep buttons to the edges */
   align-items: center;
   font-size: 0.95rem;
   color: #666;
-  user-select: none;
+  width: 100%; /* Ensure it stretches across the full table width */
 }
 
 .pagination-button {
@@ -111,13 +109,19 @@
   font-weight: 600;
   box-shadow: 0 2px 6px rgba(0,0,0,0.15);
   transition: background-color 0.3s ease, box-shadow 0.3s ease;
-  display: flex;
+  display: inline-flex;
   align-items: center;
   gap: 6px;
 }
 
+/* Make Previous button look like Next button */
+.pagination-container .pagination-button:first-of-type {
+  background-color: #f1c40f; /* same yellow as Next button */
+  color: #222; /* black text */
+}
+
 .pagination-button:hover:not(:disabled) {
-  background-color: #d4ac0d;
+  background-color: #d4ac0d; /* darken yellow for hover */
   box-shadow: 0 4px 12px rgba(0,0,0,0.25);
 }
 
@@ -134,6 +138,18 @@
   font-weight: bold;
   font-size: 1.1em;
 }
+
+/* Styling for page number and buttons */
+.pagination-info {
+  color: #444;
+  margin: 0 20px; /* Add some margin around page info */
+}
+
+.pagination-button,
+.pagination-info {
+  margin: 0 10px;
+}
+
 .trade-history-table td.buy {
   color: #27ae60 !important; /* Strong green */
   font-weight: 600;

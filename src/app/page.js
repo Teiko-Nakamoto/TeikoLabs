@@ -36,15 +36,13 @@ export default function HomePage() {
     liquidity,
   };
 
-  const featuredTokens = [realToken, { comingSoon: true }, { comingSoon: true }];
-  const allTokens = Array(9).fill({ comingSoon: true });
+  // Only 1 "Coming Soon" token in the featured section
+  const featuredTokens = [realToken, { comingSoon: true }];
   const practiceTokens = [realToken];
 
   let displayedCards = [];
   if (activeTab === 'featured') {
     displayedCards = featuredTokens;
-  } else if (activeTab === 'all') {
-    displayedCards = allTokens;
   } else if (activeTab === 'practice') {
     displayedCards = practiceTokens;
   }
@@ -62,9 +60,7 @@ export default function HomePage() {
             <button className={activeTab === 'featured' ? 'active' : ''} onClick={() => setActiveTab('featured')}>
               Featured
             </button>
-            <button className={activeTab === 'all' ? 'active' : ''} onClick={() => setActiveTab('all')}>
-              All Tokens
-            </button>
+            {/* Removed the "All Tokens" button */}
             <button className={activeTab === 'practice' ? 'active' : ''} onClick={() => setActiveTab('practice')}>
               Practice Trading
             </button>
@@ -84,30 +80,52 @@ export default function HomePage() {
             }
 
             return (
-              <Link
-                href="/test-page"
-                key={`token-${idx}`}
-                style={{ textDecoration: 'none', color: 'inherit' }}
-              >
-                <div className="token-card">
-                  <div className="token-card-box">
-                    <span className="token-symbol">
-                      <span className="btc-symbol">₿</span> {tokenSymbol}
-                    </span>
-                  </div>
+              <div key={`token-${idx}`} className="token-card-wrapper">
+                <Link
+                  href="/test-page"
+                  style={{ textDecoration: 'none', color: 'inherit' }}
+                >
+                  <div className="token-card">
+                    <div className="token-card-box">
+                      <span className="token-symbol">
+                        <span className="btc-symbol">₿</span> {tokenSymbol}
+                      </span>
+                    </div>
 
-                  <div className="token-card-meta">
-                    <p>
-                      <span className="label">Revenue Locked:</span>{' '}
-                      <span className="value sats">⚡ {token.revenue} sats</span>
-                    </p>
-                    <p>
-                      <span className="label">Liquidity Held:</span>{' '}
-                      <span className="value sats">⚡ {token.liquidity} sats</span>
-                    </p>
+                    <div className="token-card-meta">
+                      <p>
+                        <span className="label">Revenue Locked:</span>{' '}
+                        <span className="value sats">⚡ {token.revenue} sats</span>
+                      </p>
+                      <p>
+                        <span className="label">Liquidity Held:</span>{' '}
+                        <span className="value sats">⚡ {token.liquidity} sats</span>
+                      </p>
+                    </div>
                   </div>
+                </Link>
+
+                {/* Button to Get Fake Bitcoin */}
+                <div style={{ marginTop: '20px' }}>
+                  <a
+                    href="https://platform.hiro.so/faucet"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    style={{
+                      display: 'inline-block',
+                      backgroundColor: '#4CAF50',
+                      color: 'white',
+                      padding: '10px 20px',
+                      borderRadius: '5px',
+                      textDecoration: 'none',
+                      fontSize: '16px',
+                      textAlign: 'center',
+                    }}
+                  >
+                    Get Free Fake Bitcoin for Trading
+                  </a>
                 </div>
-              </Link>
+              </div>
             );
           })}
         </div>

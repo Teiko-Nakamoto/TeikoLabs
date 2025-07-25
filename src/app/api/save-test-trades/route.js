@@ -5,7 +5,7 @@ export async function POST(req) {
     // Parse the incoming request body to get transaction data
     const { transaction_id, price, type, created_at, tokens_traded } = await req.json();
 
-    // ✅ Validate required fields including tokens_traded
+    // Validate required fields including tokens_traded
     if (!transaction_id || !price || !type || !created_at || typeof tokens_traded !== 'number') {
       return new Response(
         JSON.stringify({ error: 'Missing required fields: transaction_id, price, type, created_at, and tokens_traded are required.' }),
@@ -13,7 +13,25 @@ export async function POST(req) {
       );
     }
 
-    // ✅ Insert trade into Supabase, including the created_at and tokens_traded fields
+    // --- New verification step ---
+    // Verify the transaction exists and is confirmed on the blockchain via Hiro API
+    const verifyRes = await fetch(`https://api.testnet.hiro.so/extended/v1/tx/${transaction_id}`);
+    if (!verifyRes.ok) {
+      return new Response(
+        JSON.stringify({ error: 'Failed to verify transaction on blockchain.' }),
+        { status: 400 }
+      );
+    }
+    const txData = await verifyRes.json();
+
+    if (txData.tx_status !== 'success') {
+      return new Response(
+        JSON.stringify({ error: 'Transaction not confirmed or invalid.' }),
+        { status: 400 }
+      );
+    }
+
+    // Insert trade into Supabase, including the created_at and tokens_traded fields
     const { error } = await supabase
       .from('TestTrades')
       .insert([{ transaction_id, price, type, created_at, tokens_traded }]);
@@ -26,7 +44,10 @@ export async function POST(req) {
       );
     }
 
-    // ✅ Success — respond with what was saved, including tokens_traded
+    // Log successful insertion with security verification
+    console.log(`✅ Trade with txId ${transaction_id} passed verification and was saved successfully.`);
+
+    // Success — respond with what was saved, including tokens_traded
     return new Response(
       JSON.stringify({
         message: '✅ Trade saved successfully',
