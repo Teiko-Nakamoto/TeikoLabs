@@ -4,11 +4,6 @@ import { useState, useEffect } from 'react';
 export default function TransactionToast({ message, txId, onClose }) {
   const [copied, setCopied] = useState(false);
 
-  useEffect(() => {
-    if (txId) {
-      console.log('🔗 View on Explorer:', `https://explorer.stacks.co/txid/${txId}?chain=testnet`);
-    }
-  }, [txId]);
 
   const handleCopy = () => {
     if (txId) {

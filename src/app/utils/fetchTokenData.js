@@ -3,6 +3,9 @@
 import { STACKS_TESTNET } from '@stacks/network';
 import { fetchCallReadOnlyFunction, Cl } from '@stacks/transactions';
 import { getLocalStorage } from '@stacks/connect';
+export const SATS_CONTRACT_ADDRESS = 'ST1F7QA2MDF17S807EPA36TSS8AMEFY4KA9TVGWXT';
+export const SATS_CONTRACT_NAME = 'sbtc-token';
+
 
 export const DEX_CONTRACT_ADDRESS = 'ST37918Q7NBZ52AMV133VTY5C864KVK0S2HZ3CGA4';
 export const DEX_CONTRACT_NAME = 'dear-cyan-dex';
@@ -85,6 +88,7 @@ export async function getTokenName() {
 }
 
 // Fetch current user's token balance
+// Fetch current user's token balance (rounded up to nearest whole number)
 export async function getUserTokenBalance() {
   try {
     const data = getLocalStorage();
@@ -101,7 +105,7 @@ export async function getUserTokenBalance() {
     });
 
     const raw = result?.value?.value || result?.value || null;
-    return raw ? parseInt(raw) : 0;
+    return raw ? Math.ceil(parseInt(raw)) : 0;
   } catch (err) {
     console.error('❌ Failed to fetch user token balance:', err);
     return 0;
@@ -191,34 +195,25 @@ export async function getCurrentPrice() {
   }
 }
 
-// NEW: Calculate tokens user bought or sold during a trade
-// tradeCallback is an async function that triggers the wallet transaction and waits for confirmation
-export async function getUserTokensTraded(tradeCallback) {
+export async function getUserSatsBalance() {
   try {
-    // Snapshot balance before trade
-    const balanceBefore = await getUserTokenBalance();
+    const data = getLocalStorage();
+    const userAddress = data?.addresses?.stx?.[0]?.address;
+    if (!userAddress) return 0;
 
-    // Execute trade and wait for confirmation
-    await tradeCallback();
+    const result = await fetchCallReadOnlyFunction({
+      contractAddress: SATS_CONTRACT_ADDRESS,
+      contractName: SATS_CONTRACT_NAME,
+      functionName: 'get-balance',
+      functionArgs: [Cl.principal(userAddress)],
+      network: STACKS_TESTNET,
+      senderAddress: userAddress,
+    });
 
-    // Snapshot balance after trade
-    const balanceAfter = await getUserTokenBalance();
-
-    // Calculate token delta
-    const tokensTraded = balanceAfter - balanceBefore;
-
-    // Log for debug
-    if (tokensTraded > 0) {
-      console.log(`User bought ${tokensTraded} tokens`);
-    } else if (tokensTraded < 0) {
-      console.log(`User sold ${Math.abs(tokensTraded)} tokens`);
-    } else {
-      console.log('No token change detected');
-    }
-
-    return tokensTraded;
+    const raw = result?.value?.value || result?.value || null;
+    return raw ? parseInt(raw) : 0;
   } catch (err) {
-    console.error('❌ Error calculating tokens traded:', err);
+    console.error('❌ Failed to fetch user SATS balance:', err);
     return 0;
   }
 }

@@ -6,24 +6,25 @@ import BuySellBox from '../components/BuySellBox';
 import Chart from '../components/chart';
 import TradeHistory from '../components/tradehistory';
 import { supabase } from '../utils/supabaseClient';
+import ProfitLoss from '../components/ProfitLoss';
+import TokenStats from '../components/TokenStats';
 
 export default function TestPage() {
-  const [tab, setTab] = useState('buy'); // Default tab value
-  const [amount, setAmount] = useState(''); // Default amount value
+  const [tab, setTab] = useState('buy');
+  const [amount, setAmount] = useState('');
   const [estimatedResult, setEstimatedResult] = useState(null);
-  const [errorMessage, setErrorMessage] = useState('');  // State to hold error message
-  const [isRefreshing, setIsRefreshing] = useState(false);  // To control "Hold on, refreshing" popup
-  const [isClient, setIsClient] = useState(false); // Flag to check if client-side
-
+  const [errorMessage, setErrorMessage] = useState('');
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const [isClient, setIsClient] = useState(false);
   const [trades, setTrades] = useState([]);
   const [tradesPerCandle, setTradesPerCandle] = useState(1);
+  const [activeSection, setActiveSection] = useState('profit');
 
-  // Function to trigger the refresh with the "Hold on" message
   const triggerPageRefresh = () => {
-    setIsRefreshing(true);  // Show the pop-up
+    setIsRefreshing(true);
     setTimeout(() => {
-      window.location.reload();  // Refresh the page after the delay
-    }, 2000);  // Delay of 2 seconds
+      window.location.reload();
+    }, 2000);
   };
 
   async function fetchTrades() {
@@ -44,14 +45,12 @@ export default function TestPage() {
     fetchTrades();
   }, []);
 
-  // useEffect to check if we're on the client-side
   useEffect(() => {
     if (typeof window !== 'undefined') {
-      setIsClient(true); // Set the client-side flag after mount
+      setIsClient(true);
     }
   }, []);
 
-  // UseEffect to access localStorage only on the client-side
   useEffect(() => {
     if (isClient) {
       const storedTab = localStorage.getItem('tab');
@@ -61,7 +60,6 @@ export default function TestPage() {
     }
   }, [isClient]);
 
-  // useEffect to store values in localStorage whenever they change
   useEffect(() => {
     if (isClient) {
       localStorage.setItem('tab', tab);
@@ -69,19 +67,18 @@ export default function TestPage() {
     }
   }, [tab, amount, isClient]);
 
-  // Show loading state until the page is rendered client-side
-  if (!isClient) {
-    return <div>Loading...</div>;
-  }
+  if (!isClient) return <div>Loading...</div>;
 
   return (
     <div className="test-page">
       <Header />
 
-      {/* Display error message if exists */}
-      {errorMessage && <div className="error-message" style={{ color: 'red', marginBottom: '20px' }}>{errorMessage}</div>}
+      {errorMessage && (
+        <div className="error-message" style={{ color: 'red', marginBottom: '20px' }}>
+          {errorMessage}
+        </div>
+      )}
 
-      {/* Show the "Hold on, page refreshing" pop-up */}
       {isRefreshing && (
         <div className="refresh-popup">
           <p>Hold on, page refreshing...</p>
@@ -89,7 +86,7 @@ export default function TestPage() {
       )}
 
       <div style={{ display: 'flex', gap: '20px', marginTop: '20px' }}>
-        {/* Left side: Chart and Trade History stacked vertically */}
+        {/* Left side: Chart and Trade History */}
         <div style={{ flex: 7, display: 'flex', flexDirection: 'column', gap: '20px' }}>
           <Chart
             trades={trades}
@@ -99,9 +96,8 @@ export default function TestPage() {
           <TradeHistory trades={trades} />
         </div>
 
-        {/* Right side: Buy/Sell Box */}
-        <div style={{ flex: 3 }}>
-          <h1 className="test-title" style={{ marginBottom: '20px' }}></h1>
+        {/* Right side: Buy/Sell + Toggle Display */}
+        <div style={{ flex: 3, display: 'flex', flexDirection: 'column', gap: '20px' }}>
           <BuySellBox
             tab={tab}
             setTab={setTab}
@@ -110,9 +106,42 @@ export default function TestPage() {
             estimatedResult={estimatedResult}
             setEstimatedResult={setEstimatedResult}
             refreshTrades={fetchTrades}
-            setErrorMessage={setErrorMessage}  // Passing setErrorMessage to BuySellBox
-            triggerPageRefresh={triggerPageRefresh}  // Pass the refresh function down
+            setErrorMessage={setErrorMessage}
+            triggerPageRefresh={triggerPageRefresh}
           />
+
+          {/* Toggle between Profit and Token Stats */}
+          <div style={{ display: 'flex', justifyContent: 'center', gap: '10px' }}>
+            <button
+              onClick={() => setActiveSection('profit')}
+              style={{
+                padding: '8px 16px',
+                borderRadius: '6px',
+                backgroundColor: activeSection === 'profit' ? '#2563eb' : '#e5e7eb',
+                color: activeSection === 'profit' ? 'white' : '#111827',
+                border: 'none',
+                cursor: 'pointer',
+              }}
+            >
+              Profit / Loss
+            </button>
+            <button
+              onClick={() => setActiveSection('stats')}
+              style={{
+                padding: '8px 16px',
+                borderRadius: '6px',
+                backgroundColor: activeSection === 'stats' ? '#2563eb' : '#e5e7eb',
+                color: activeSection === 'stats' ? 'white' : '#111827',
+                border: 'none',
+                cursor: 'pointer',
+              }}
+            >
+              Token Statistics
+            </button>
+          </div>
+
+          {/* Show either component directly without wrapper box */}
+          {activeSection === 'profit' ? <ProfitLoss /> : <TokenStats />}
         </div>
       </div>
     </div>

@@ -1,0 +1,43 @@
+
+
+.profit-loss-header {
+  font-size: 1.2rem;
+  font-weight: bold;
+  margin-bottom: 1rem;
+}
+
+.toggle-buttons {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 1rem;
+}
+
+.toggle-button {
+  flex: 1;
+  padding: 8px 12px;
+  background-color: #1f2937;
+  color: #ffffff;
+  border: 1px solid #374151;
+  border-radius: 6px;
+  cursor: pointer;
+  text-align: center;
+  transition: background-color 0.2s ease;
+}
+
+.toggle-button:hover {
+  background-color: #374151;
+}
+
+.toggle-button.active {
+  background-color: #2563eb;
+}
+
+.pnl-profit {
+  color: #22c55e; /* green */
+  font-weight: bold;
+}
+
+.pnl-loss {
+  color: #ef4444; /* red */
+  font-weight: bold;
+}

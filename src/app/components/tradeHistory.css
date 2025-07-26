@@ -1,161 +1,213 @@
-.trade-history-container {
-  margin-top: 20px;
-  font-family: Arial, sans-serif;
-  color: #333;
-}
-
-.trade-history-title {
-  margin-bottom: 12px;
-  font-weight: 600;
-  font-size: 1.25rem;
-  color: #222;
-}
-
-.trade-history-table {
-  background-color: rgba(255, 255, 255, 0.1); /* semi-transparent white */
-  backdrop-filter: blur(8px);
-  border-radius: 8px;
-  overflow: hidden;
-  box-shadow: 0 0 10px rgba(0,0,0,0.1);
-  width: 100%; /* Ensure it takes up the full width */
-}
-
-.trade-history-table thead tr {
-  background-color: #f5f5f5;
-}
-
-.trade-history-table th {
-  padding: 12px 16px;
-  text-align: left;
-  border-bottom: 2px solid #ddd;
-  font-weight: 700;
-  font-size: 14px;
-  color: #444;
-  user-select: none;
-}
-
-.trade-history-table td {
-  padding: 12px 16px;
-  font-size: 13px;
-  border-bottom: 1px solid #eee;
-  font-family: monospace;
-  color: #555;
-}
-
-.trade-row:hover {
-  background-color: #fafafa;
-  cursor: default;
-  transition: background-color 0.2s ease;
-}
-
-/* Type cell colors */
-.type-cell.buy {
-  color: #2ecc71; /* nice green */
-  font-weight: 600;
-}
-
-.type-cell.sell {
-  color: #e74c3c; /* nice red */
-  font-weight: 600;
-}
-
-/* TxID cell styles */
-.txid-cell {
+/* === General Trade Block Layout === */
+.block-container {
   display: flex;
-  align-items: center;
-  gap: 8px;
+  align-items: flex-end;
+  gap: 1.2rem;
+  overflow-x: auto;
+  padding: 1rem;
+  position: relative;
 }
 
-.txid-link {
-  color: #0070f3;
-  text-decoration: underline;
-  font-family: monospace;
-  user-select: text;
+.trade-block,
+.awaiting-block {
+  width: 200px;
+  margin-right: 10px;
+  flex-shrink: 0;
+  border-radius: 20px;
+  background: linear-gradient(to bottom, #1c2d4e, #3776c6);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+  color: white;
+  padding: 12px;
+  position: relative;
+  transition: transform 0.3s ease;
 }
 
-.copy-button {
-  border: none;
-  background: none;
-  cursor: pointer;
-  font-size: 16px;
-  color: #0070f3;
-  padding: 0;
-  user-select: none;
-  transition: color 0.2s ease;
+.trade-block:hover,
+.awaiting-block:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.4);
 }
 
-.copy-button:hover {
-  color: #005bb5;
-}
-
-/* Pagination container and buttons */
-.pagination-container {
-  margin-top: 16px;
-  display: flex;
-  justify-content: space-between; /* Keep buttons to the edges */
-  align-items: center;
-  font-size: 0.95rem;
-  color: #666;
-  width: 100%; /* Ensure it stretches across the full table width */
-}
-
-.pagination-button {
-  border: none;
-  background-color: #f1c40f; /* bright yellow */
-  color: #222;
-  padding: 8px 18px;
-  cursor: pointer;
+.trade-block .face,
+.awaiting-block .face {
+  padding: 0.6rem;
+  height: 100%;
   border-radius: 6px;
-  font-weight: 600;
-  box-shadow: 0 2px 6px rgba(0,0,0,0.15);
-  transition: background-color 0.3s ease, box-shadow 0.3s ease;
-  display: inline-flex;
+  box-shadow:
+    inset -2px -2px 6px rgba(255, 255, 255, 0.05),
+    inset 2px 2px 4px rgba(0, 0, 0, 0.15),
+    4px 4px 12px rgba(0, 0, 0, 0.5);
+  position: relative;
+  z-index: 3;
+  background: linear-gradient(to bottom, #6bb6ff, #1d3fa4);
+}
+
+.awaiting-block .face {
+  background: linear-gradient(to right, #881b67, #f26db3);
+}
+
+.trade-block::before,
+.awaiting-block::before {
+  content: "";
+  position: absolute;
+  top: -10px;
+  left: 0;
+  width: 150px;
+  height: 14px;
+  background: linear-gradient(to right, #444, #222);
+  transform: skewX(-25deg);
+  transform-origin: bottom left;
+  z-index: 1;
+  border-top-left-radius: 6px;
+  border-top-right-radius: 6px;
+}
+
+.trade-block::after,
+.awaiting-block::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  right: -14px;
+  width: 14px;
+  height: 100%;
+  background: linear-gradient(to bottom, rgba(0, 0, 0, 0.25), rgba(0, 0, 0, 0.5));
+  transform: skewY(-30deg);
+  transform-origin: top left;
+  z-index: 2;
+  border-top-right-radius: 6px;
+  border-bottom-right-radius: 6px;
+}
+
+.vertical-divider {
+  width: 2px;
+  height: 180px;
+  background: repeating-linear-gradient(
+    to bottom,
+    #ccc,
+    #ccc 6px,
+    transparent 6px,
+    transparent 12px
+  );
+}
+
+/* === Trade Content === */
+.block-line {
+  margin-bottom: 4px;
+  word-wrap: break-word;
+  color: #fff;
+}
+
+.txid-line {
+  display: flex;
+  justify-content: space-between;
   align-items: center;
-  gap: 6px;
 }
 
-/* Make Previous button look like Next button */
-.pagination-container .pagination-button:first-of-type {
-  background-color: #f1c40f; /* same yellow as Next button */
-  color: #222; /* black text */
+.txid-line a {
+  color: #a8f2ff;
+  text-decoration: none;
+  font-size: 0.75rem;
 }
 
-.pagination-button:hover:not(:disabled) {
-  background-color: #d4ac0d; /* darken yellow for hover */
-  box-shadow: 0 4px 12px rgba(0,0,0,0.25);
+.txid-line button {
+  background: transparent;
+  border: none;
+  color: #fff;
+  font-size: 0.8rem;
+  cursor: pointer;
 }
 
-.pagination-button:disabled {
-  background-color: #f9e79f;
-  color: #999;
+/* === Pagination === */
+.block-pagination {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 1rem;
+  margin-top: 1rem;
+}
+
+.block-pagination button {
+  padding: 0.3rem 0.6rem;
+  font-size: 0.85rem;
+  background: #1f1f1f;
+  border: 1px solid #555;
+  border-radius: 4px;
+  color: white;
+  cursor: pointer;
+}
+
+.block-pagination button:disabled {
+  opacity: 0.4;
   cursor: not-allowed;
-  box-shadow: none;
 }
 
-/* Add arrow icons with content attr for better UX */
-.pagination-button.arrow::before {
-  content: attr(data-arrow);
-  font-weight: bold;
-  font-size: 1.1em;
+.no-trades-msg {
+  padding: 1rem;
+  text-align: center;
+  color: #aaa;
 }
 
-/* Styling for page number and buttons */
-.pagination-info {
-  color: #444;
-  margin: 0 20px; /* Add some margin around page info */
+/* === Slider === */
+.slide-window {
+  width: 630px;
+  overflow: hidden;
 }
 
-.pagination-button,
-.pagination-info {
-  margin: 0 10px;
+.slide-track {
+  display: flex;
+  transition: transform 0.4s ease-in-out;
 }
 
-.trade-history-table td.buy {
-  color: #27ae60 !important; /* Strong green */
-  font-weight: 600;
+/* === MASSATS BADGE === */
+@import url('https://fonts.googleapis.com/css2?family=Monofett&family=Baloo+2:wght@700&display=swap');
+
+.mass-sats-wrapper {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  margin-top: 4px;
+  margin-bottom: 2px;
 }
 
-.trade-history-table td.sell {
-  color: #e74c3c !important; /* Strong red */
-  font-weight: 600;
+.mas-letters {
+  display: flex;
+  gap: 2px; /* reduce spacing so they hug */
+  justify-content: center;
+}
+
+.mas-bubble {
+  font-family: 'Monofett', monospace;
+  font-weight: 400;
+  font-size: 24px;
+  line-height: 100%;
+  background: linear-gradient(180deg, #d7d45f, #6a7750); /* match green-gold hue */
+  color: #001233;
+  border-radius: 12px;
+  padding: 4px 8px;
+  box-shadow: inset -1px -4px 2px rgba(0, 0, 0, 0.3);
+  text-align: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+}
+
+.sats-under-text {
+  font-family: 'Baloo 2', cursive;
+  font-weight: 700;
+  font-size: 10px;
+  text-align: center;
+  text-transform: uppercase;
+  color: #d7d45f;
+  margin-top: 4px;
+  letter-spacing: 1px;
+}
+
+.mass-sats-wrapper {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
 }

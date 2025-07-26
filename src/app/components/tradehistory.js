@@ -1,21 +1,24 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import './tradeHistory.css';
 
 export default function TradeHistory({ trades }) {
-  const [page, setPage] = useState(1);
+  const [index, setIndex] = useState(0); // sliding index
   const [copiedTxId, setCopiedTxId] = useState(null);
-  const TRADES_PER_PAGE = 15;
+  const sliderRef = useRef(null);
 
-  if (!trades || trades.length === 0) {
-    return <p className="no-trades-msg">No trades to display.</p>;
-  }
+  const reversedTrades = [...(trades || [])].reverse();
+  const visibleCount = 3;
+  const maxIndex = Math.max(0, reversedTrades.length - visibleCount);
 
-  const paginatedTrades = trades
-    .slice()
-    .reverse()
-    .slice((page - 1) * TRADES_PER_PAGE, page * TRADES_PER_PAGE);
+  useEffect(() => {
+    if (sliderRef.current) {
+      const blockWidth = 210; // Block width + margin
+      sliderRef.current.style.transition = 'transform 0.4s ease-in-out';
+      sliderRef.current.style.transform = `translateX(-${index * blockWidth}px)`;
+    }
+  }, [index]);
 
   const copyToClipboard = (txId) => {
     navigator.clipboard.writeText(txId).then(() => {
@@ -24,88 +27,76 @@ export default function TradeHistory({ trades }) {
     });
   };
 
-  const totalPages = Math.ceil(trades.length / TRADES_PER_PAGE);
+  if (!trades || trades.length === 0) {
+    return <p className="no-trades-msg">No trades to display.</p>;
+  }
 
   return (
-    <div className="trade-history-container">
-      <h3 className="trade-history-title">Recent Trades</h3>
-      <table className="trade-history-table">
-        <thead>
-          <tr>
-            <th>Type</th>
-            <th>Sats/Token</th>
-            <th>Tokens Traded</th>
-            <th>Time</th>
-            <th>TxID</th>
-          </tr>
-        </thead>
-        <tbody>
-          {paginatedTrades.map((trade, idx) => {
-            const txUrl = `https://explorer.hiro.so/txid/${trade.transaction_id}?chain=testnet`;
-            const isCopied = copiedTxId === trade.transaction_id;
-            const typeClass = trade.type === 'buy' ? 'buy' : trade.type === 'sell' ? 'sell' : '';
+   <div className="block-history-wrapper">
+  <h3 className="block-history-title">Market History</h3> {/* 🔁 Title updated */}
 
-            return (
-              <tr key={idx} className="trade-row">
-                {/* Apply typeClass to all data cells except TxID */}
-                <td className={`type-cell ${typeClass}`}>
-                  {trade.type.charAt(0).toUpperCase() + trade.type.slice(1)}
-                </td>
-                <td className={typeClass}>{Number(trade.price).toFixed(8)}</td>
-                <td className={typeClass}>{trade.tokens_traded?.toLocaleString() ?? '—'}</td>
-                <td className={typeClass}>
-                  {new Date(trade.created_at).toLocaleString(undefined, {
-                    hour12: true,
-                    month: 'short',
-                    day: 'numeric',
-                    year: 'numeric',
+  <div className="block-container">
+    {/* Awaiting block */}
+    <div className="trade-block awaiting-block">
+      <div className="face">
+        <div className="block-line"><strong>Awaiting next trade…</strong></div>
+        <div className="block-line">Sats/Mass Sats: —</div> {/* 🔁 Label updated */}
+        <div className="block-line">Mass Sats: —</div>       {/* 🔁 Label updated */}
+        <div className="block-line">--:--</div>
+        <div className="block-line txid-line">
+          <span style={{ opacity: 0.5 }}>—</span>
+          <button style={{ opacity: 0.5, cursor: 'default' }}>📋</button>
+        </div>
+      </div>
+    </div>
+
+    {/* Divider */}
+    <div className="vertical-divider" />
+
+    {/* Sliding container */}
+    <div className="slide-window">
+      <div className="slide-track" ref={sliderRef}>
+        {reversedTrades.map((trade, i) => {
+          const txUrl = `https://explorer.hiro.so/txid/${trade.transaction_id}?chain=testnet`;
+          const isCopied = copiedTxId === trade.transaction_id;
+          const typeClass = trade.type === 'buy' ? 'buy-block' : 'sell-block';
+
+          return (
+            <div key={i} className={`trade-block ${typeClass}`}>
+              <div className="face">
+                <div className="block-line"><strong>{trade.type.toUpperCase()}</strong></div>
+                <div className="block-line">Sats/Mass Sats: {Number(trade.price).toFixed(8)}</div> {/* 🔁 Label updated */}
+                <div className="block-line">Mass Sats: {trade.tokens_traded?.toLocaleString() ?? '—'}</div> {/* 🔁 Label updated */}
+                <div className="block-line">
+                  {new Date(trade.created_at).toLocaleTimeString([], {
                     hour: '2-digit',
                     minute: '2-digit',
                   })}
-                </td>
-                <td className="txid-cell">
-                  <a
-                    href={txUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="txid-link"
-                    title="View transaction on Explorer"
-                  >
+                </div>
+                <div className="block-line txid-line">
+                  <a href={txUrl} target="_blank" rel="noopener noreferrer">
                     {trade.transaction_id.slice(0, 10)}...
                   </a>
-                  <button
-                    className="copy-button"
-                    onClick={() => copyToClipboard(trade.transaction_id)}
-                    aria-label={`Copy full transaction ID ${trade.transaction_id}`}
-                    title="Copy full TxID"
-                  >
+                  <button onClick={() => copyToClipboard(trade.transaction_id)} title="Copy TxID">
                     {isCopied ? '✓' : '📋'}
                   </button>
-                </td>
-              </tr>
-            );
-          })}
-        </tbody>
-      </table>
+                </div>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  </div>
 
-      <div className="pagination-container">
-        <button
-          onClick={() => setPage(p => Math.max(1, p - 1))}
-          disabled={page === 1}
-          className="pagination-button"
-          aria-label="Previous page"
-        >
+
+      {/* Pagination */}
+      <div className="block-pagination">
+        <button onClick={() => setIndex(i => Math.max(0, i - 1))} disabled={index === 0}>
           ← Prev
         </button>
-        <span className="pagination-info">
-          Page {page} of {totalPages}
-        </span>
-        <button
-          onClick={() => setPage(p => (p < totalPages ? p + 1 : p))}
-          disabled={page === totalPages}
-          className="pagination-button"
-          aria-label="Next page"
-        >
+        <span>Trade {index + 1} of {reversedTrades.length}</span>
+        <button onClick={() => setIndex(i => Math.min(maxIndex, i + 1))} disabled={index >= maxIndex}>
           Next →
         </button>
       </div>
