@@ -119,15 +119,32 @@ export default function Chart({ trades, tradesPerCandle, setTradesPerCandle }) {
 
   return (
     <div className="chart-wrapper">
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <h2 style={{ color: '#ccc' }}>₿ SATs / Token </h2>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '10px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', justifyContent: 'center', flex: '1 1 auto', minWidth: '0' }}>
+          <img 
+            src="/icons/sats1.svg" 
+            alt="SATs" 
+            style={{ width: '28px', height: '28px', minWidth: '28px' }}
+          />
+          <img 
+            src="/icons/Vector.svg" 
+            alt="Lightning" 
+            style={{ width: '28px', height: '28px', minWidth: '28px' }}
+          />
+          <span style={{ color: '#ccc', fontSize: '20px', fontWeight: 'bold', whiteSpace: 'nowrap' }}>/</span>
+          <img 
+            src="/icons/The Mas Network.svg" 
+            alt="Mas Network" 
+            style={{ width: '28px', height: '28px', minWidth: '28px' }}
+          />
+        </div>
         <select
           value={tradesPerCandle || localTradesPerCandle}
           onChange={e => {
             setTradesPerCandle(Number(e.target.value));
             setLocalTradesPerCandle(Number(e.target.value));
           }}
-          style={{ background: '#222', color: '#fff', border: '1px solid #444' }}
+          style={{ background: '#222', color: '#fff', border: '1px solid #444', minWidth: '100px', flex: '0 0 auto' }}
         >
           <option value={1}>1 Trade</option>
           <option value={2}>2 Trades</option>
