@@ -4,15 +4,23 @@ import { useState, useRef } from 'react';
 import '../components/header.css';
 import ConnectWallet from './connectwallet';
 import HowItWorks from './HowItWorks'; // ✅ Import popup component
+import Leaderboard from './Leaderboard';
 
 export default function Header() {
   const [showPopup, setShowPopup] = useState(false);
   const [showHowItWorks, setShowHowItWorks] = useState(false); // ✅ Control modal
+  const [showLeaderboard, setShowLeaderboard] = useState(false);
+  const [copied, setCopied] = useState(false);
   const walletRef = useRef(null);
 
-  const handleCopy = () => {
-    navigator.clipboard.writeText('teikonakamoto@tutamail.com');
-    alert('Email address copied to clipboard!');
+  const handleCopy = async () => {
+    try {
+      await navigator.clipboard.writeText('teikonakamoto@tutamail.com');
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000); // Reset after 2 seconds
+    } catch (err) {
+      console.error('Failed to copy: ', err);
+    }
   };
 
   const handleViewProfile = () => {
@@ -62,8 +70,12 @@ export default function Header() {
               <img src="/icons/globe.svg" alt="Language" className="icon" />
               English
             </span>
-            <span onClick={handleViewProfile} className="nav-link">
-              View Profile
+            <span 
+              className="nav-link" 
+              onClick={() => setShowLeaderboard(true)}
+              style={{ cursor: 'pointer' }}
+            >
+              Leaderboard
             </span>
           </div>
 
@@ -76,7 +88,22 @@ export default function Header() {
         <div className="popup-overlay" onClick={() => setShowPopup(false)}>
           <div className="popup" onClick={(e) => e.stopPropagation()}>
             <p>Email <b>teikonakamoto@tutamail.com</b> for all support issues.</p>
-            <button onClick={handleCopy}>Copy Email</button>
+            <button 
+              style={{ 
+                background: 'none', 
+                border: 'none', 
+                color: '#ffffff', 
+                cursor: 'pointer', 
+                fontSize: '0.75rem',
+                marginLeft: '4px',
+                padding: '2px 4px',
+                borderRadius: '3px',
+                backgroundColor: '#4a5568'
+              }}
+              onClick={handleCopy}
+            >
+              {copied ? 'Copied!' : 'Copy 📋'}
+            </button>
             <button onClick={() => setShowPopup(false)}>Close</button>
           </div>
         </div>
@@ -84,6 +111,16 @@ export default function Header() {
 
       {/* ✅ Render How It Works popup */}
       {showHowItWorks && <HowItWorks onClose={() => setShowHowItWorks(false)} />}
+      
+      {/* Render Leaderboard popup */}
+      {showLeaderboard && (
+        <div className="popup-overlay" onClick={() => setShowLeaderboard(false)}>
+          <div className="popup leaderboard-popup" onClick={(e) => e.stopPropagation()}>
+            <Leaderboard />
+            <button onClick={() => setShowLeaderboard(false)}>Close</button>
+          </div>
+        </div>
+      )}
     </>
   );
 }

@@ -1,7 +1,7 @@
 // utils/fetchTokenData.js
 
 import { STACKS_TESTNET } from '@stacks/network';
-import { fetchCallReadOnlyFunction, Cl } from '@stacks/transactions';
+import { fetchCallReadOnlyFunction, Cl, principalCV } from '@stacks/transactions';
 import { getLocalStorage } from '@stacks/connect';
 export const SATS_CONTRACT_ADDRESS = 'ST1F7QA2MDF17S807EPA36TSS8AMEFY4KA9TVGWXT';
 export const SATS_CONTRACT_NAME = 'sbtc-token';
@@ -99,7 +99,7 @@ export async function getUserTokenBalance() {
       contractAddress: DEX_CONTRACT_ADDRESS,
       contractName: TOKEN_CONTRACT_NAME,
       functionName: 'get-balance',
-      functionArgs: [Cl.principal(userAddress)],
+      functionArgs: [principalCV(userAddress)],
       network: STACKS_TESTNET,
       senderAddress: DEX_CONTRACT_ADDRESS,
     });
@@ -195,6 +195,62 @@ export async function getCurrentPrice() {
   }
 }
 
+// Calculate estimated sats to receive for a given token amount
+export async function getEstimatedSatsForTokens(tokenAmount) {
+  try {
+    if (!tokenAmount) return 0;
+    
+    // Convert token amount to base units (1e8)
+    const tokensInBaseUnits = Math.floor(parseFloat(tokenAmount) * 1e8);
+    
+    // Use the contract's sell estimation function
+    const result = await fetchCallReadOnlyFunction({
+      contractAddress: DEX_CONTRACT_ADDRESS,
+      contractName: DEX_CONTRACT_NAME,
+      functionName: 'get-sellable-sbtc',
+      functionArgs: [Cl.uint(tokensInBaseUnits)],
+      network: STACKS_TESTNET,
+      senderAddress: DEX_CONTRACT_ADDRESS,
+    });
+    
+    if (result && result.value) {
+      const sellData = result.value;
+      console.log('Sell estimation result:', sellData);
+      console.log('Sell estimation result keys:', Object.keys(sellData));
+      console.log('Sell estimation result values:', Object.values(sellData));
+      console.log('Full result structure:', JSON.stringify(result, null, 2));
+      
+      // Try different ways to access the sbtc-receive value
+      let satsToReceive = 0;
+      
+      // Check if it's a tuple structure
+      if (sellData && Array.isArray(sellData)) {
+        console.log('Sell data is an array:', sellData);
+        // Look for the sbtc-receive value in the tuple
+        for (let i = 0; i < sellData.length; i++) {
+          console.log(`Index ${i}:`, sellData[i]);
+        }
+      } else if (sellData['sbtc-receive']) {
+        satsToReceive = sellData['sbtc-receive'];
+      } else if (sellData.sbtc_receive) {
+        satsToReceive = sellData.sbtc_receive;
+      } else if (sellData['sbtc-receive'] && sellData['sbtc-receive'].value) {
+        satsToReceive = sellData['sbtc-receive'].value;
+      } else if (sellData.sbtc_receive && sellData.sbtc_receive.value) {
+        satsToReceive = sellData.sbtc_receive.value;
+      }
+      
+      console.log('Extracted sats to receive:', satsToReceive);
+      return satsToReceive ? parseInt(satsToReceive) : 0;
+    }
+    
+    return 0;
+  } catch (err) {
+    console.error('❌ Failed to calculate estimated sats:', err);
+    return 0;
+  }
+}
+
 export async function getUserSatsBalance() {
   try {
     const data = getLocalStorage();
@@ -205,7 +261,7 @@ export async function getUserSatsBalance() {
       contractAddress: SATS_CONTRACT_ADDRESS,
       contractName: SATS_CONTRACT_NAME,
       functionName: 'get-balance',
-      functionArgs: [Cl.principal(userAddress)],
+      functionArgs: [principalCV(userAddress)],
       network: STACKS_TESTNET,
       senderAddress: userAddress,
     });
@@ -215,5 +271,107 @@ export async function getUserSatsBalance() {
   } catch (err) {
     console.error('❌ Failed to fetch user SATS balance:', err);
     return 0;
+  }
+}
+
+// Simple price-based calculations (no blockchain calls needed)
+export function calculateEstimatedTokensForSats(satsAmount, currentPrice) {
+  if (!satsAmount || satsAmount <= 0 || !currentPrice || currentPrice <= 0) return 0;
+  
+  try {
+    // Simple calculation: tokens = sats / price (with 2% fee)
+    const satsAfterFee = satsAmount * 0.98; // 2% fee
+    const estimatedTokens = satsAfterFee / currentPrice;
+    
+    console.log('🔍 Buy calculation (price-based):', {
+      satsAmount,
+      currentPrice,
+      satsAfterFee,
+      estimatedTokens: Math.floor(estimatedTokens),
+      rawEstimatedTokens: estimatedTokens
+    });
+    
+    // If price is extremely small, use a more reasonable calculation
+    if (currentPrice < 0.000001) {
+      // Use a ratio-based calculation instead
+      const estimatedTokens = Math.floor(satsAmount * 0.98 * 100); // Rough estimate
+      return Math.min(estimatedTokens, satsAmount * 1000); // Cap at reasonable number
+    }
+    
+    // Return reasonable number of tokens (max 8 decimal places)
+    const roundedTokens = Math.round(estimatedTokens * 1e8) / 1e8;
+    // Cap at a more reasonable number based on input
+    const maxTokens = Math.max(satsAmount * 1000, 1000000); // Dynamic cap
+    return Math.min(roundedTokens, maxTokens);
+  } catch (err) {
+    console.error('❌ Failed to calculate estimated tokens:', err);
+    return 0;
+  }
+}
+
+export function calculateEstimatedSatsForTokens(tokenAmount, currentPrice) {
+  if (!tokenAmount || tokenAmount <= 0 || !currentPrice || currentPrice <= 0) return 0;
+  
+  try {
+    // Simple calculation: sats = tokens * price (with 2% fee)
+    const estimatedSats = tokenAmount * currentPrice;
+    const satsAfterFee = estimatedSats * 0.98; // 2% fee
+    
+    console.log('🔍 Sell calculation (price-based):', {
+      tokenAmount,
+      currentPrice,
+      estimatedSats,
+      satsAfterFee: Math.floor(satsAfterFee)
+    });
+    
+    // Return reasonable number of sats (max 8 decimal places)
+    const roundedSats = Math.round(satsAfterFee * 1e8) / 1e8;
+    return Math.min(roundedSats, 999999999); // Cap at reasonable number
+  } catch (err) {
+    console.error('❌ Failed to calculate estimated sats:', err);
+    return 0;
+  }
+}
+
+// Helper function to get current balances for calculations
+export async function getCurrentBalancesForCalculation() {
+  try {
+    console.log('🔍 Fetching token balance...');
+    const tokenBalanceResult = await fetchCallReadOnlyFunction({
+      contractAddress: DEX_CONTRACT_ADDRESS,
+      contractName: DEX_CONTRACT_NAME,
+      functionName: 'get-token-balance',
+      functionArgs: [],
+      network: STACKS_TESTNET,
+      senderAddress: DEX_CONTRACT_ADDRESS,
+    });
+    console.log('🔍 Token balance result:', tokenBalanceResult);
+
+    console.log('🔍 Fetching SBTC balance...');
+    const sbtcBalanceResult = await fetchCallReadOnlyFunction({
+      contractAddress: DEX_CONTRACT_ADDRESS,
+      contractName: DEX_CONTRACT_NAME,
+      functionName: 'get-sbtc-balance',
+      functionArgs: [],
+      network: STACKS_TESTNET,
+      senderAddress: DEX_CONTRACT_ADDRESS,
+    });
+    console.log('🔍 SBTC balance result:', sbtcBalanceResult);
+
+    const tokenBalance = tokenBalanceResult?.value || 0;
+    const sbtcBalance = sbtcBalanceResult?.value || 0;
+    
+    console.log('🔍 Extracted balances:', { tokenBalance, sbtcBalance });
+    
+    const result = {
+      tokenBalance: parseInt(tokenBalance),
+      sbtcBalance: parseInt(sbtcBalance)
+    };
+    
+    console.log('🔍 Final balance object:', result);
+    return result;
+  } catch (err) {
+    console.error('❌ Failed to get current balances:', err);
+    return { tokenBalance: 0, sbtcBalance: 0 };
   }
 }

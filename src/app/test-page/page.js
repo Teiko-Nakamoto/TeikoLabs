@@ -19,6 +19,8 @@ export default function TestPage() {
   const [trades, setTrades] = useState([]);
   const [tradesPerCandle, setTradesPerCandle] = useState(1);
   const [activeSection, setActiveSection] = useState('profit');
+  const [pendingTransaction, setPendingTransaction] = useState(null);
+  const [isSuccessfulTransaction, setIsSuccessfulTransaction] = useState(false);
 
   const triggerPageRefresh = () => {
     setIsRefreshing(true);
@@ -30,7 +32,7 @@ export default function TestPage() {
   async function fetchTrades() {
     const { data, error } = await supabase
       .from('TestTrades')
-      .select('type, price, created_at, transaction_id, tokens_traded')
+      .select('type, price, created_at, transaction_id, tokens_traded, sats_traded')
       .order('created_at', { ascending: true });
 
     if (error) {
@@ -93,11 +95,12 @@ export default function TestPage() {
             tradesPerCandle={tradesPerCandle}
             setTradesPerCandle={setTradesPerCandle}
           />
-          <TradeHistory trades={trades} />
+          <TradeHistory trades={trades} pendingTransaction={pendingTransaction} isSuccessfulTransaction={isSuccessfulTransaction} />
         </div>
 
         {/* Right side: Buy/Sell + Toggle Display */}
         <div style={{ flex: 3, display: 'flex', flexDirection: 'column', gap: '20px' }}>
+          {/* Always show BuySellBox with navigation buttons inside */}
           <BuySellBox
             tab={tab}
             setTab={setTab}
@@ -108,40 +111,12 @@ export default function TestPage() {
             refreshTrades={fetchTrades}
             setErrorMessage={setErrorMessage}
             triggerPageRefresh={triggerPageRefresh}
+            setPendingTransaction={setPendingTransaction}
+            setIsSuccessfulTransaction={setIsSuccessfulTransaction}
+            trades={trades}
+            activeSection={activeSection}
+            setActiveSection={setActiveSection}
           />
-
-          {/* Toggle between Profit and Token Stats */}
-          <div style={{ display: 'flex', justifyContent: 'center', gap: '10px' }}>
-            <button
-              onClick={() => setActiveSection('profit')}
-              style={{
-                padding: '8px 16px',
-                borderRadius: '6px',
-                backgroundColor: activeSection === 'profit' ? '#2563eb' : '#e5e7eb',
-                color: activeSection === 'profit' ? 'white' : '#111827',
-                border: 'none',
-                cursor: 'pointer',
-              }}
-            >
-              Profit / Loss
-            </button>
-            <button
-              onClick={() => setActiveSection('stats')}
-              style={{
-                padding: '8px 16px',
-                borderRadius: '6px',
-                backgroundColor: activeSection === 'stats' ? '#2563eb' : '#e5e7eb',
-                color: activeSection === 'stats' ? 'white' : '#111827',
-                border: 'none',
-                cursor: 'pointer',
-              }}
-            >
-              Token Statistics
-            </button>
-          </div>
-
-          {/* Show either component directly without wrapper box */}
-          {activeSection === 'profit' ? <ProfitLoss /> : <TokenStats />}
         </div>
       </div>
     </div>

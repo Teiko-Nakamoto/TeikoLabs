@@ -1,105 +1,152 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import { supabase } from '../utils/supabaseClient';
-import './ProfitLoss.css';
+import React, { useState, useEffect } from 'react';
 
 export default function ProfitLoss() {
-  const [wallet, setWallet] = useState(null);
-  const [stats, setStats] = useState(null);
-  const [currentPrice, setCurrentPrice] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [view, setView] = useState('7d'); // '7d' or '30d'
+  const [timeframe, setTimeframe] = useState('7-day');
+  const [walletAddress, setWalletAddress] = useState('ST37918Q7NBZ52AMV133VTY5C864KVK0S2HZ3CGA4');
 
-  useEffect(() => {
-    const fetchStats = async () => {
-      const address = localStorage.getItem('connectedAddress');
-      if (!address) return;
-
-      setWallet(address);
-
-      const { data: statsData, error: statsError } = await supabase
-        .from('wallet_token_stats_timed')
-        .select('*')
-        .eq('wallet_address', address)
-        .single();
-
-      const { data: priceData, error: priceError } = await supabase
-        .from('TestTrades')
-        .select('price')
-        .order('created_at', { ascending: false })
-        .limit(1);
-
-      if (statsError || priceError) {
-        console.error('Error fetching stats or price:', statsError || priceError);
-        setLoading(false);
-        return;
-      }
-
-      setStats(statsData);
-      setCurrentPrice(Number(priceData[0]?.price));
-      setLoading(false);
-    };
-
-    fetchStats();
-  }, []);
-
-  const formatPNL = (pnl) => {
-    if (pnl === null) return '--';
-    const rounded = Math.round(pnl);
-    if (rounded > 0) return <span className="pnl-profit">+{rounded} sats</span>;
-    if (rounded < 0) return <span className="pnl-loss">{rounded} sats</span>;
-    return <span>{rounded} sats</span>;
+  const copyToClipboard = async () => {
+    try {
+      await navigator.clipboard.writeText(walletAddress);
+      // You could add a toast notification here
+    } catch (err) {
+      console.error('Failed to copy: ', err);
+    }
   };
-
-  const formatCost = (cost) =>
-    cost !== null && !isNaN(cost) ? `${Number(cost).toFixed(2)} sats` : '--';
-
-  const getPNL = (avgCost) => {
-    if (
-      !stats ||
-      !stats.cumulative_tokens ||
-      avgCost === null ||
-      currentPrice === null
-    )
-      return null;
-    return (
-      (currentPrice - avgCost) * Number(stats.cumulative_tokens)
-    );
-  };
-
-  const avgCost =
-    view === '7d' ? stats?.avg_cost_7d : stats?.avg_cost_30d;
-  const pnl = getPNL(avgCost);
-
-  if (loading) return <div className="profit-loss-container">Loading P&L...</div>;
-  if (!wallet || !stats) return <div className="profit-loss-container">No data available</div>;
 
   return (
-    <div className="profit-loss-container">
-      <div className="profit-loss-header">
-        Your {view === '7d' ? '7-Day' : '30-Day'} Profit & Loss
-      </div>
-
-      <div className="toggle-buttons">
-        <div
-          className={`toggle-button ${view === '7d' ? 'active' : ''}`}
-          onClick={() => setView('7d')}
+    <div style={{
+      width: '100%',
+      maxWidth: '320px',
+      margin: '0 auto',
+      padding: '16px',
+      backgroundColor: '#1c2d4e',
+      borderRadius: '12px',
+      color: 'white',
+      fontFamily: 'Arial, sans-serif'
+    }}>
+      {/* Timeframe Toggle */}
+      <div style={{
+        display: 'flex',
+        gap: '8px',
+        marginBottom: '20px'
+      }}>
+        <button
+          onClick={() => setTimeframe('7-day')}
+          style={{
+            flex: 1,
+            padding: '8px 12px',
+            backgroundColor: timeframe === '7-day' ? '#2563eb' : '#374151',
+            color: 'white',
+            border: 'none',
+            borderRadius: '6px',
+            cursor: 'pointer',
+            fontSize: '14px',
+            fontWeight: 'bold'
+          }}
         >
           7-Day
-        </div>
-        <div
-          className={`toggle-button ${view === '30d' ? 'active' : ''}`}
-          onClick={() => setView('30d')}
+        </button>
+        <button
+          onClick={() => setTimeframe('30-day')}
+          style={{
+            flex: 1,
+            padding: '8px 12px',
+            backgroundColor: timeframe === '30-day' ? '#2563eb' : '#374151',
+            color: 'white',
+            border: 'none',
+            borderRadius: '6px',
+            cursor: 'pointer',
+            fontSize: '14px',
+            fontWeight: 'bold'
+          }}
         >
           30-Day
+        </button>
+      </div>
+
+      {/* Wallet Section */}
+      <div style={{ marginBottom: '16px' }}>
+        <div style={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          marginBottom: '8px'
+        }}>
+          <span style={{ fontSize: '14px', color: '#e5e7eb' }}>Wallet:</span>
+          <button
+            onClick={copyToClipboard}
+            style={{
+              padding: '4px 8px',
+              backgroundColor: '#374151',
+              color: 'white',
+              border: 'none',
+              borderRadius: '4px',
+              cursor: 'pointer',
+              fontSize: '12px',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '4px'
+            }}
+          >
+            Copy 📋
+          </button>
+        </div>
+        <div style={{
+          fontSize: '12px',
+          color: '#ffffff',
+          wordBreak: 'break-all',
+          backgroundColor: '#374151',
+          padding: '8px',
+          borderRadius: '4px',
+          fontFamily: 'monospace'
+        }}>
+          {walletAddress.slice(0, 20)}<br />
+          {walletAddress.slice(20)}
         </div>
       </div>
 
-      <p><strong>Wallet:</strong> {wallet}</p>
-     <p><strong>Holdings:</strong> {Math.round(stats.cumulative_tokens).toLocaleString()} MAS Sats</p>
-      <p><strong>Average Cost:</strong> {formatCost(avgCost)}</p>
-      <p><strong>P&L:</strong> {formatPNL(pnl)}</p>
+      {/* Holdings */}
+      <div style={{
+        display: 'flex',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        marginBottom: '12px'
+      }}>
+        <span style={{ fontSize: '14px', color: '#e5e7eb' }}>Holdings:</span>
+        <span style={{ fontSize: '14px', color: '#ffffff' }}>
+          261,877{' '}
+          <span style={{ color: '#fbbf24' }}>SATS</span>
+        </span>
+      </div>
+
+      {/* Average Cost */}
+      <div style={{
+        display: 'flex',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        marginBottom: '12px'
+      }}>
+        <span style={{ fontSize: '14px', color: '#e5e7eb' }}>Average Cost:</span>
+        <span style={{ fontSize: '14px', color: '#ffffff' }}>
+          0.114557{' '}
+          <span style={{ color: '#fbbf24' }}>SATS</span>
+        </span>
+      </div>
+
+      {/* P&L */}
+      <div style={{
+        display: 'flex',
+        justifyContent: 'space-between',
+        alignItems: 'center'
+      }}>
+        <span style={{ fontSize: '14px', color: '#e5e7eb' }}>P&L:</span>
+        <span style={{ fontSize: '14px', color: '#22c55e', fontWeight: 'bold' }}>
+          +422{' '}
+          <span style={{ color: '#fbbf24' }}>SATS</span>
+        </span>
+      </div>
     </div>
   );
 }

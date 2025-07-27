@@ -11,76 +11,46 @@
 .trade-block,
 .awaiting-block {
   width: 200px;
+  height: 180px;
   margin-right: 10px;
   flex-shrink: 0;
-  border-radius: 20px;
-  background: linear-gradient(to bottom, #1c2d4e, #3776c6);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+  border-radius: 12px;
+  background: #1c2d4e;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
   color: white;
   padding: 12px;
   position: relative;
   transition: transform 0.3s ease;
+  display: flex;
+  flex-direction: column;
 }
 
 .trade-block:hover,
 .awaiting-block:hover {
-  transform: translateY(-4px);
-  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.4);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
 }
 
 .trade-block .face,
 .awaiting-block .face {
   padding: 0.6rem;
   height: 100%;
-  border-radius: 6px;
-  box-shadow:
-    inset -2px -2px 6px rgba(255, 255, 255, 0.05),
-    inset 2px 2px 4px rgba(0, 0, 0, 0.15),
-    4px 4px 12px rgba(0, 0, 0, 0.5);
+  border-radius: 8px;
+  background: #3776c6;
   position: relative;
   z-index: 3;
-  background: linear-gradient(to bottom, #6bb6ff, #1d3fa4);
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
 }
 
 .awaiting-block .face {
-  background: linear-gradient(to right, #881b67, #f26db3);
-}
-
-.trade-block::before,
-.awaiting-block::before {
-  content: "";
-  position: absolute;
-  top: -10px;
-  left: 0;
-  width: 150px;
-  height: 14px;
-  background: linear-gradient(to right, #444, #222);
-  transform: skewX(-25deg);
-  transform-origin: bottom left;
-  z-index: 1;
-  border-top-left-radius: 6px;
-  border-top-right-radius: 6px;
-}
-
-.trade-block::after,
-.awaiting-block::after {
-  content: "";
-  position: absolute;
-  top: 0;
-  right: -14px;
-  width: 14px;
-  height: 100%;
-  background: linear-gradient(to bottom, rgba(0, 0, 0, 0.25), rgba(0, 0, 0, 0.5));
-  transform: skewY(-30deg);
-  transform-origin: top left;
-  z-index: 2;
-  border-top-right-radius: 6px;
-  border-bottom-right-radius: 6px;
+  background: #881b67;
 }
 
 .vertical-divider {
   width: 2px;
-  height: 180px;
+  height: 200px;
   background: repeating-linear-gradient(
     to bottom,
     #ccc,

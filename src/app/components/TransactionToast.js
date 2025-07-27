@@ -1,9 +1,8 @@
 'use client';
 import { useState, useEffect } from 'react';
 
-export default function TransactionToast({ message, txId, onClose }) {
+export default function TransactionToast({ message, txId, onClose, status = 'pending', onRetry }) {
   const [copied, setCopied] = useState(false);
-
 
   const handleCopy = () => {
     if (txId) {
@@ -13,49 +12,75 @@ export default function TransactionToast({ message, txId, onClose }) {
     }
   };
 
-  // Determine what extra status to show
-  const showSubmitted = message.includes('transaction submitted');
-  const showConfirmed = message.includes('confirmed');
-  const showFailed = message.includes('failed');
+  // Auto-dismiss successful transactions after 3 seconds
+  useEffect(() => {
+    if (status === 'success') {
+      const timer = setTimeout(() => {
+        onClose();
+      }, 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [status, onClose]);
+
+  // Show toast for pending, success, and failed states
+  if (status === 'failed') {
+  return (
+    <div style={toastStyle}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+          {/* Yellow circle (not spinning) */}
+          <div style={{
+            width: '20px',
+            height: '20px',
+            borderRadius: '50%',
+            border: '2px solid #fbbf24',
+            borderTop: '2px solid transparent',
+          }}></div>
+          
+          {/* Text and retry button */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+            <div style={{ fontWeight: 'bold', color: '#fbbf24' }}>
+              Transaction Failed
+            </div>
+            <button 
+              onClick={onRetry}
+              style={{
+                padding: '4px 8px',
+                fontSize: '0.8rem',
+                backgroundColor: '#fbbf24',
+                color: '#000',
+                border: 'none',
+                borderRadius: '4px',
+                cursor: 'pointer',
+              }}
+            >
+              Retry
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div style={toastStyle}>
-      <button onClick={onClose} style={closeButtonStyle}>✖</button>
-
-      {/* 🟢 Top message (unchanged) */}
-      <div style={{ fontWeight: 'bold' }}>{message}</div>
-
-      {/* ⏳ Secondary status */}
-      {showSubmitted && !showConfirmed && !showFailed && (
-        <div style={secondaryLineStyle}>⏳ Pending confirmation</div>
-      )}
-
-      {showConfirmed && (
-        <div style={{ ...secondaryLineStyle, color: 'green' }}>✅ Transaction confirmed</div>
-      )}
-
-      {showFailed && (
-        <div style={{ ...secondaryLineStyle, color: 'red' }}>❌ Transaction failed</div>
-      )}
-
-      {txId && (
-        <>
-          <a
-            href={`https://explorer.stacks.co/txid/${txId}?chain=testnet`}
-            target="_blank"
-            rel="noreferrer"
-            style={linkStyle}
-          >
-            View on Explorer
-          </a>
-          <div style={txIdStyle}>
-            {txId}
-            <button onClick={handleCopy} style={copyButtonStyle}>
-              {copied ? 'Copied!' : 'Copy'}
-            </button>
-          </div>
-        </>
-      )}
+      <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+        {/* Spinning circle */}
+        <div style={{
+          width: '20px',
+          height: '20px',
+          borderRadius: '50%',
+          borderLeft: `2px solid ${status === 'success' ? '#10b981' : '#fbbf24'}`,
+          borderRight: `2px solid ${status === 'success' ? '#10b981' : '#fbbf24'}`,
+          borderBottom: `2px solid ${status === 'success' ? '#10b981' : '#fbbf24'}`,
+          borderTop: '2px solid transparent',
+          animation: status === 'pending' ? 'spin 1s linear infinite' : 'none',
+        }}></div>
+        
+        {/* Text */}
+        <div style={{ fontWeight: 'bold', color: status === 'success' ? '#10b981' : '#fbbf24' }}>
+          {status === 'success' ? 'Transaction Successful' : 'Pending'}
+        </div>
+      </div>
     </div>
   );
 }
@@ -68,13 +93,8 @@ const toastStyle = {
   position: 'fixed',
   top: '5rem',
   right: '1rem',
-  backgroundColor: '#fff',
-  color: '#000',
   padding: '1rem',
-  borderRadius: '10px',
-  boxShadow: '0 2px 10px rgba(0, 0, 0, 0.2)',
   zIndex: 9999,
-  width: '320px',
   fontSize: '0.9rem',
   lineHeight: 1.4,
 };
@@ -118,3 +138,18 @@ const secondaryLineStyle = {
   marginTop: '0.4rem',
   fontSize: '0.85rem',
 };
+
+// Add CSS animation for spinning circle
+const spinAnimation = `
+  @keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+  }
+`;
+
+// Inject the CSS animation
+if (typeof document !== 'undefined') {
+  const style = document.createElement('style');
+  style.textContent = spinAnimation;
+  document.head.appendChild(style);
+}

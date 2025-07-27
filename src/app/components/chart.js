@@ -119,39 +119,90 @@ export default function Chart({ trades, tradesPerCandle, setTradesPerCandle }) {
 
   return (
     <div className="chart-wrapper">
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '10px' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', justifyContent: 'center', flex: '1 1 auto', minWidth: '0' }}>
-          <img 
-            src="/icons/sats1.svg" 
-            alt="SATs" 
-            style={{ width: '28px', height: '28px', minWidth: '28px' }}
-          />
-          <img 
-            src="/icons/Vector.svg" 
-            alt="Lightning" 
-            style={{ width: '28px', height: '28px', minWidth: '28px' }}
-          />
-          <span style={{ color: '#ccc', fontSize: '20px', fontWeight: 'bold', whiteSpace: 'nowrap' }}>/</span>
-          <img 
-            src="/icons/The Mas Network.svg" 
-            alt="Mas Network" 
-            style={{ width: '28px', height: '28px', minWidth: '28px' }}
-          />
+      <div style={{ 
+        display: 'flex', 
+        flexDirection: 'column', 
+        gap: '12px',
+        padding: '8px 0'
+      }}>
+        {/* Mobile-first header layout */}
+        <div style={{ 
+          display: 'flex', 
+          flexDirection: 'row',
+          justifyContent: 'space-between', 
+          alignItems: 'center',
+          flexWrap: 'wrap',
+          gap: '8px'
+        }}>
+          {/* Icons container - centered on mobile */}
+          <div style={{ 
+            display: 'flex', 
+            alignItems: 'center', 
+            gap: '6px',
+            justifyContent: 'center',
+            flex: '1 1 auto',
+            minWidth: '200px'
+          }}>
+            <img 
+              src="/icons/sats1.svg" 
+              alt="SATs" 
+              style={{ 
+                width: 'clamp(20px, 4vw, 28px)', 
+                height: 'clamp(20px, 4vw, 28px)',
+                minWidth: '20px'
+              }}
+            />
+            <img 
+              src="/icons/Vector.svg" 
+              alt="Lightning" 
+              style={{ 
+                width: 'clamp(20px, 4vw, 28px)', 
+                height: 'clamp(20px, 4vw, 28px)',
+                minWidth: '20px'
+              }}
+            />
+            <span style={{ 
+              color: '#ccc', 
+              fontSize: 'clamp(16px, 3.5vw, 20px)', 
+              fontWeight: 'bold', 
+              whiteSpace: 'nowrap'
+            }}>/</span>
+            <img 
+              src="/icons/The Mas Network.svg" 
+              alt="Mas Network" 
+              style={{ 
+                width: 'clamp(20px, 4vw, 28px)', 
+                height: 'clamp(20px, 4vw, 28px)',
+                minWidth: '20px'
+              }}
+            />
+          </div>
+          
+          {/* Dropdown - positioned on the right */}
+          <select
+            value={tradesPerCandle || localTradesPerCandle}
+            onChange={e => {
+              setTradesPerCandle(Number(e.target.value));
+              setLocalTradesPerCandle(Number(e.target.value));
+            }}
+            style={{ 
+              background: '#222', 
+              color: '#fff', 
+              border: '1px solid #444', 
+              padding: '4px 8px',
+              borderRadius: '4px',
+              fontSize: 'clamp(12px, 2.5vw, 14px)',
+              minWidth: '80px',
+              flex: '0 0 auto'
+            }}
+          >
+            <option value={1}>1 Trade</option>
+            <option value={2}>2 Trades</option>
+            <option value={3}>3 Trades</option>
+            <option value={5}>5 Trades</option>
+            <option value={8}>8 Trades</option>
+          </select>
         </div>
-        <select
-          value={tradesPerCandle || localTradesPerCandle}
-          onChange={e => {
-            setTradesPerCandle(Number(e.target.value));
-            setLocalTradesPerCandle(Number(e.target.value));
-          }}
-          style={{ background: '#222', color: '#fff', border: '1px solid #444', minWidth: '100px', flex: '0 0 auto' }}
-        >
-          <option value={1}>1 Trade</option>
-          <option value={2}>2 Trades</option>
-          <option value={3}>3 Trades</option>
-          <option value={5}>5 Trades</option>
-          <option value={8}>8 Trades</option>
-        </select>
       </div>
 
       <div ref={chartRef} className="chart-container" />

@@ -46,6 +46,7 @@ export async function handleTransaction(tab, amount, setErrorMessage, setToast) 
       message: `🔄 ${tab.toUpperCase()} transaction submitted`,
       txId: formattedTxId,
       visible: true,
+      status: 'pending',
     });
 
     const confirmedData = await waitForConfirmation(txId);
@@ -58,6 +59,7 @@ export async function handleTransaction(tab, amount, setErrorMessage, setToast) 
         message: `❌ ${tab.toUpperCase()} transaction failed`,
         txId: formattedTxId,
         visible: true,
+        status: 'failed',
       });
 
       return null;
@@ -84,6 +86,7 @@ export async function handleTransaction(tab, amount, setErrorMessage, setToast) 
       message: `✅ ${tab.toUpperCase()} transaction confirmed`,
       txId: formattedTxId,
       visible: true,
+      status: 'success',
     });
 
     createdAtISO = confirmedData.block_time_iso || null;

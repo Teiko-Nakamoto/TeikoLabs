@@ -95,11 +95,35 @@ export default function HomePage() {
                     <div className="token-card-meta">
                       <p>
                         <span className="label">Revenue Locked:</span>{' '}
-                        <span className="value sats">⚡ {token.revenue} sats</span>
+                        <span className="value sats">
+                          <img 
+                            src="/icons/sats1.svg" 
+                            alt="sats" 
+                            style={{ width: '16px', height: '16px', verticalAlign: 'middle', marginRight: '2px' }}
+                          />
+                          <img 
+                            src="/icons/Vector.svg" 
+                            alt="lightning" 
+                            style={{ width: '16px', height: '16px', verticalAlign: 'middle', marginRight: '4px' }}
+                          />
+                          {token.revenue}
+                        </span>
                       </p>
                       <p>
                         <span className="label">Liquidity Held:</span>{' '}
-                        <span className="value sats">⚡ {token.liquidity} sats</span>
+                        <span className="value sats">
+                          <img 
+                            src="/icons/sats1.svg" 
+                            alt="sats" 
+                            style={{ width: '16px', height: '16px', verticalAlign: 'middle', marginRight: '2px' }}
+                          />
+                          <img 
+                            src="/icons/Vector.svg" 
+                            alt="lightning" 
+                            style={{ width: '16px', height: '16px', verticalAlign: 'middle', marginRight: '4px' }}
+                          />
+                          {token.liquidity}
+                        </span>
                       </p>
                     </div>
                   </div>

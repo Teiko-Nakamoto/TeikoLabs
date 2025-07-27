@@ -20,7 +20,6 @@ header {
   align-items: center;
   color: white;
   font-size: 1rem;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
   margin: 0; /* Remove any margin */
 }
 
@@ -31,16 +30,15 @@ header {
   align-items: center;
   padding-top: 80px; /* This should offset content below the fixed header */
   min-height: 100vh;
-  background: transparent; /* Let global background show */
+  background: #0a0a0a; /* Solid dark background */
   color: white;
 }
 
 /* Buy/Sell Container */
 .buy-sell-container {
-  background: rgba(0, 0, 0, 0.5);
+  background: transparent;
   padding: 2rem;
   border-radius: 1rem;
-  box-shadow: 0 0 15px rgba(255, 255, 255, 0.1);
   max-width: 400px;
   width: 100%;
   text-align: center;
