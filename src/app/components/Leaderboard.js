@@ -1,9 +1,11 @@
 'use client';
 import { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { supabase } from '../utils/supabaseClient';
 import './Leaderboard.css';
 
 export default function Leaderboard() {
+  const { t } = useTranslation();
   const [leaderboardData, setLeaderboardData] = useState([]);
   const [topHolders, setTopHolders] = useState([]);
   const [view, setView] = useState('pnl'); // 'pnl' or 'holders'
@@ -133,7 +135,7 @@ export default function Leaderboard() {
   };
 
   const formatAddress = (address) => {
-    if (!address) return 'Unknown';
+    if (!address) return t('unknown');
     return address; // Show full address
   };
 
@@ -143,26 +145,26 @@ export default function Leaderboard() {
   };
 
   if (loading) {
-    return <div className="leaderboard-container">Loading leaderboard...</div>;
+    return <div className="leaderboard-container">{t('loading_leaderboard')}</div>;
   }
 
   return (
     <div className="leaderboard-container">
       <div className="leaderboard-header">
-        <h2>Leaderboard</h2>
+        <h2>{t('leaderboard')}</h2>
         
         <div className="period-toggle">
           <button
             className={`period-btn ${period === '7d' ? 'active' : ''}`}
             onClick={() => setPeriod('7d')}
           >
-            7-Day
+            {t('seven_day')}
           </button>
           <button
             className={`period-btn ${period === '30d' ? 'active' : ''}`}
             onClick={() => setPeriod('30d')}
           >
-            30-Day
+            {t('thirty_day')}
           </button>
         </div>
       </div>
@@ -172,23 +174,23 @@ export default function Leaderboard() {
           className={`view-btn ${view === 'pnl' ? 'active' : ''}`}
           onClick={() => setView('pnl')}
         >
-          Top Performers
+          {t('top_performers')}
         </button>
         <button
           className={`view-btn ${view === 'holders' ? 'active' : ''}`}
           onClick={() => setView('holders')}
         >
-          Top Holders
+          {t('top_holders')}
         </button>
       </div>
 
       {view === 'pnl' ? (
         <div className="leaderboard-table">
           <div className="table-header">
-            <span>Rank</span>
-            <span>Wallet</span>
-            <span>Realized P&L</span>
-            <span>Trades</span>
+            <span>{t('rank')}</span>
+            <span>{t('wallet')}</span>
+            <span>{t('realized_pnl')}</span>
+            <span>{t('trades')}</span>
           </div>
           {leaderboardData.length > 0 ? (
             leaderboardData.map((entry, index) => (
@@ -198,7 +200,7 @@ export default function Leaderboard() {
                   <span 
                     style={{ cursor: 'pointer', textDecoration: 'underline', color: '#fbbf24' }}
                     onClick={() => openInExplorer(entry.wallet)}
-                    title="Click to open in Stacks Explorer"
+                    title={t('click_to_open_explorer')}
                   >
                     {formatAddress(entry.wallet)}
                   </span>
@@ -215,9 +217,9 @@ export default function Leaderboard() {
                       backgroundColor: '#4a5568'
                     }}
                     onClick={() => copyToClipboard(entry.wallet)}
-                    title="Copy wallet address"
+                    title={t('copy_wallet_address')}
                   >
-                    {copied ? 'Copied!' : 'Copy 📋'}
+                    {copied ? t('copied') : t('copy_clipboard')}
                   </button>
                 </span>
                 <span className="pnl positive">+{formatLargeNumber(entry.realizedPnl)} ⚡</span>
@@ -225,21 +227,21 @@ export default function Leaderboard() {
               </div>
             ))
           ) : (
-            <div className="no-data">No profitable traders in this period</div>
+            <div className="no-data">{t('no_profitable_traders')}</div>
           )}
         </div>
       ) : (
         <div className="leaderboard-table">
           <div className="table-header">
-            <span>Rank</span>
-            <span>Wallet</span>
+            <span>{t('rank')}</span>
+            <span>{t('wallet')}</span>
             <span>
               <img 
                 src="/icons/The Mas Network.svg" 
                 alt="MAS Sats" 
                 style={{ width: '16px', height: '16px', verticalAlign: 'middle', marginRight: '4px' }}
               />
-              Held
+              {t('held')}
             </span>
             <span>
               <img 
@@ -252,7 +254,7 @@ export default function Leaderboard() {
                 alt="lightning" 
                 style={{ width: '16px', height: '16px', verticalAlign: 'middle', marginRight: '4px' }}
               />
-              Value
+              {t('value')}
             </span>
           </div>
           {topHolders.length > 0 ? (
@@ -263,7 +265,7 @@ export default function Leaderboard() {
                   <span 
                     style={{ cursor: 'pointer', textDecoration: 'underline', color: '#fbbf24' }}
                     onClick={() => openInExplorer(holder.wallet)}
-                    title="Click to open in Stacks Explorer"
+                    title={t('click_to_open_explorer')}
                   >
                     {formatAddress(holder.wallet)}
                   </span>
@@ -280,9 +282,9 @@ export default function Leaderboard() {
                       backgroundColor: '#4a5568'
                     }}
                     onClick={() => copyToClipboard(holder.wallet)}
-                    title="Copy wallet address"
+                    title={t('copy_wallet_address')}
                   >
-                    {copied ? 'Copied!' : 'Copy 📋'}
+                    {copied ? t('copied') : t('copy_clipboard')}
                   </button>
                 </span>
                 <span className="holdings">
@@ -294,7 +296,7 @@ export default function Leaderboard() {
               </div>
             ))
           ) : (
-            <div className="no-data">No holders found</div>
+            <div className="no-data">{t('no_holders_found')}</div>
           )}
         </div>
       )}

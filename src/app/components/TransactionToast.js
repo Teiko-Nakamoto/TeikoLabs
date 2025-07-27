@@ -1,7 +1,9 @@
 'use client';
 import { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 
 export default function TransactionToast({ message, txId, onClose, status = 'pending', onRetry }) {
+  const { t } = useTranslation();
   const [copied, setCopied] = useState(false);
 
   const handleCopy = () => {
@@ -39,7 +41,7 @@ export default function TransactionToast({ message, txId, onClose, status = 'pen
           {/* Text and retry button */}
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
             <div style={{ fontWeight: 'bold', color: '#fbbf24' }}>
-              Transaction Failed
+              {t('transaction_failed')}
             </div>
             <button 
               onClick={onRetry}
@@ -53,7 +55,7 @@ export default function TransactionToast({ message, txId, onClose, status = 'pen
                 cursor: 'pointer',
               }}
             >
-              Retry
+              {t('retry')}
             </button>
           </div>
         </div>
@@ -78,7 +80,7 @@ export default function TransactionToast({ message, txId, onClose, status = 'pen
         
         {/* Text */}
         <div style={{ fontWeight: 'bold', color: status === 'success' ? '#10b981' : '#fbbf24' }}>
-          {status === 'success' ? 'Transaction Successful' : 'Pending'}
+          {status === 'success' ? t('transaction_successful') : t('pending')}
         </div>
       </div>
     </div>

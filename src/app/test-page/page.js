@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import Header from '../components/header';
 import BuySellBox from '../components/BuySellBox';
 import Chart from '../components/chart';
@@ -10,6 +11,7 @@ import ProfitLoss from '../components/ProfitLoss';
 import TokenStats from '../components/TokenStats';
 
 export default function TestPage() {
+  const { t } = useTranslation();
   const [tab, setTab] = useState('buy');
   const [amount, setAmount] = useState('');
   const [estimatedResult, setEstimatedResult] = useState(null);
@@ -57,8 +59,10 @@ export default function TestPage() {
     if (isClient) {
       const storedTab = localStorage.getItem('tab');
       const storedAmount = localStorage.getItem('amount');
+      const storedSection = localStorage.getItem('activeSection');
       if (storedTab) setTab(storedTab);
       if (storedAmount) setAmount(storedAmount);
+      if (storedSection) setActiveSection(storedSection);
     }
   }, [isClient]);
 
@@ -66,10 +70,11 @@ export default function TestPage() {
     if (isClient) {
       localStorage.setItem('tab', tab);
       localStorage.setItem('amount', amount);
+      localStorage.setItem('activeSection', activeSection || 'buysell');
     }
-  }, [tab, amount, isClient]);
+  }, [tab, amount, activeSection, isClient]);
 
-  if (!isClient) return <div>Loading...</div>;
+  if (!isClient) return <div>{t('loading')}</div>;
 
   return (
     <div className="test-page">
@@ -83,7 +88,7 @@ export default function TestPage() {
 
       {isRefreshing && (
         <div className="refresh-popup">
-          <p>Hold on, page refreshing...</p>
+          <p>{t('page_refreshing')}</p>
         </div>
       )}
 

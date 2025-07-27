@@ -62,9 +62,22 @@
 
 /* === Trade Content === */
 .block-line {
+  font-size: 0.85rem;
   margin-bottom: 4px;
   word-wrap: break-word;
   color: #fff;
+}
+
+/* Make trade history text and icons slightly smaller for better fit */
+.block-line {
+  font-size: 0.85rem;
+}
+.block-line img {
+  width: 12px !important;
+  height: 12px !important;
+  vertical-align: middle;
+  margin-left: 2px;
+  margin-right: 1px;
 }
 
 .txid-line {

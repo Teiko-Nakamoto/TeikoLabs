@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import { useTranslation } from 'react-i18next';
 import Header from './components/header';
 import './globals.css';
 import { useEffect, useState } from 'react';
@@ -11,6 +12,7 @@ import {
 } from './utils/fetchTokenData';
 
 export default function HomePage() {
+  const { t } = useTranslation();
   const [activeTab, setActiveTab] = useState('featured');
   const [tokenSymbol, setTokenSymbol] = useState('--');
   const [revenue, setRevenue] = useState('--');
@@ -52,17 +54,17 @@ export default function HomePage() {
       <Header />
       <main className="home-page">
         <div className="page-header-centered">
-          <h1>Live Bitcoin Token Market</h1>
+          <h1>{t('live_bitcoin_token_market')}</h1>
         </div>
 
         <div className="top-controls">
           <div className="tab-toggle">
             <button className={activeTab === 'featured' ? 'active' : ''} onClick={() => setActiveTab('featured')}>
-              Featured
+              {t('featured')}
             </button>
             {/* Removed the "All Tokens" button */}
             <button className={activeTab === 'practice' ? 'active' : ''} onClick={() => setActiveTab('practice')}>
-              Practice Trading
+              {t('practice_trading')}
             </button>
           </div>
         </div>
@@ -73,7 +75,7 @@ export default function HomePage() {
               return (
                 <div key={`coming-soon-${idx}`} className="token-card coming-soon">
                   <div className="token-card-box">
-                    <span className="token-symbol">🚧 Coming Soon</span>
+                    <span className="token-symbol">🚧 {t('coming_soon')}</span>
                   </div>
                 </div>
               );
@@ -94,7 +96,7 @@ export default function HomePage() {
 
                     <div className="token-card-meta">
                       <p>
-                        <span className="label">Revenue Locked:</span>{' '}
+                        <span className="label">{t('revenue_locked')}:</span>{' '}
                         <span className="value sats">
                           <img 
                             src="/icons/sats1.svg" 
@@ -110,7 +112,7 @@ export default function HomePage() {
                         </span>
                       </p>
                       <p>
-                        <span className="label">Liquidity Held:</span>{' '}
+                        <span className="label">{t('liquidity_held')}:</span>{' '}
                         <span className="value sats">
                           <img 
                             src="/icons/sats1.svg" 
@@ -146,7 +148,7 @@ export default function HomePage() {
                       textAlign: 'center',
                     }}
                   >
-                    Get Free Fake Bitcoin for Trading
+                    {t('get_free_fake_bitcoin')}
                   </a>
                 </div>
               </div>

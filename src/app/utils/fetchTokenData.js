@@ -287,22 +287,14 @@ export function calculateEstimatedTokensForSats(satsAmount, currentPrice) {
       satsAmount,
       currentPrice,
       satsAfterFee,
+      formula: `${satsAfterFee} / ${currentPrice} = ${estimatedTokens}`,
       estimatedTokens: Math.floor(estimatedTokens),
-      rawEstimatedTokens: estimatedTokens
+      rawEstimatedTokens: estimatedTokens,
+      expectedForExample: '17 SATS ÷ 17.08 SATS/token = ~0.995 tokens'
     });
     
-    // If price is extremely small, use a more reasonable calculation
-    if (currentPrice < 0.000001) {
-      // Use a ratio-based calculation instead
-      const estimatedTokens = Math.floor(satsAmount * 0.98 * 100); // Rough estimate
-      return Math.min(estimatedTokens, satsAmount * 1000); // Cap at reasonable number
-    }
-    
-    // Return reasonable number of tokens (max 8 decimal places)
-    const roundedTokens = Math.round(estimatedTokens * 1e8) / 1e8;
-    // Cap at a more reasonable number based on input
-    const maxTokens = Math.max(satsAmount * 1000, 1000000); // Dynamic cap
-    return Math.min(roundedTokens, maxTokens);
+    // Return the calculated tokens (no caps or adjustments for normal prices)
+    return Math.floor(estimatedTokens);
   } catch (err) {
     console.error('❌ Failed to calculate estimated tokens:', err);
     return 0;

@@ -1,9 +1,11 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import './tradeHistory.css';
 
 export default function TradeHistory({ trades, pendingTransaction, isSuccessfulTransaction }) {
+  const { t } = useTranslation();
   const [index, setIndex] = useState(0); // sliding index
   const [copiedTxId, setCopiedTxId] = useState(null);
   const [copied, setCopied] = useState(false);
@@ -17,20 +19,13 @@ export default function TradeHistory({ trades, pendingTransaction, isSuccessfulT
   const maxIndex = Math.max(0, reversedTrades.length - visibleCount);
 
   // Function to format large numbers with K and M
-  const formatLargeNumber = (num) => {
-    if (!num) return '—';
-    const absNum = Math.abs(num);
-    if (absNum >= 1000000) {
-      const millions = (absNum / 1000000).toFixed(1);
-      const cleanMillions = millions.endsWith('.0') ? millions.slice(0, -2) : millions;
-      return `${num < 0 ? '-' : ''}${cleanMillions}M`;
-    } else if (absNum >= 1000) {
-      const thousands = (absNum / 1000).toFixed(1);
-      const cleanThousands = thousands.endsWith('.0') ? thousands.slice(0, -2) : thousands;
-      return `${num < 0 ? '-' : ''}${cleanThousands}K`;
-    }
-    return Math.ceil(num).toLocaleString();
+  const formatLargeNumber = (num, locale = (typeof navigator !== 'undefined' ? navigator.language : 'en-US')) => {
+    if (!num && num !== 0) return '—';
+    return new Intl.NumberFormat(locale, { notation: 'compact', maximumFractionDigits: 1 }).format(num);
   };
+
+  // Update the helper function:
+  const formatMasSats = (amount) => formatLargeNumber(Math.round(Number(amount) / 1e8));
 
   useEffect(() => {
     if (sliderRef.current) {
@@ -88,12 +83,12 @@ export default function TradeHistory({ trades, pendingTransaction, isSuccessfulT
   };
 
   if (!trades || trades.length === 0) {
-    return <p className="no-trades-msg">No trades to display.</p>;
+    return <p className="no-trades-msg">{t('no_trades_msg')}</p>;
   }
 
   return (
    <div className="block-history-wrapper">
-  <h3 className="block-history-title">Market History</h3> {/* 🔁 Title updated */}
+  <h3 className="block-history-title">{t('market_history_title')}</h3> {/* 🔁 Title updated */}
 
   <div className="block-container" style={{ position: 'relative' }}>
     {/* Awaiting block */}
@@ -130,31 +125,11 @@ export default function TradeHistory({ trades, pendingTransaction, isSuccessfulT
                     />
                   </>
                 )}
-                Pending...
+                {t('pending_trade_msg')}
               </strong>
             </div>
             <div className="block-line">
-              Amount: {(() => {
-                if (pendingTransaction.satsAmount) {
-                  return (
-                    <>
-                      {formatLargeNumber(pendingTransaction.satsAmount)}{' '}
-                      <img 
-                        src="/icons/sats1.svg" 
-                        alt="sats" 
-                        style={{ width: '14px', height: '14px', verticalAlign: 'middle', marginLeft: '2px', marginRight: '1px' }}
-                      />
-                      <img 
-                        src="/icons/Vector.svg" 
-                        alt="lightning" 
-                        style={{ width: '14px', height: '14px', verticalAlign: 'middle' }}
-                      />
-                    </>
-                  );
-                } else {
-                  return formatLargeNumber(pendingTransaction.amount);
-                }
-              })()}
+              {t('amount_line', { amount: pendingTransaction.satsAmount ? formatLargeNumber(pendingTransaction.satsAmount) : formatLargeNumber(pendingTransaction.amount) })}
             </div>
             <div className="block-line">
               {new Date(pendingTransaction.timestamp).toLocaleTimeString([], {
@@ -163,30 +138,30 @@ export default function TradeHistory({ trades, pendingTransaction, isSuccessfulT
               })}
             </div>
             <div className="block-line txid-line">
-              <span style={{ opacity: 0.7 }}>Processing...</span>
-              <button style={{ opacity: 0.5, cursor: 'default' }}>⏳</button>
+              <span style={{ opacity: 0.7 }}>{t('processing_tx_msg')}</span>
+              <button style={{ opacity: 0.5, cursor: 'default' }}>{t('loading_icon')}</button>
             </div>
           </>
         ) : transitioningTx ? (
           <>
-            <div className="block-line"><strong>Awaiting next trade…</strong></div>
-            <div className="block-line">Price: —</div>
-            <div className="block-line">Amount: —</div>
+            <div className="block-line"><strong>{t('awaiting_next_trade_msg')}</strong></div>
+            <div className="block-line">{t('price_line', { price: '—' })}</div>
+            <div className="block-line">{t('amount_line', { amount: '—' })}</div>
             <div className="block-line">--:--</div>
             <div className="block-line txid-line">
-              <span style={{ opacity: 0.5 }}>—</span>
-              <button style={{ opacity: 0.5, cursor: 'default' }}>📋</button>
+              <span style={{ opacity: 0.5 }}>{t('txid_line', { txid: '—' })}</span>
+              <button style={{ opacity: 0.5, cursor: 'default' }}>{t('copy_icon')}</button>
             </div>
           </>
         ) : (
           <>
-        <div className="block-line"><strong>Awaiting next trade…</strong></div>
-            <div className="block-line">Price: —</div>
-            <div className="block-line">Amount: —</div>
+        <div className="block-line"><strong>{t('awaiting_next_trade_msg')}</strong></div>
+            <div className="block-line">{t('price_line', { price: '—' })}</div>
+            <div className="block-line">{t('amount_line', { amount: '—' })}</div>
         <div className="block-line">--:--</div>
         <div className="block-line txid-line">
-          <span style={{ opacity: 0.5 }}>—</span>
-          <button style={{ opacity: 0.5, cursor: 'default' }}>📋</button>
+          <span style={{ opacity: 0.5 }}>{t('txid_line', { txid: '—' })}</span>
+          <button style={{ opacity: 0.5, cursor: 'default' }}>{t('copy_icon')}</button>
         </div>
           </>
         )}
@@ -244,31 +219,11 @@ export default function TradeHistory({ trades, pendingTransaction, isSuccessfulT
                   />
                 </>
               )}
-              {transitionProgress < 0.5 ? 'Pending...' : 'Confirmed'}
+              {transitionProgress < 0.5 ? t('pending_trade_msg') : t('confirmed_trade_msg')}
             </strong>
           </div>
           <div className="block-line">
-            Amount: {(() => {
-              if (transitioningTx.satsAmount) {
-                return (
-                  <>
-                    {formatLargeNumber(transitioningTx.satsAmount)}{' '}
-                    <img 
-                      src="/icons/sats1.svg" 
-                      alt="sats" 
-                      style={{ width: '14px', height: '14px', verticalAlign: 'middle', marginLeft: '2px', marginRight: '1px' }}
-                    />
-                    <img 
-                      src="/icons/Vector.svg" 
-                      alt="lightning" 
-                      style={{ width: '14px', height: '14px', verticalAlign: 'middle' }}
-                    />
-                  </>
-                );
-              } else {
-                return formatLargeNumber(transitioningTx.amount);
-              }
-            })()}
+            {t('amount_line', { amount: transitioningTx.satsAmount ? formatLargeNumber(transitioningTx.satsAmount) : formatLargeNumber(transitioningTx.amount) })}
           </div>
           <div className="block-line">
             {new Date(transitioningTx.timestamp).toLocaleTimeString([], {
@@ -277,8 +232,8 @@ export default function TradeHistory({ trades, pendingTransaction, isSuccessfulT
             })}
           </div>
           <div className="block-line txid-line">
-            <span style={{ opacity: 0.7 }}>{transitionProgress < 0.5 ? 'Processing...' : 'Confirmed'}</span>
-            <button style={{ opacity: 0.5, cursor: 'default' }}>⏳</button>
+            <span style={{ opacity: 0.7 }}>{transitionProgress < 0.5 ? t('processing_tx_msg') : t('confirmed_trade_msg')}</span>
+            <button style={{ opacity: 0.5, cursor: 'default' }}>{t('loading_icon')}</button>
           </div>
         </div>
       </div>
@@ -297,110 +252,50 @@ export default function TradeHistory({ trades, pendingTransaction, isSuccessfulT
           return (
             <div key={i} className={`trade-block ${typeClass}`}>
               <div className="face">
+                {/* Swapped line */}
                 <div className="block-line">
                   <strong>
-                    {trade.type === 'buy' ? (
-                      <>
-                        Swapped {(() => {
-                          if (trade.sats_traded) {
-                            return (
-                              <>
-                                {formatLargeNumber(trade.sats_traded)}{' '}
-                                <img 
-                                  src="/icons/sats1.svg" 
-                                  alt="sats" 
-                                  style={{ width: '14px', height: '14px', verticalAlign: 'middle', marginLeft: '2px', marginRight: '1px' }}
-                                />
-                                <img 
-                                  src="/icons/Vector.svg" 
-                                  alt="lightning" 
-                                  style={{ width: '14px', height: '14px', verticalAlign: 'middle' }}
-                                />
-                              </>
-                            );
-                          } else if (trade.tokens_traded && trade.price) {
-                            const calculatedSats = Math.round(Math.abs(trade.tokens_traded) * trade.price);
-                            return (
-                              <>
-                                {formatLargeNumber(calculatedSats)}{' '}
-                                <img 
-                                  src="/icons/sats1.svg" 
-                                  alt="sats" 
-                                  style={{ width: '14px', height: '14px', verticalAlign: 'middle', marginLeft: '2px', marginRight: '1px' }}
-                                />
-                                <img 
-                                  src="/icons/Vector.svg" 
-                                  alt="lightning" 
-                                  style={{ width: '14px', height: '14px', verticalAlign: 'middle' }}
-                                />
-                              </>
-                            );
-                          } else {
-                            return formatLargeNumber(trade.tokens_traded);
-                          }
-                        })()}
-                      </>
-                    ) : (
-                      <>
-                        Swapped {(() => {
-                          if (trade.sats_traded) {
-                            return (
-                              <>
-                                {formatLargeNumber(trade.sats_traded)}{' '}
-                                <img 
-                                  src="/icons/sats1.svg" 
-                                  alt="sats" 
-                                  style={{ width: '14px', height: '14px', verticalAlign: 'middle', marginLeft: '2px', marginRight: '1px' }}
-                                />
-                                <img 
-                                  src="/icons/Vector.svg" 
-                                  alt="lightning" 
-                                  style={{ width: '14px', height: '14px', verticalAlign: 'middle' }}
-                                />
-                              </>
-                            );
-                          } else if (trade.tokens_traded && trade.price) {
-                            const calculatedSats = Math.round(Math.abs(trade.tokens_traded) * trade.price);
-                            return (
-                              <>
-                                {formatLargeNumber(calculatedSats)}{' '}
-                                <img 
-                                  src="/icons/sats1.svg" 
-                                  alt="sats" 
-                                  style={{ width: '14px', height: '14px', verticalAlign: 'middle', marginLeft: '2px', marginRight: '1px' }}
-                                />
-                                <img 
-                                  src="/icons/Vector.svg" 
-                                  alt="lightning" 
-                                  style={{ width: '14px', height: '14px', verticalAlign: 'middle' }}
-                                />
-                              </>
-                            );
-                          } else {
-                            return formatLargeNumber(trade.tokens_traded);
-                          }
-                        })()}
-                      </>
-                    )}
+                    {t('swapped')}:{' '}
+                    {trade.type === 'buy'
+                      ? (trade.sats_traded ? (
+                          <>
+                            {formatLargeNumber(trade.sats_traded)}{' '}
+                            <img src="/icons/sats1.svg" alt="sats" style={{ width: '14px', height: '14px', verticalAlign: 'middle', marginLeft: '2px', marginRight: '1px' }} />
+                            <img src="/icons/Vector.svg" alt="lightning" style={{ width: '14px', height: '14px', verticalAlign: 'middle' }} />
+                          </>
+                        ) : '—')
+                      : (trade.tokens_traded ? (
+                          <>
+                            {formatMasSats(Math.abs(trade.tokens_traded))}{' '}
+                            <img src="/icons/The Mas Network.svg" alt="MAS Sats" style={{ width: '14px', height: '14px', verticalAlign: 'middle', marginLeft: '2px' }} />
+                          </>
+                        ) : '—')
+                      }
                   </strong>
                 </div>
-                <div className="block-line">Received: {(() => {
-                  if (trade.tokens_traded) {
-                    return (
-                      <>
-                        {formatLargeNumber(Math.abs(trade.tokens_traded))}{' '}
-                        <img 
-                          src="/icons/The Mas Network.svg" 
-                          alt="MAS Sats" 
-                          style={{ width: '14px', height: '14px', verticalAlign: 'middle', marginLeft: '2px' }}
-                        />
-                      </>
-                    );
-                  } else {
-                    return '—';
-                  }
-                })()}</div>
-                <div className="block-line">Price: {(() => {
+                {/* Received line */}
+                <div className="block-line">
+                  <strong>
+                    {t('received')}:{' '}
+                    {trade.type === 'buy'
+                      ? (trade.tokens_traded ? (
+                          <>
+                            {formatMasSats(Math.abs(trade.tokens_traded))}{' '}
+                            <img src="/icons/The Mas Network.svg" alt="MAS Sats" style={{ width: '14px', height: '14px', verticalAlign: 'middle', marginLeft: '2px' }} />
+                          </>
+                        ) : '—')
+                      : (trade.sats_traded ? (
+                          <>
+                            {formatLargeNumber(trade.sats_traded)}{' '}
+                            <img src="/icons/sats1.svg" alt="sats" style={{ width: '14px', height: '14px', verticalAlign: 'middle', marginLeft: '2px', marginRight: '1px' }} />
+                            <img src="/icons/Vector.svg" alt="lightning" style={{ width: '14px', height: '14px', verticalAlign: 'middle' }} />
+                          </>
+                        ) : '—')
+                      }
+                  </strong>
+                </div>
+                {/* Price, time, txid, etc. remain unchanged */}
+                <div className="block-line">{t('price')}: {(() => {
                   const price = Number(trade.price);
                   if (price < 1) {
                     return price.toFixed(5);
@@ -417,9 +312,7 @@ export default function TradeHistory({ trades, pendingTransaction, isSuccessfulT
                   })}
                 </div>
                 <div className="block-line txid-line">
-                  <a href={txUrl} target="_blank" rel="noopener noreferrer">
-                    {trade.transaction_id.slice(0, 10)}...
-                  </a>
+                  <a href={txUrl} target="_blank" rel="noopener noreferrer">{t('txid_line', { txid: trade.transaction_id.slice(0, 10) + '...' })}</a>
                   <button 
                     style={{ 
                       background: 'none', 
@@ -433,9 +326,9 @@ export default function TradeHistory({ trades, pendingTransaction, isSuccessfulT
                       backgroundColor: '#4a5568'
                     }}
                     onClick={() => copyToClipboard(trade.transaction_id)}
-                    title="Copy transaction ID"
+                    title={t('copy_txid_title')}
                   >
-                    {copied ? 'Copied!' : 'Copy 📋'}
+                    {copied ? t('copied_msg') : t('copy_icon')}
                   </button>
                 </div>
               </div>
@@ -450,11 +343,11 @@ export default function TradeHistory({ trades, pendingTransaction, isSuccessfulT
       {/* Pagination */}
       <div className="block-pagination">
         <button onClick={() => setIndex(i => Math.max(0, i - 1))} disabled={index === 0}>
-          ← Prev
+          {t('prev_button')}
         </button>
-        <span>Trade {index + 1} of {reversedTrades.length}</span>
+        <span>{t('trade_count', { count: index + 1, total: reversedTrades.length })}</span>
         <button onClick={() => setIndex(i => Math.min(maxIndex, i + 1))} disabled={index >= maxIndex}>
-          Next →
+          {t('next_button')}
         </button>
       </div>
     </div>

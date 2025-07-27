@@ -17,10 +17,12 @@
     "@stacks/network": "^7.0.2",
     "@stacks/transactions": "^7.1.0",
     "@supabase/supabase-js": "^2.50.5",
+    "i18next": "^25.3.2",
     "lightweight-charts": "^5.0.8",
     "next": "15.3.5",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
+    "react-i18next": "^15.6.1",
     "sats-connect": "^3.5.0"
   },
   "devDependencies": {

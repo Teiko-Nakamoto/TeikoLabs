@@ -1,8 +1,14 @@
+'use client';
+
+import { useTranslation } from 'react-i18next';
+
 export default function ProfilePage() {
+  const { t } = useTranslation();
+  
   return (
     <div style={{ padding: '2rem' }}>
-      <h1>Profile Page</h1>
-      <p>This is your wallet-connected profile page.</p>
+      <h1>{t('profile_page')}</h1>
+      <p>{t('profile_description')}</p>
     </div>
   );
 }

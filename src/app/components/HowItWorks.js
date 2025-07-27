@@ -1,14 +1,17 @@
 'use client';
+import { useTranslation } from 'react-i18next';
 import './HowItWorks.css';
 
 const HowItWorks = ({ onClose }) => {
+  const { t } = useTranslation();
+  
   return (
     <div className="how-it-works-overlay" onClick={onClose}>
       <div className="how-it-works-popup" onClick={(e) => e.stopPropagation()}>
-        <h2>How It Works</h2>
-        <p>This is where you&apos;ll explain how your DEX functions, bonding curves, etc.</p>
+        <h2>{t('how_it_works')}</h2>
+        <p>{t('how_it_works_description')}</p>
 
-        <button onClick={onClose} className="close-btn">Close</button>
+        <button onClick={onClose} className="close-btn">{t('close')}</button>
       </div>
     </div>
   );

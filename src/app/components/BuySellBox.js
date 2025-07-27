@@ -7,8 +7,10 @@ import { getUserTokenBalance, getUserSatsBalance, calculateEstimatedTokensForSat
 import ProfitLoss from './ProfitLoss';
 import TokenStats from './TokenStats';
 import './BuySellBox.css';
+import { useTranslation } from 'react-i18next';
 
 export default function BuySellBox({ tab, setTab, amount, setAmount, refreshTrades, setErrorMessage, setPendingTransaction, setIsSuccessfulTransaction, trades, activeSection, setActiveSection }) {
+  const { t } = useTranslation();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [userBalance, setUserBalance] = useState(0);
@@ -52,21 +54,35 @@ export default function BuySellBox({ tab, setTab, amount, setAmount, refreshTrad
     fetchBalance();
   }, [tab]);
 
+
+
   // Get current price from last trade
   useEffect(() => {
     if (trades && trades.length > 0) {
-      // Get the last trade price
+      // Get the last trade price (this should be in SATS per token)
       const lastTrade = trades[trades.length - 1];
       const chartPrice = lastTrade.price;
-      console.log('🔍 Using chart price from last trade:', chartPrice);
+      console.log('🔍 Using chart price from last trade:', {
+        price: chartPrice,
+        type: typeof chartPrice,
+        trade: lastTrade
+      });
       setCurrentPrice(chartPrice);
     } else {
       // Fallback to calculated price if no trades
       const fetchCurrentPrice = async () => {
         console.log('🔍 No trades found, fetching calculated price...');
         const price = await getCurrentPrice();
-        console.log('🔍 Received calculated price:', price);
-        setCurrentPrice(price);
+        console.log('🔍 Received calculated price:', {
+          price,
+          type: typeof price,
+          needsConversion: price < 1
+        });
+        
+        // If price is in SBTC units (very small), convert to SATS
+        const adjustedPrice = price < 1 ? price * 100000000 : price;
+        console.log('🔍 Adjusted price for SATS units:', adjustedPrice);
+        setCurrentPrice(adjustedPrice);
       };
       fetchCurrentPrice();
     }
@@ -90,12 +106,12 @@ export default function BuySellBox({ tab, setTab, amount, setAmount, refreshTrad
         const amountValue = Number(cleanAmount);
         
         if (tab === 'sell') {
-          // Calculate estimated sats for token sell
+          // Calculate estimated sats for token sell using price
           const estimated = calculateEstimatedSatsForTokens(amountValue, currentPrice);
           console.log('🔍 Sell estimate result:', estimated);
           setEstimatedSats(estimated);
         } else {
-          // Calculate estimated tokens for sats buy
+          // Calculate estimated tokens for sats buy using price
           const estimated = calculateEstimatedTokensForSats(amountValue, currentPrice);
           console.log('🔍 Buy estimate result:', estimated);
           setEstimatedTokens(estimated);
@@ -248,7 +264,7 @@ export default function BuySellBox({ tab, setTab, amount, setAmount, refreshTrad
               cursor: 'pointer',
             }}
           >
-            Buy/Sell
+            {t('buy_sell')}
           </button>
           <button
             onClick={() => setActiveSection(activeSection === 'profit' ? null : 'profit')}
@@ -261,7 +277,7 @@ export default function BuySellBox({ tab, setTab, amount, setAmount, refreshTrad
               cursor: 'pointer',
             }}
           >
-            Profit / Loss
+            {t('profit_loss')}
           </button>
           <button
             onClick={() => setActiveSection(activeSection === 'stats' ? null : 'stats')}
@@ -274,7 +290,7 @@ export default function BuySellBox({ tab, setTab, amount, setAmount, refreshTrad
               cursor: 'pointer',
             }}
           >
-            Token Statistics
+            {t('token_stats')}
           </button>
         </div>
 
@@ -290,7 +306,7 @@ export default function BuySellBox({ tab, setTab, amount, setAmount, refreshTrad
                   setError(null);
                 }}
               >
-                Buy
+                {t('buy')}
               </button>
               <button
                 className={`tab-button active ${tab === 'sell' ? 'sell' : ''}`}
@@ -300,7 +316,7 @@ export default function BuySellBox({ tab, setTab, amount, setAmount, refreshTrad
                   setError(null);
                 }}
               >
-                Sell
+                {t('sell')}
               </button>
             </div>
 
@@ -308,7 +324,7 @@ export default function BuySellBox({ tab, setTab, amount, setAmount, refreshTrad
           {tab === 'sell' ? (
             <>
               <div style={{ marginBottom: '8px' }}>
-                Holdings: {Math.floor(userBalance).toLocaleString()}{" "}
+                {t('holdings')}: {Math.floor(userBalance).toLocaleString()}{" "}
                 <img 
                   src="/icons/The Mas Network.svg" 
                   alt="MAS Sats" 
@@ -316,7 +332,7 @@ export default function BuySellBox({ tab, setTab, amount, setAmount, refreshTrad
                 />
               </div>
               <div>
-                Estimated to receive:{" "}
+                {t('estimated_receive')}:{" "}
                 {Math.floor(estimatedSats).toLocaleString()}{" "}
                 <img 
                   src="/icons/sats1.svg" 
@@ -333,7 +349,7 @@ export default function BuySellBox({ tab, setTab, amount, setAmount, refreshTrad
           ) : (
             <>
               <div style={{ marginBottom: '8px' }}>
-                Holdings:{" "}
+                {t('holdings')}:{" "}
                 {userBalance.toLocaleString()}{" "}
                 <img 
                   src="/icons/sats1.svg" 
@@ -347,7 +363,7 @@ export default function BuySellBox({ tab, setTab, amount, setAmount, refreshTrad
                 />
               </div>
               <div>
-                Estimated to receive:{" "}
+                {t('estimated_receive')}:{" "}
                 {Math.floor(estimatedTokens).toLocaleString()}{" "}
                 <img 
                   src="/icons/The Mas Network.svg" 
@@ -362,7 +378,7 @@ export default function BuySellBox({ tab, setTab, amount, setAmount, refreshTrad
         <label htmlFor="amount-input" className="input-label">
           {tab === 'buy' ? (
             <>
-              Buy in 
+              {t('buy_in')}
               <img 
                 src="/icons/sats1.svg" 
                 alt="SATS" 
@@ -375,7 +391,7 @@ export default function BuySellBox({ tab, setTab, amount, setAmount, refreshTrad
               />
             </>
           ) : (
-            'Amount to sell'
+            t('amount_to_sell')
           )}
         </label>
         <div style={{ position: 'relative' }}>
@@ -451,7 +467,7 @@ export default function BuySellBox({ tab, setTab, amount, setAmount, refreshTrad
           disabled={loading}
           className={`buy-button ${tab === 'buy' ? 'buy' : 'sell'}`}
         >
-          {loading ? 'Processing...' : tab === 'buy' ? 'Buy' : 'Sell'}
+          {loading ? t('processing') : tab === 'buy' ? t('buy') : t('sell')}
         </button>
 
         <div style={{ 
@@ -479,7 +495,7 @@ export default function BuySellBox({ tab, setTab, amount, setAmount, refreshTrad
                 accentColor: '#4CAF50'
               }}
             />
-            Auto-refresh page on failed transactions
+            {t('auto_refresh')}
           </label>
           <div style={{ 
             fontSize: '12px', 
@@ -487,7 +503,7 @@ export default function BuySellBox({ tab, setTab, amount, setAmount, refreshTrad
             marginTop: '4px',
             marginLeft: '24px'
           }}>
-            Automatically reloads the page if a transaction fails
+            {t('auto_refresh_desc')}
           </div>
         </div>
 

@@ -1,6 +1,7 @@
 'use client'; // Tells Next.js this is a browser-side file (can use things like buttons and clicks)
 
 import { useState, useEffect, forwardRef, useImperativeHandle } from 'react';
+import { useTranslation } from 'react-i18next';
 // We import tools from React:
 // - useState: lets us store things like the wallet address
 // - useEffect: lets us run code when the page loads
@@ -15,6 +16,7 @@ import { connect, disconnect, isConnected, getLocalStorage } from '@stacks/conne
 
 // This makes your wallet button a component that can be triggered from outside (like in Header.js)
 const ConnectWallet = forwardRef((props, ref) => {
+  const { t } = useTranslation();
   const [userAddress, setUserAddress] = useState(null); // This keeps track of whether someone is connected
 
   // Connect to wallet when button is clicked
@@ -69,12 +71,12 @@ const ConnectWallet = forwardRef((props, ref) => {
       {userAddress ? (
         // If someone is connected, show "Disconnect" with the first 6 characters of their wallet address
         <button onClick={handleDisconnect} className="connect-button hover-underline">
-          Disconnect ({userAddress.slice(0, 6)}…)
+          {t('disconnect')} ({userAddress.slice(0, 6)}…)
         </button>
       ) : (
         // If no one is connected, show a "Connect Wallet" button
         <button onClick={handleConnect} className="connect-button hover-underline">
-          Connect Wallet
+          {t('connect_wallet')}
         </button>
       )}
     </>

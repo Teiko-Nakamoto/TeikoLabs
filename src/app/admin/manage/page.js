@@ -1,11 +1,13 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import Header from '../../components/header';
 import './manage-tokens.css';
 import { supabase } from '../../utils/supabaseClient';
 
 export default function ManageTokensPage() {
+  const { t } = useTranslation();
   const [showPopup, setShowPopup] = useState(false);
   const [tokenId, setTokenId] = useState('');
   const [dexId, setDexId] = useState('');
@@ -31,7 +33,7 @@ export default function ManageTokensPage() {
 
   const handleAddToken = async () => {
     if (!tokenId || !dexId) {
-      setMessage('❗ Please enter both Token ID and DEX ID.');
+      setMessage(`❗ ${t('enter_token_dex_id')}`);
       return;
     }
 
@@ -55,7 +57,7 @@ export default function ManageTokensPage() {
 
       const result = await res.json();
       if (res.ok) {
-        setMessage('✅ Token added successfully!');
+        setMessage(`✅ ${t('token_added_successfully')}`);
         setTokenId('');
         setDexId('');
         setTokenName('');
@@ -65,11 +67,11 @@ export default function ManageTokensPage() {
         setShowPopup(false);
         await fetchTokens();
       } else {
-        setMessage(`❌ Error: ${result.error || 'Unknown error'}`);
+        setMessage(`❌ ${t('error')}: ${result.error || t('unknown_error')}`);
       }
     } catch (err) {
       console.error('❌ Submission error:', err);
-      setMessage('❌ Network error. Please try again.');
+      setMessage(`❌ ${t('network_error')}`);
     } finally {
       setLoading(false);
     }
@@ -87,7 +89,7 @@ export default function ManageTokensPage() {
   };
 
   const handleDeleteSelected = async () => {
-    const confirm = window.confirm(`Delete ${selectedRows.length} selected token(s)?`);
+    const confirm = window.confirm(t('confirm_delete_tokens', { count: selectedRows.length }));
     if (!confirm) return;
 
     try {
@@ -98,7 +100,7 @@ export default function ManageTokensPage() {
 
       if (error) {
         console.error('❌ Bulk delete failed:', error);
-        alert('Error deleting selected tokens.');
+        alert(t('error_deleting_tokens'));
       } else {
         setSelectedRows([]);
         setDeleteMode(false);
@@ -106,7 +108,7 @@ export default function ManageTokensPage() {
       }
     } catch (err) {
       console.error('❌ Deletion error:', err);
-      alert('Unexpected error while deleting.');
+      alert(t('unexpected_error_deleting'));
     }
   };
 
@@ -115,15 +117,15 @@ export default function ManageTokensPage() {
       <Header />
       <main className="manage-tokens-page">
         <div className="manage-tokens-header">
-          <h1 className="manage-tokens-title">📋 Manage All Tokens</h1>
+          <h1 className="manage-tokens-title">📋 {t('manage_all_tokens')}</h1>
           <div className="button-group">
-            <button className="add-button" onClick={() => setShowPopup(true)}>➕ Add Token</button>
+            <button className="add-button" onClick={() => setShowPopup(true)}>➕ {t('add_token')}</button>
             <button className="delete-mode-button" onClick={toggleDeleteMode}>
-              {deleteMode ? '❌ Cancel Delete Mode' : '🗑 Delete Mode'}
+              {deleteMode ? `❌ ${t('cancel_delete_mode')}` : `🗑 ${t('delete_mode')}`}
             </button>
             {deleteMode && selectedRows.length > 0 && (
               <button className="delete-selected-button" onClick={handleDeleteSelected}>
-                Delete Selected ({selectedRows.length})
+                {t('delete_selected')} ({selectedRows.length})
               </button>
             )}
           </div>
@@ -132,12 +134,12 @@ export default function ManageTokensPage() {
         <table className="token-table">
           <thead>
             <tr>
-              {deleteMode && <th>Select</th>}
-              <th>Token ID</th>
-              <th>DEX ID</th>
-              <th>Network</th>
-              <th>Token Name</th>
-              <th>Token Symbol</th>
+              {deleteMode && <th>{t('select')}</th>}
+              <th>{t('token_id')}</th>
+              <th>{t('dex_id')}</th>
+              <th>{t('network')}</th>
+              <th>{t('token_name')}</th>
+              <th>{t('token_symbol')}</th>
             </tr>
           </thead>
           <tbody>
@@ -165,61 +167,61 @@ export default function ManageTokensPage() {
         {showPopup && (
           <div className="popup">
             <div className="popup-inner">
-              <h3>Add New Token</h3>
+              <h3>{t('add_new_token')}</h3>
 
               <input
                 type="text"
-                placeholder="Token ID"
+                placeholder={t('token_id')}
                 value={tokenId}
                 onChange={(e) => setTokenId(e.target.value)}
               />
               <input
                 type="text"
-                placeholder="DEX ID"
+                placeholder={t('dex_id')}
                 value={dexId}
                 onChange={(e) => setDexId(e.target.value)}
               />
               <input
                 type="text"
-                placeholder="Token Name (Optional)"
+                placeholder={t('token_name_optional')}
                 value={tokenName}
                 onChange={(e) => setTokenName(e.target.value)}
               />
               <input
                 type="text"
-                placeholder="Token Symbol (Optional)"
+                placeholder={t('token_symbol_optional')}
                 value={tokenSymbol}
                 onChange={(e) => setTokenSymbol(e.target.value)}
               />
               <input
                 type="text"
-                placeholder="Current Revenue Locked (Optional)"
+                placeholder={t('current_revenue_locked_optional')}
                 value={revenueLocked}
                 onChange={(e) => setRevenueLocked(e.target.value)}
               />
               <input
                 type="text"
-                placeholder="Current Liquidity Held (Optional)"
+                placeholder={t('current_liquidity_held_optional')}
                 value={liquidityHeld}
                 onChange={(e) => setLiquidityHeld(e.target.value)}
               />
-              <label htmlFor="network-select">Select Network:</label>
+              <label htmlFor="network-select">{t('select_network')}:</label>
               <select
                 id="network-select"
                 value={network}
                 onChange={(e) => setNetwork(e.target.value)}
               >
-                <option value="mainnet">Mainnet</option>
-                <option value="testnet">Testnet</option>
+                <option value="mainnet">{t('mainnet')}</option>
+                <option value="testnet">{t('testnet')}</option>
               </select>
 
               {message && <p className="popup-message">{message}</p>}
 
               <div className="popup-actions">
                 <button onClick={handleAddToken} disabled={loading}>
-                  {loading ? 'Adding...' : 'Confirm'}
+                  {loading ? t('adding') : t('confirm')}
                 </button>
-                <button onClick={() => setShowPopup(false)}>Cancel</button>
+                <button onClick={() => setShowPopup(false)}>{t('cancel')}</button>
               </div>
             </div>
           </div>

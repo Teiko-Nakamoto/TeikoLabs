@@ -2,13 +2,18 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { createChart, CandlestickSeries } from 'lightweight-charts';
+import { useTranslation } from 'react-i18next';
 import './token-chart.css';
 
 export default function Chart({ trades, tradesPerCandle, setTradesPerCandle }) {
+  const { t } = useTranslation();
   const chartRef = useRef(null);
 
   // Initialize tradesPerCandle to 1 for resting state
   const [localTradesPerCandle, setLocalTradesPerCandle] = useState(1);  // Default to 1 trade per candle
+  
+  // State to track current market sentiment for background color
+  const [isCurrentlyGreen, setIsCurrentlyGreen] = useState(true); // Default to green/blue
 
   useEffect(() => {
     if (!trades || trades.length === 0 || !chartRef.current) return;
@@ -85,6 +90,9 @@ export default function Chart({ trades, tradesPerCandle, setTradesPerCandle }) {
       const lineColor = isGreen ? '#26a69a' : '#ef5350';
       const lineStyle = 2;
 
+      // Update the background sentiment state
+      setIsCurrentlyGreen(isGreen);
+
       series.createPriceLine({
         price: lastCandle.close,
         color: lineColor,
@@ -117,8 +125,19 @@ export default function Chart({ trades, tradesPerCandle, setTradesPerCandle }) {
     };
   }, [trades, tradesPerCandle, localTradesPerCandle]);
 
+  // Dynamic background style based on market sentiment
+  const dynamicWrapperStyle = {
+    background: isCurrentlyGreen 
+      ? 'linear-gradient(135deg, rgba(59, 130, 246, 0.1) 0%, rgba(59, 130, 246, 0.05) 100%)' // Blue gradient for green/bullish
+      : 'linear-gradient(135deg, rgba(236, 72, 153, 0.1) 0%, rgba(236, 72, 153, 0.05) 100%)', // Pink gradient for red/bearish
+    border: isCurrentlyGreen 
+      ? '1px solid rgba(59, 130, 246, 0.2)' // Blue border for green/bullish
+      : '1px solid rgba(236, 72, 153, 0.2)', // Pink border for red/bearish
+    transition: 'all 0.3s ease', // Smooth transition between colors
+  };
+
   return (
-    <div className="chart-wrapper">
+    <div className="chart-wrapper" style={dynamicWrapperStyle}>
       <div style={{ 
         display: 'flex', 
         flexDirection: 'column', 
@@ -138,7 +157,7 @@ export default function Chart({ trades, tradesPerCandle, setTradesPerCandle }) {
           <div style={{ 
             display: 'flex', 
             alignItems: 'center', 
-            gap: '6px',
+            gap: '12px',
             justifyContent: 'center',
             flex: '1 1 auto',
             minWidth: '200px'
@@ -147,43 +166,47 @@ export default function Chart({ trades, tradesPerCandle, setTradesPerCandle }) {
               src="/icons/sats1.svg" 
               alt="SATs" 
               style={{ 
-                width: 'clamp(20px, 4vw, 28px)', 
-                height: 'clamp(20px, 4vw, 28px)',
-                minWidth: '20px'
-              }}
+                width: 'clamp(24px, 5vw, 32px)', 
+                height: 'clamp(24px, 5vw, 32px)', 
+                verticalAlign: 'middle' 
+              }} 
             />
             <img 
               src="/icons/Vector.svg" 
-              alt="Lightning" 
+              alt="lightning" 
               style={{ 
-                width: 'clamp(20px, 4vw, 28px)', 
-                height: 'clamp(20px, 4vw, 28px)',
-                minWidth: '20px'
-              }}
+                width: 'clamp(24px, 5vw, 32px)', 
+                height: 'clamp(24px, 5vw, 32px)', 
+                verticalAlign: 'middle' 
+              }} 
             />
             <span style={{ 
-              color: '#ccc', 
-              fontSize: 'clamp(16px, 3.5vw, 20px)', 
-              fontWeight: 'bold', 
-              whiteSpace: 'nowrap'
-            }}>/</span>
+              color: '#fff', 
+              fontSize: 'clamp(20px, 4vw, 28px)', 
+              fontWeight: '600', 
+              whiteSpace: 'nowrap',
+              margin: '0 4px'
+            }}>
+              /
+            </span>
             <img 
               src="/icons/The Mas Network.svg" 
-              alt="Mas Network" 
+              alt="MAS Sats" 
               style={{ 
-                width: 'clamp(20px, 4vw, 28px)', 
-                height: 'clamp(20px, 4vw, 28px)',
-                minWidth: '20px'
-              }}
+                width: 'clamp(24px, 5vw, 32px)', 
+                height: 'clamp(24px, 5vw, 32px)', 
+                verticalAlign: 'middle' 
+              }} 
             />
           </div>
-          
-          {/* Dropdown - positioned on the right */}
+
+          {/* Dropdown - auto-sized on mobile */}
           <select
             value={tradesPerCandle || localTradesPerCandle}
             onChange={e => {
-              setTradesPerCandle(Number(e.target.value));
-              setLocalTradesPerCandle(Number(e.target.value));
+              const value = parseInt(e.target.value);
+              setLocalTradesPerCandle(value);
+              if (setTradesPerCandle) setTradesPerCandle(value);
             }}
             style={{ 
               background: '#222', 
@@ -196,11 +219,11 @@ export default function Chart({ trades, tradesPerCandle, setTradesPerCandle }) {
               flex: '0 0 auto'
             }}
           >
-            <option value={1}>1 Trade</option>
-            <option value={2}>2 Trades</option>
-            <option value={3}>3 Trades</option>
-            <option value={5}>5 Trades</option>
-            <option value={8}>8 Trades</option>
+            <option value={1}>{t('one_trade')}</option>
+            <option value={2}>{t('two_trades')}</option>
+            <option value={3}>{t('three_trades')}</option>
+            <option value={5}>{t('five_trades')}</option>
+            <option value={8}>{t('eight_trades')}</option>
           </select>
         </div>
       </div>
