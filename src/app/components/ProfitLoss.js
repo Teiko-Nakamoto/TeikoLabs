@@ -18,9 +18,9 @@ export default function ProfitLoss() {
   return (
     <div style={{
       width: '100%',
-      maxWidth: '320px',
+      maxWidth: window.innerWidth <= 768 ? '100%' : '320px',
       margin: '0 auto',
-      padding: '16px',
+      padding: window.innerWidth <= 768 ? '12px' : '16px',
       backgroundColor: '#1c2d4e',
       borderRadius: '12px',
       color: 'white',
@@ -29,20 +29,20 @@ export default function ProfitLoss() {
       {/* Timeframe Toggle */}
       <div style={{
         display: 'flex',
-        gap: '8px',
-        marginBottom: '20px'
+        gap: window.innerWidth <= 768 ? '6px' : '8px',
+        marginBottom: window.innerWidth <= 768 ? '15px' : '20px'
       }}>
         <button
           onClick={() => setTimeframe('7-day')}
           style={{
             flex: 1,
-            padding: '8px 12px',
+            padding: window.innerWidth <= 768 ? '6px 8px' : '8px 12px',
             backgroundColor: timeframe === '7-day' ? '#2563eb' : '#374151',
             color: 'white',
             border: 'none',
             borderRadius: '6px',
             cursor: 'pointer',
-            fontSize: '14px',
+            fontSize: window.innerWidth <= 768 ? '12px' : '14px',
             fontWeight: 'bold'
           }}
         >
@@ -52,13 +52,13 @@ export default function ProfitLoss() {
           onClick={() => setTimeframe('30-day')}
           style={{
             flex: 1,
-            padding: '8px 12px',
+            padding: window.innerWidth <= 768 ? '6px 8px' : '8px 12px',
             backgroundColor: timeframe === '30-day' ? '#2563eb' : '#374151',
             color: 'white',
             border: 'none',
             borderRadius: '6px',
             cursor: 'pointer',
-            fontSize: '14px',
+            fontSize: window.innerWidth <= 768 ? '12px' : '14px',
             fontWeight: 'bold'
           }}
         >

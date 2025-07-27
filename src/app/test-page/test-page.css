@@ -6,6 +6,63 @@ body, html {
   height: 100%; /* Ensure the body takes the full height of the screen */
 }
 
+/* Mobile responsive layout */
+@media (max-width: 768px) {
+  .test-page {
+    padding: 10px;
+    padding-top: 80px;
+  }
+  
+  .main-layout {
+    flex-direction: column !important;
+    gap: 15px !important;
+  }
+  
+  .chart-section,
+  .trading-section {
+    width: 100% !important;
+    flex: none !important;
+  }
+  
+  .buy-sell-box {
+    max-width: 100% !important;
+  }
+  
+  .buy-sell-content {
+    padding: 12px !important;
+  }
+  
+  .tab-row {
+    gap: 6px !important;
+    margin-bottom: 15px !important;
+  }
+  
+  .tab-button {
+    padding: 10px 0 !important;
+    font-size: 14px !important;
+  }
+  
+  .quick-buttons {
+    gap: 6px !important;
+    margin-bottom: 12px !important;
+  }
+  
+  .quick-button {
+    padding: 8px 0 !important;
+    font-size: 12px !important;
+  }
+  
+  .sats-input {
+    padding: 10px !important;
+    font-size: 14px !important;
+  }
+  
+  .buy-button {
+    padding: 12px !important;
+    font-size: 14px !important;
+  }
+}
+
 /* Fix header position at the top of the screen */
 header {
   position: fixed;

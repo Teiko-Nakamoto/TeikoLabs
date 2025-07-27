@@ -10,6 +10,102 @@
   font-family: sans-serif;
 }
 
+/* Mobile responsive header */
+@media (max-width: 768px) {
+  .header {
+    padding: 0.5rem 1rem;
+    flex-wrap: nowrap;
+    min-height: 60px;
+  }
+  
+  .left-section {
+    gap: 1rem;
+    flex-shrink: 0;
+  }
+  
+  .logo {
+    height: 40px;
+  }
+  
+  .social-links {
+    gap: 0.8rem;
+  }
+  
+  .social-links a,
+  .social-links button {
+    font-size: 0.8rem;
+    white-space: nowrap;
+  }
+  
+  .social-links img {
+    height: 16px;
+    width: 16px;
+  }
+  
+  .center-link {
+    position: static;
+    transform: none;
+    margin: 0;
+  }
+  
+  .center-link a {
+    font-size: 0.9rem;
+    white-space: nowrap;
+  }
+  
+  .nav-links {
+    margin-left: 0;
+    flex-shrink: 0;
+  }
+  
+  .language-profile {
+    font-size: 0.8rem;
+  }
+  
+  .connect-button {
+    padding: 0.4rem 0.8rem;
+    font-size: 0.8rem;
+  }
+}
+
+/* Extra small mobile devices */
+@media (max-width: 480px) {
+  .header {
+    padding: 0.4rem 0.8rem;
+  }
+  
+  .left-section {
+    gap: 0.5rem;
+  }
+  
+  .logo {
+    height: 35px;
+  }
+  
+  .social-links {
+    gap: 0.5rem;
+  }
+  
+  .social-links a,
+  .social-links button {
+    font-size: 0.7rem;
+  }
+  
+  .social-links img {
+    height: 14px;
+    width: 14px;
+  }
+  
+  .center-link a {
+    font-size: 0.8rem;
+  }
+  
+  .connect-button {
+    padding: 0.3rem 0.6rem;
+    font-size: 0.7rem;
+  }
+}
+
 /* Left section with logo + social icons */
 .left-section {
   display: flex;
@@ -28,6 +124,7 @@
   display: flex;
   align-items: center;
   gap: 1.5rem;
+  flex-shrink: 0;
 }
 
 .social-links a,
@@ -71,6 +168,7 @@
   align-items: center;
   justify-content: center;
   margin-left: 3rem;
+  flex-shrink: 0;
 }
 
 .center-link {

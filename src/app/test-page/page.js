@@ -87,9 +87,9 @@ export default function TestPage() {
         </div>
       )}
 
-      <div style={{ display: 'flex', gap: '20px', marginTop: '20px' }}>
+      <div className="main-layout" style={{ display: 'flex', gap: '20px', marginTop: '20px' }}>
         {/* Left side: Chart and Trade History */}
-        <div style={{ flex: 7, display: 'flex', flexDirection: 'column', gap: '20px' }}>
+        <div className="chart-section" style={{ flex: 7, display: 'flex', flexDirection: 'column', gap: '20px' }}>
           <Chart
             trades={trades}
             tradesPerCandle={tradesPerCandle}
@@ -99,7 +99,7 @@ export default function TestPage() {
         </div>
 
         {/* Right side: Buy/Sell + Toggle Display */}
-        <div style={{ flex: 3, display: 'flex', flexDirection: 'column', gap: '20px' }}>
+        <div className="trading-section" style={{ flex: 3, display: 'flex', flexDirection: 'column', gap: '20px' }}>
           {/* Always show BuySellBox with navigation buttons inside */}
           <BuySellBox
             tab={tab}
