@@ -11,7 +11,7 @@ export const DEX_CONTRACT_ADDRESS = 'ST37918Q7NBZ52AMV133VTY5C864KVK0S2HZ3CGA4';
 export const DEX_CONTRACT_NAME = 'dear-cyan-dex';
 export const TOKEN_CONTRACT_NAME = 'dear-cyan';
 
-// Fetch SBTC fee pool (revenue)
+// Fetch SBTC fee pool (revenue) using read-only function
 export async function getRevenueBalance() {
   try {
     const result = await fetchCallReadOnlyFunction({
@@ -22,15 +22,29 @@ export async function getRevenueBalance() {
       network: STACKS_TESTNET,
       senderAddress: DEX_CONTRACT_ADDRESS,
     });
+    
     const rawValue = result?.value?.value || result?.value || null;
-    return rawValue ? parseInt(rawValue) : 0;
+    console.log('🔍 Raw revenue value:', rawValue, typeof rawValue);
+    
+    // Handle string or number conversion
+    let satsValue = 0;
+    if (rawValue) {
+      if (typeof rawValue === 'string') {
+        satsValue = parseInt(rawValue);
+      } else {
+        satsValue = Number(rawValue);
+      }
+    }
+    
+    console.log('🔍 Revenue in SATS (final):', satsValue);
+    return satsValue;
   } catch (err) {
     console.error('❌ Failed to fetch revenue balance:', err);
     return 0;
   }
 }
 
-// Fetch SBTC liquidity balance
+// Fetch SBTC liquidity balance using read-only function
 export async function getLiquidityBalance() {
   try {
     const result = await fetchCallReadOnlyFunction({
@@ -41,8 +55,22 @@ export async function getLiquidityBalance() {
       network: STACKS_TESTNET,
       senderAddress: DEX_CONTRACT_ADDRESS,
     });
+    
     const rawValue = result?.value?.value || result?.value || null;
-    return rawValue ? parseInt(rawValue) : 0;
+    console.log('🔍 Raw liquidity value:', rawValue, typeof rawValue);
+    
+    // Handle string or number conversion
+    let satsValue = 0;
+    if (rawValue) {
+      if (typeof rawValue === 'string') {
+        satsValue = parseInt(rawValue);
+      } else {
+        satsValue = Number(rawValue);
+      }
+    }
+    
+    console.log('🔍 Liquidity in SATS (final):', satsValue);
+    return satsValue;
   } catch (err) {
     console.error('❌ Failed to fetch liquidity balance:', err);
     return 0;

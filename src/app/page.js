@@ -20,9 +20,18 @@ export default function HomePage() {
 
   useEffect(() => {
     const fetchAll = async () => {
+      console.log('🔄 Fetching fresh data...');
       const symbol = await getTokenSymbol();
       const rev = await getRevenueBalance();
       const liq = await getLiquidityBalance();
+
+      console.log('📊 Final display values:', { 
+        symbol, 
+        revenue: rev, 
+        liquidity: liq,
+        revenueFormatted: rev !== null ? rev.toLocaleString() : '--',
+        liquidityFormatted: liq !== null ? liq.toLocaleString() : '--'
+      });
 
       setTokenSymbol(symbol ? symbol.toUpperCase() : '--');
       setRevenue(rev !== null ? rev.toLocaleString() : '--');

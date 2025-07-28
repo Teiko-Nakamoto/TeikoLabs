@@ -245,7 +245,7 @@ export default function ProfitLoss() {
             >
               {t('thirty_day')}
             </button>
-          </div>
+              </div>
 
           {/* Wallet Section */}
           <div style={{ marginBottom: '16px' }}>
@@ -285,9 +285,9 @@ export default function ProfitLoss() {
             }}>
               {walletAddress.slice(0, 20)}<br />
               {walletAddress.slice(20)}
+              </div>
             </div>
-          </div>
-
+            
           {pnlData.loading ? (
             <div style={{
               display: 'flex',
@@ -325,9 +325,9 @@ export default function ProfitLoss() {
                 <span style={{ fontSize: '14px', color: '#ffffff' }}>
                   {formatPrice(pnlData.averageCost)}{' '}
                   <span style={{ color: '#fbbf24' }}>SATS</span>
-                </span>
-              </div>
-
+              </span>
+            </div>
+            
               {/* P&L */}
               <div style={{
                 display: 'flex',
@@ -342,8 +342,8 @@ export default function ProfitLoss() {
                 }}>
                   {pnlData.realizedPnl >= 0 ? '+' : ''}{formatNumber(pnlData.realizedPnl)}{' '}
                   <span style={{ color: '#fbbf24' }}>SATS</span>
-                </span>
-              </div>
+              </span>
+            </div>
             </>
           )}
         </>
@@ -364,7 +364,7 @@ export default function ProfitLoss() {
             opacity: 0.5
           }}>
             👛
-          </div>
+            </div>
           <div style={{
             fontSize: '16px',
             fontWeight: '600',
@@ -372,7 +372,7 @@ export default function ProfitLoss() {
             color: '#e5e7eb'
           }}>
             {t('connect_wallet')}
-          </div>
+            </div>
           <div style={{
             fontSize: '14px',
             lineHeight: '1.4',
