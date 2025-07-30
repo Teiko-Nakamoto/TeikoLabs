@@ -6,11 +6,6 @@
   max-width: 320px;
   color: #eee;
   font-family: Arial, sans-serif;
-  transition: transform 0.3s ease;
-}
-
-.buy-sell-box:hover {
-  transform: translateY(-2px);
 }
 
 .buy-sell-content {

@@ -6,7 +6,7 @@ import {
   getCurrentPrice,
 } from './fetchTokenData';
 
-export async function handleTransaction(tab, amount, setErrorMessage, setToast) {
+export async function handleTransaction(tab, amount, setErrorMessage, setToast, expectedPrice, setDuplicateCallback = null) {
   let formattedTxId = '';
   let createdAtISO = null;
   let formattedSatsPerToken = '';
@@ -35,7 +35,9 @@ export async function handleTransaction(tab, amount, setErrorMessage, setToast) 
     const lastTx = localStorage.getItem('lastTx');
     if (lastTx === formattedTxId) {
       console.warn('⚠️ Duplicate transaction detected.');
-      setErrorMessage('Duplicate transaction detected. Please try again.');
+      if (setDuplicateCallback) {
+        setDuplicateCallback();
+      }
       return null;
     }
     localStorage.setItem('lastTx', formattedTxId);
@@ -151,6 +153,7 @@ export async function handleTransaction(tab, amount, setErrorMessage, setToast) 
     const tradePayload = {
       transaction_id: formattedTxId,
       price: parseFloat(formattedSatsPerToken),
+      expected_price: expectedPrice || null, // Add expected price to payload
       type: tradeType,
       created_at: createdAtISO,
       tokens_traded: tokensTraded,
@@ -158,6 +161,7 @@ export async function handleTransaction(tab, amount, setErrorMessage, setToast) 
     };
 
     console.log('📤 Payload to Supabase:', tradePayload);
+    console.log('🎯 Expected price in payload:', expectedPrice);
 
     try {
       const res = await fetch('/api/save-test-trades', {

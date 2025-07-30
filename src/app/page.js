@@ -63,7 +63,26 @@ export default function HomePage() {
       <Header />
       <main className="home-page">
         <div className="page-header-centered">
-          <h1>{t('live_bitcoin_token_market')}</h1>
+          <h1 style={{ 
+            display: 'flex', 
+            alignItems: 'center', 
+            justifyContent: 'center',
+            gap: '12px',
+            color: '#fbbf24',
+            fontWeight: 'bold',
+            fontSize: '2rem',
+            fontFamily: 'Arial, sans-serif'
+          }}>
+            <img 
+              src="/icons/The Mas Network.svg" 
+              alt="MAS Sats" 
+              style={{ 
+                width: '60px', 
+                height: '60px'
+              }} 
+            />
+            <span style={{ color: '#fbbf24' }}>Trade on Bitcoin Layer 3</span>
+          </h1>
         </div>
 
         <div className="top-controls">

@@ -3,6 +3,7 @@
 import { STACKS_TESTNET } from '@stacks/network';
 import { fetchCallReadOnlyFunction, Cl, principalCV } from '@stacks/transactions';
 import { getLocalStorage } from '@stacks/connect';
+import { getCachedBlockchainData } from './hiro-config';
 export const SATS_CONTRACT_ADDRESS = 'ST1F7QA2MDF17S807EPA36TSS8AMEFY4KA9TVGWXT';
 export const SATS_CONTRACT_NAME = 'sbtc-token';
 
@@ -143,12 +144,11 @@ export async function getUserTokenBalance() {
 // Fetch total token balance (all tokens in the contract)
 export async function getTotalTokenBalance() {
   try {
-    const result = await fetchCallReadOnlyFunction({
+    const result = await getCachedBlockchainData({
       contractAddress: DEX_CONTRACT_ADDRESS,
       contractName: DEX_CONTRACT_NAME,
       functionName: 'get-token-balance',
       functionArgs: [],
-      network: STACKS_TESTNET,
       senderAddress: DEX_CONTRACT_ADDRESS,
     });
     const rawValue = result?.value?.value || result?.value || null;
@@ -162,12 +162,11 @@ export async function getTotalTokenBalance() {
 // Fetch total locked tokens in the contract
 export async function getTotalLockedTokens() {
   try {
-    const result = await fetchCallReadOnlyFunction({
+    const result = await getCachedBlockchainData({
       contractAddress: DEX_CONTRACT_ADDRESS,
       contractName: DEX_CONTRACT_NAME,
       functionName: 'get-total-locked',
       functionArgs: [],
-      network: STACKS_TESTNET,
       senderAddress: DEX_CONTRACT_ADDRESS,
     });
     const rawValue = result?.value?.value || result?.value || null;
@@ -181,12 +180,11 @@ export async function getTotalLockedTokens() {
 // Fetch SBTC balance
 export async function getSbtcBalance() {
   try {
-    const result = await fetchCallReadOnlyFunction({
+    const result = await getCachedBlockchainData({
       contractAddress: DEX_CONTRACT_ADDRESS,
       contractName: DEX_CONTRACT_NAME,
       functionName: 'get-sbtc-balance',
       functionArgs: [],
-      network: STACKS_TESTNET,
       senderAddress: DEX_CONTRACT_ADDRESS,
     });
     const rawValue = result?.value?.value || result?.value || null;
@@ -209,13 +207,14 @@ export async function getCurrentPrice() {
     // Calculate available token balance for trading
     const availableTokenBalance = totalTokenBalance - totalLockedTokens;
 
-    // Get SBTC balance
-    const sbtcBalance = await getSbtcBalance();
+      // Get SBTC balance
+  const sbtcBalance = await getSbtcBalance();
 
-    // Calculate price per token
-    const pricePerToken = sbtcBalance / availableTokenBalance;
+  // Calculate price per token using AMM formula with virtual SBTC
+  const virtualSbtc = 1500000; // INITIAL_VIRTUAL_SBTC constant (0.015 sBTC)
+  const pricePerToken = (sbtcBalance + virtualSbtc) / availableTokenBalance;
 
-    console.log("Current price per token:", pricePerToken);
+  console.log("Current price per token:", pricePerToken);
     return pricePerToken;
   } catch (err) {
     console.error('❌ Error calculating current price:', err);

@@ -5,6 +5,7 @@ export async function POST(req) {
     const {
       transaction_id,
       price,
+      expected_price,
       type,
       created_at,
       tokens_traded,
@@ -115,6 +116,7 @@ export async function POST(req) {
       transaction_id,
       wallet_address,
       price,
+      expected_price: expected_price || null, // Add expected price for slippage tracking
       type,
       created_at,
       tokens_traded: tokens_traded_final,

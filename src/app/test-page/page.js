@@ -20,6 +20,7 @@ export default function TestPage() {
   const [isClient, setIsClient] = useState(false);
   const [trades, setTrades] = useState([]);
   const [tradesPerCandle, setTradesPerCandle] = useState(1);
+  const [tradeLimit, setTradeLimit] = useState(20);
   const [activeSection, setActiveSection] = useState('profit');
   const [pendingTransaction, setPendingTransaction] = useState(null);
   const [isSuccessfulTransaction, setIsSuccessfulTransaction] = useState(false);
@@ -34,7 +35,7 @@ export default function TestPage() {
   async function fetchTrades() {
     const { data, error } = await supabase
       .from('TestTrades')
-      .select('type, price, created_at, transaction_id, tokens_traded, sats_traded')
+      .select('type, price, expected_price, created_at, transaction_id, tokens_traded, sats_traded')
       .order('created_at', { ascending: true });
 
     if (error) {
@@ -99,6 +100,8 @@ export default function TestPage() {
             trades={trades}
             tradesPerCandle={tradesPerCandle}
             setTradesPerCandle={setTradesPerCandle}
+            tradeLimit={tradeLimit}
+            setTradeLimit={setTradeLimit}
           />
           <TradeHistory trades={trades} pendingTransaction={pendingTransaction} isSuccessfulTransaction={isSuccessfulTransaction} />
         </div>

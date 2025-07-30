@@ -5,12 +5,13 @@ import { createChart, CandlestickSeries } from 'lightweight-charts';
 import { useTranslation } from 'react-i18next';
 import './token-chart.css';
 
-export default function Chart({ trades, tradesPerCandle, setTradesPerCandle }) {
+export default function Chart({ trades, tradesPerCandle, setTradesPerCandle, tradeLimit, setTradeLimit }) {
   const { t } = useTranslation();
   const chartRef = useRef(null);
 
   // Initialize tradesPerCandle to 1 for resting state
   const [localTradesPerCandle, setLocalTradesPerCandle] = useState(1);  // Default to 1 trade per candle
+  const [localTradeLimit, setLocalTradeLimit] = useState(20); // Default to 20 trades
   
   // State to track current market sentiment for background color
   const [isCurrentlyGreen, setIsCurrentlyGreen] = useState(true); // Default to green/blue
@@ -18,13 +19,17 @@ export default function Chart({ trades, tradesPerCandle, setTradesPerCandle }) {
   useEffect(() => {
     if (!trades || trades.length === 0 || !chartRef.current) return;
 
+    // Limit the number of trades shown (use most recent trades)
+    const currentTradeLimit = tradeLimit || localTradeLimit;
+    const limitedTrades = trades.slice(-currentTradeLimit);
+
     const candles = [];
     let previousClose = null;
 
     const groupSize = tradesPerCandle || localTradesPerCandle;
 
-    for (let i = 0; i < trades.length; i += groupSize) {
-      const group = trades.slice(i, i + groupSize);
+    for (let i = 0; i < limitedTrades.length; i += groupSize) {
+      const group = limitedTrades.slice(i, i + groupSize);
       const prices = group
         .map(t => parseFloat(t.price))
         .filter(p => !isNaN(p) && p > 0);
@@ -123,7 +128,7 @@ export default function Chart({ trades, tradesPerCandle, setTradesPerCandle }) {
       window.removeEventListener('resize', handleResize);
       chart.remove();
     };
-  }, [trades, tradesPerCandle, localTradesPerCandle]);
+  }, [trades, tradesPerCandle, localTradesPerCandle, tradeLimit, localTradeLimit]);
 
   // Dynamic background style based on market sentiment
   const dynamicWrapperStyle = {
@@ -200,31 +205,83 @@ export default function Chart({ trades, tradesPerCandle, setTradesPerCandle }) {
             />
           </div>
 
-          {/* Dropdown - auto-sized on mobile */}
-          <select
-            value={tradesPerCandle || localTradesPerCandle}
-            onChange={e => {
-              const value = parseInt(e.target.value);
-              setLocalTradesPerCandle(value);
-              if (setTradesPerCandle) setTradesPerCandle(value);
-            }}
-            style={{ 
-              background: '#222', 
-              color: '#fff', 
-              border: '1px solid #444', 
-              padding: '4px 8px',
-              borderRadius: '4px',
-              fontSize: 'clamp(12px, 2.5vw, 14px)',
-              minWidth: '80px',
-              flex: '0 0 auto'
-            }}
-          >
-            <option value={1}>{t('one_trade')}</option>
-            <option value={2}>{t('two_trades')}</option>
-            <option value={3}>{t('three_trades')}</option>
-            <option value={5}>{t('five_trades')}</option>
-            <option value={8}>{t('eight_trades')}</option>
-          </select>
+          {/* Dropdown controls container */}
+          <div style={{
+            display: 'flex',
+            gap: '16px',
+            alignItems: 'flex-end',
+            flexWrap: 'wrap'
+          }}>
+            {/* Trade Limit Control */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+              <label style={{
+                fontSize: 'clamp(10px, 2vw, 12px)',
+                color: '#ccc',
+                fontWeight: '500'
+              }}>
+                Trades to Show
+              </label>
+              <select
+                value={tradeLimit || localTradeLimit}
+                onChange={e => {
+                  const value = parseInt(e.target.value);
+                  setLocalTradeLimit(value);
+                  if (setTradeLimit) setTradeLimit(value);
+                }}
+                style={{ 
+                  background: '#222', 
+                  color: '#fff', 
+                  border: '1px solid #444', 
+                  padding: '4px 8px',
+                  borderRadius: '4px',
+                  fontSize: 'clamp(12px, 2.5vw, 14px)',
+                  minWidth: '70px',
+                  flex: '0 0 auto'
+                }}
+              >
+                <option value={5}>5 Trades</option>
+                <option value={10}>10 Trades</option>
+                <option value={20}>20 Trades</option>
+                <option value={40}>40 Trades</option>
+                <option value={80}>80 Trades</option>
+              </select>
+            </div>
+
+            {/* Candle Grouping Control */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+              <label style={{
+                fontSize: 'clamp(10px, 2vw, 12px)',
+                color: '#ccc',
+                fontWeight: '500'
+              }}>
+                Trades per Candle
+              </label>
+              <select
+                value={tradesPerCandle || localTradesPerCandle}
+                onChange={e => {
+                  const value = parseInt(e.target.value);
+                  setLocalTradesPerCandle(value);
+                  if (setTradesPerCandle) setTradesPerCandle(value);
+                }}
+                style={{ 
+                  background: '#222', 
+                  color: '#fff', 
+                  border: '1px solid #444', 
+                  padding: '4px 8px',
+                  borderRadius: '4px',
+                  fontSize: 'clamp(12px, 2.5vw, 14px)',
+                  minWidth: '80px',
+                  flex: '0 0 auto'
+                }}
+              >
+                <option value={1}>{t('one_trade')}</option>
+                <option value={2}>{t('two_trades')}</option>
+                <option value={3}>{t('three_trades')}</option>
+                <option value={5}>{t('five_trades')}</option>
+                <option value={8}>{t('eight_trades')}</option>
+              </select>
+            </div>
+          </div>
         </div>
       </div>
 

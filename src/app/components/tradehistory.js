@@ -11,6 +11,8 @@ export default function TradeHistory({ trades, pendingTransaction, isSuccessfulT
   const [copied, setCopied] = useState(false);
   const [transitioningTx, setTransitioningTx] = useState(null);
   const [transitionProgress, setTransitionProgress] = useState(0);
+  const [showTradeModal, setShowTradeModal] = useState(false);
+  const [selectedTrade, setSelectedTrade] = useState(null);
 
   const sliderRef = useRef(null);
 
@@ -26,6 +28,14 @@ export default function TradeHistory({ trades, pendingTransaction, isSuccessfulT
 
   // Update the helper function:
   const formatMasSats = (amount) => formatLargeNumber(Math.round(Number(amount) / 1e8));
+
+  // Handle trade square click
+  const handleTradeClick = (trade) => {
+    console.log('🔍 Selected trade data:', trade);
+    console.log('🎯 Expected price in trade:', trade.expected_price);
+    setSelectedTrade(trade);
+    setShowTradeModal(true);
+  };
 
   useEffect(() => {
     if (sliderRef.current) {
@@ -250,7 +260,13 @@ export default function TradeHistory({ trades, pendingTransaction, isSuccessfulT
 
 
           return (
-            <div key={i} className={`trade-block ${typeClass}`}>
+            <div 
+              key={i} 
+              className={`trade-block ${typeClass}`}
+              onClick={() => handleTradeClick(trade)}
+              style={{ cursor: 'pointer' }}
+              title="Click to see price calculation"
+            >
               <div className="face">
                 {/* Swapped line */}
                 <div className="block-line">
@@ -312,7 +328,14 @@ export default function TradeHistory({ trades, pendingTransaction, isSuccessfulT
                   })}
                 </div>
                 <div className="block-line txid-line">
-                  <a href={txUrl} target="_blank" rel="noopener noreferrer">{t('txid_line', { txid: trade.transaction_id.slice(0, 10) + '...' })}</a>
+                  <a 
+                    href={txUrl} 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    {t('txid_line', { txid: trade.transaction_id.slice(0, 10) + '...' })}
+                  </a>
                   <button 
                     style={{ 
                       background: 'none', 
@@ -325,7 +348,10 @@ export default function TradeHistory({ trades, pendingTransaction, isSuccessfulT
                       borderRadius: '3px',
                       backgroundColor: '#4a5568'
                     }}
-                    onClick={() => copyToClipboard(trade.transaction_id)}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      copyToClipboard(trade.transaction_id);
+                    }}
                     title={t('copy_txid_title')}
                   >
                     {copied ? t('copied_msg') : t('copy_icon')}
@@ -350,6 +376,332 @@ export default function TradeHistory({ trades, pendingTransaction, isSuccessfulT
           {t('next_button')}
         </button>
       </div>
+
+      {/* Trade Price Calculation Modal */}
+      {showTradeModal && selectedTrade && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          backgroundColor: 'rgba(0, 0, 0, 0.7)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 1000
+        }}>
+          <div style={{
+            backgroundColor: 'white',
+            borderRadius: '12px',
+            padding: '20px',
+            maxWidth: '500px',
+            width: '95%',
+            maxHeight: '85vh',
+            overflowY: 'auto',
+            overflowX: 'hidden', // Prevent horizontal overflow
+            position: 'relative',
+            margin: '0 10px', // Add some margin for mobile
+            boxSizing: 'border-box'
+          }}>
+            {/* Modal Header */}
+            <div style={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              marginBottom: '20px',
+              paddingBottom: '12px',
+              borderBottom: '1px solid #e2e8f0'
+            }}>
+              <h3 style={{ margin: 0, color: '#1e293b', fontSize: '18px' }}>
+                Trade Execution Price Calculation
+              </h3>
+              <button 
+                onClick={() => setShowTradeModal(false)}
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  fontSize: '24px',
+                  cursor: 'pointer',
+                  color: '#64748b',
+                  padding: '4px'
+                }}
+              >
+                ×
+              </button>
+            </div>
+
+            {/* Trade Details */}
+            <div style={{
+              background: selectedTrade.type === 'buy' ? '#f0f9ff' : '#fdf2f8',
+              padding: '16px',
+              borderRadius: '8px',
+              marginBottom: '20px',
+              border: selectedTrade.type === 'buy' ? '1px solid #bae6fd' : '1px solid #f9a8d4'
+            }}>
+              <div style={{ fontSize: '14px', color: '#64748b', marginBottom: '8px' }}>
+                {selectedTrade.type === 'buy' ? 'Buy Trade' : 'Sell Trade'} - {new Date(selectedTrade.created_at).toLocaleString()}
+              </div>
+              <div style={{ fontSize: '20px', fontWeight: '700', color: '#0f172a' }}>
+                Execution Price: {(() => {
+                  const price = Number(selectedTrade.price);
+                  if (price < 1) {
+                    return price.toFixed(8);
+                  } else if (price >= 1 && price < 999.99) {
+                    return price.toFixed(2);
+                  } else {
+                    return Math.round(price).toString();
+                  }
+                })()} sats/token
+              </div>
+            </div>
+
+            {/* Price Calculation */}
+            <div style={{ marginBottom: '20px' }}>
+              <h4 style={{ fontSize: '16px', color: '#374151', marginBottom: '12px' }}>
+                How This Price Was Calculated:
+              </h4>
+              
+              <div style={{
+                background: '#f8fafc',
+                padding: '16px',
+                borderRadius: '8px',
+                border: '1px solid #e2e8f0'
+              }}>
+                <div style={{ marginBottom: '12px', fontSize: '14px', color: '#475569' }}>
+                  <strong>Execution Price = Sats {selectedTrade.type === 'buy' ? 'Spent' : 'Received'} ÷ Tokens {selectedTrade.type === 'buy' ? 'Received' : 'Sold'}</strong>
+                </div>
+                
+                {selectedTrade.type === 'buy' ? (
+                  <>
+                    <div style={{ fontSize: '13px', color: '#64748b', marginBottom: '8px' }}>
+                      = {selectedTrade.sats_traded ? selectedTrade.sats_traded.toLocaleString() : '—'} sats ÷ {selectedTrade.tokens_traded ? Math.abs(selectedTrade.tokens_traded / 1e8).toLocaleString(undefined, {maximumFractionDigits: 8}) : '—'} tokens
+                    </div>
+                    <div style={{ fontSize: '13px', color: '#64748b', marginBottom: '8px' }}>
+                      = {selectedTrade.sats_traded && selectedTrade.tokens_traded ? 
+                        (selectedTrade.sats_traded / Math.abs(selectedTrade.tokens_traded / 1e8)).toFixed(8) : '—'} sats/token
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <div style={{ fontSize: '13px', color: '#64748b', marginBottom: '8px' }}>
+                      = {selectedTrade.sats_traded ? selectedTrade.sats_traded.toLocaleString() : '—'} sats ÷ {selectedTrade.tokens_traded ? Math.abs(selectedTrade.tokens_traded / 1e8).toLocaleString(undefined, {maximumFractionDigits: 8}) : '—'} tokens
+                    </div>
+                    <div style={{ fontSize: '13px', color: '#64748b', marginBottom: '8px' }}>
+                      = {selectedTrade.sats_traded && selectedTrade.tokens_traded ? 
+                        (selectedTrade.sats_traded / Math.abs(selectedTrade.tokens_traded / 1e8)).toFixed(8) : '—'} sats/token
+                    </div>
+                  </>
+                )}
+              </div>
+            </div>
+
+            {/* Slippage Analysis Section */}
+            {(selectedTrade.expected_price || true) && ( // Temporarily show for all trades for testing
+              <div style={{ marginBottom: '20px' }}>
+                <h4 style={{ fontSize: '16px', color: '#374151', marginBottom: '12px' }}>
+                  Slippage Analysis:
+                </h4>
+                
+                <div style={{
+                  background: '#fefce8',
+                  padding: '16px',
+                  borderRadius: '8px',
+                  border: '1px solid #fde047'
+                }}>
+                  {(() => {
+                    const executionPrice = Number(selectedTrade.price);
+                    const expectedPrice = Number(selectedTrade.expected_price || selectedTrade.price); // Fallback for testing
+                    const slippagePercent = expectedPrice > 0 ? 
+                      ((executionPrice - expectedPrice) / expectedPrice * 100) : 0;
+                    const isPositive = slippagePercent >= 0;
+                    
+                    // Debug info
+                    console.log('💡 Slippage calculation:', { 
+                      executionPrice, 
+                      expectedPrice: selectedTrade.expected_price, 
+                      fallbackUsed: !selectedTrade.expected_price,
+                      slippagePercent 
+                    });
+                    
+                    return (
+                      <>
+                        <div style={{ marginBottom: '12px', fontSize: '14px', color: '#92400e' }}>
+                          <strong>Price Comparison:</strong> 
+                          {!selectedTrade.expected_price && (
+                            <span style={{ fontSize: '12px', color: '#f59e0b', marginLeft: '8px' }}>
+                              (Legacy trade - no expected price data)
+                            </span>
+                          )}
+                        </div>
+                        
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '12px' }}>
+                          <div>
+                            <span style={{ fontSize: '12px', color: '#a16207' }}>Expected Price:</span><br/>
+                            <span style={{ fontSize: '14px', fontWeight: '600', color: '#000000' }}>
+                              {expectedPrice.toFixed(8)} sats/token
+                            </span>
+                          </div>
+                          <div>
+                            <span style={{ fontSize: '12px', color: '#a16207' }}>Execution Price:</span><br/>
+                            <span style={{ fontSize: '14px', fontWeight: '600', color: '#000000' }}>
+                              {executionPrice.toFixed(8)} sats/token
+                            </span>
+                          </div>
+                        </div>
+                        
+                        <div style={{ 
+                          textAlign: 'center', 
+                          padding: '8px',
+                          background: isPositive ? '#dcfce7' : '#fee2e2',
+                          borderRadius: '6px',
+                          border: isPositive ? '1px solid #16a34a' : '1px solid #dc2626'
+                        }}>
+                          <span style={{ 
+                            fontSize: '14px', 
+                            fontWeight: '700',
+                            color: isPositive ? '#15803d' : '#dc2626'
+                          }}>
+                            {isPositive ? '+' : ''}{slippagePercent.toFixed(3)}% 
+                            {isPositive ? ' Better than Expected' : ' Slippage'}
+                          </span>
+                        </div>
+                        
+                        <div style={{ fontSize: '12px', color: '#92400e', marginTop: '8px', textAlign: 'center' }}>
+                          {Math.abs(slippagePercent) < 0.1 ? 
+                            'Excellent execution! Minimal slippage.' : 
+                            Math.abs(slippagePercent) < 1 ? 
+                            'Good execution with low slippage.' :
+                            'Notable price difference - consider smaller trade sizes.'
+                          }
+                        </div>
+                      </>
+                    );
+                  })()}
+                </div>
+              </div>
+            )}
+
+            {/* Trade Details Section */}
+            <div>
+              <h4 style={{ fontSize: '16px', color: '#374151', marginBottom: '12px' }}>
+                Trade Details:
+              </h4>
+              
+              <div style={{ display: 'grid', gap: '12px' }}>
+                <div style={{
+                  padding: '12px',
+                  background: '#fefefe',
+                  border: '1px solid #e5e7eb',
+                  borderRadius: '6px'
+                }}>
+                  <div style={{ marginBottom: '8px' }}>
+                    <span style={{ color: '#6b7280', fontSize: '14px' }}>Transaction ID:</span>
+                  </div>
+                  <div style={{ 
+                    display: 'flex', 
+                    alignItems: 'center', 
+                    gap: '8px',
+                    flexWrap: 'wrap'
+                  }}>
+                    <a
+                      href={`https://explorer.hiro.so/txid/${selectedTrade.transaction_id}?chain=testnet`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      style={{
+                        color: '#3b82f6',
+                        textDecoration: 'none',
+                        fontSize: '11px',
+                        fontFamily: 'monospace',
+                        wordBreak: 'break-all',
+                        lineHeight: '1.2',
+                        flex: '1',
+                        minWidth: '0'
+                      }}
+                      onMouseEnter={(e) => e.target.style.textDecoration = 'underline'}
+                      onMouseLeave={(e) => e.target.style.textDecoration = 'none'}
+                    >
+                      {selectedTrade.transaction_id}
+                    </a>
+                    <button
+                      onClick={() => {
+                        copyToClipboard(selectedTrade.transaction_id);
+                        setCopiedTxId(selectedTrade.transaction_id);
+                        setTimeout(() => setCopiedTxId(null), 2000);
+                      }}
+                      style={{
+                        background: copiedTxId === selectedTrade.transaction_id ? '#10b981' : '#f3f4f6',
+                        border: '1px solid #d1d5db',
+                        borderRadius: '4px',
+                        padding: '4px 8px',
+                        fontSize: '10px',
+                        cursor: 'pointer',
+                        color: copiedTxId === selectedTrade.transaction_id ? 'white' : '#374151',
+                        whiteSpace: 'nowrap',
+                        transition: 'all 0.2s ease'
+                      }}
+                      onMouseEnter={(e) => {
+                        if (copiedTxId !== selectedTrade.transaction_id) {
+                          e.target.style.background = '#e5e7eb';
+                        }
+                      }}
+                      onMouseLeave={(e) => {
+                        if (copiedTxId !== selectedTrade.transaction_id) {
+                          e.target.style.background = '#f3f4f6';
+                        }
+                      }}
+                    >
+                      {copiedTxId === selectedTrade.transaction_id ? '✓ Copied' : '📋 Copy'}
+                    </button>
+                  </div>
+                </div>
+
+                <div style={{
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  padding: '12px',
+                  background: '#fefefe',
+                  border: '1px solid #e5e7eb',
+                  borderRadius: '6px'
+                }}>
+                  <span style={{ color: '#6b7280' }}>Sats {selectedTrade.type === 'buy' ? 'Spent' : 'Received'}:</span>
+                  <span style={{ fontWeight: '600', color: '#111827' }}>
+                    {selectedTrade.sats_traded ? selectedTrade.sats_traded.toLocaleString() : '—'} sats
+                  </span>
+                </div>
+
+                <div style={{
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  padding: '12px',
+                  background: '#fefefe',
+                  border: '1px solid #e5e7eb',
+                  borderRadius: '6px'
+                }}>
+                  <span style={{ color: '#6b7280' }}>Tokens {selectedTrade.type === 'buy' ? 'Received' : 'Sold'}:</span>
+                  <span style={{ fontWeight: '600', color: '#111827' }}>
+                    {selectedTrade.tokens_traded ? Math.abs(selectedTrade.tokens_traded / 1e8).toLocaleString(undefined, {maximumFractionDigits: 8}) : '—'} tokens
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            {/* Note */}
+            <div style={{
+              marginTop: '16px',
+              padding: '12px',
+              background: '#fffbeb',
+              border: '1px solid #fed7aa',
+              borderRadius: '6px',
+              fontSize: '12px',
+              color: '#92400e',
+              textAlign: 'center'
+            }}>
+              📊 This is the actual execution price from your completed trade on the blockchain
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
