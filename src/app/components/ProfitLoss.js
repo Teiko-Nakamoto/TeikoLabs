@@ -715,7 +715,7 @@ export default function ProfitLoss() {
                                 /> per token
                               </strong>
                               <div style={{ fontSize: '9px', color: '#9ca3af', marginTop: '2px' }}>
-                                (From buy orders only - doesn't change with sells)
+                                (From buy orders only - does not change with sells)
                               </div>
                             </div>
                           </div>
