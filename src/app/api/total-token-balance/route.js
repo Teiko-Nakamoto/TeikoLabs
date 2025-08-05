@@ -1,6 +1,7 @@
 // API Route: Get Total Token Balance (Server-side with API key + caching)
 import { NextResponse } from 'next/server';
-import { getCachedBlockchainData } from '../../utils/hiro-config';
+import { fetchCallReadOnlyFunction } from '@stacks/transactions';
+import { STACKS_TESTNET } from '@stacks/network';
 
 // Contract configuration
 const DEX_CONTRACT_ADDRESS = 'ST37918Q7NBZ52AMV133VTY5C864KVK0S2HZ3CGA4';
@@ -11,11 +12,12 @@ export async function GET() {
     console.log('🔍 API: Getting total token balance with cached data...');
 
     // Get cached token balance (uses your API key server-side)
-    const result = await getCachedBlockchainData({
+    const result = await fetchCallReadOnlyFunction({
       contractAddress: DEX_CONTRACT_ADDRESS,
       contractName: DEX_CONTRACT_NAME,
       functionName: 'get-token-balance',
       functionArgs: [],
+      network: STACKS_TESTNET,
       senderAddress: DEX_CONTRACT_ADDRESS,
     });
 

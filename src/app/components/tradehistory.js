@@ -4,7 +4,7 @@ import { useState, useRef, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import './tradeHistory.css';
 
-export default function TradeHistory({ trades, pendingTransaction, isSuccessfulTransaction }) {
+export default function TradeHistory({ trades, pendingTransaction, isSuccessfulTransaction, tokenData, onTradesUpdate }) {
   const { t } = useTranslation();
   const [index, setIndex] = useState(0); // sliding index
   const [copiedTxId, setCopiedTxId] = useState(null);
@@ -16,9 +16,183 @@ export default function TradeHistory({ trades, pendingTransaction, isSuccessfulT
 
   const sliderRef = useRef(null);
 
-  const reversedTrades = [...(trades || [])].reverse();
-  const visibleCount = 3;
-  const maxIndex = Math.max(0, reversedTrades.length - visibleCount);
+  const [dexTransactions, setDexTransactions] = useState([]);
+  const [loadingTransactions, setLoadingTransactions] = useState(false);
+
+  // Fetch real DEX transactions
+  const fetchDexTransactions = async () => {
+    if (!tokenData || !tokenData.dexInfo) {
+      console.error('❌ Token data or dexInfo not available for transaction fetch');
+      return;
+    }
+
+    setLoadingTransactions(true);
+    try {
+      const dexContractId = tokenData.dexInfo;
+      const apiUrl = 'https://api.testnet.hiro.so'; // Change to mainnet for production
+      
+      console.log('🔍 Fetching DEX transactions for trade history:', dexContractId);
+      
+      const response = await fetch(
+        `${apiUrl}/extended/v1/tx/?contract_id=${dexContractId}&limit=21&sort_by=block_height&order=desc`
+      );
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      
+      const data = await response.json();
+      
+                    // Transform blockchain transactions into trade format
+        const transformedTrades = data.results
+          .filter(tx => tx.contract_call?.function_name === 'buy' || tx.contract_call?.function_name === 'sell')
+          .map(tx => {
+            const inputArg = tx.contract_call?.function_args?.[0];
+            const inputAmount = inputArg ? parseInt(inputArg.repr.replace('u', '')) : 0;
+            
+                         // Extract actual received amounts from transaction result and events
+             let sats_traded = null;
+             let tokens_traded = null;
+             
+             // First, try to get the actual return value from the transaction result
+             if (tx.tx_result && tx.tx_result.repr) {
+               console.log('🔍 Transaction result:', tx.tx_result.repr);
+               
+               // Parse the return value (e.g., "(ok u829838709677420)")
+               const resultMatch = tx.tx_result.repr.match(/\(ok u(\d+)\)/);
+               if (resultMatch) {
+                 const returnValue = parseInt(resultMatch[1]);
+                 console.log('📊 Return value from transaction:', returnValue);
+                 
+                 if (tx.contract_call.function_name === 'buy') {
+                   // For buy: return value is tokens received
+                   tokens_traded = returnValue;
+                   console.log('🎯 Tokens received (from result):', tokens_traded);
+                 } else if (tx.contract_call.function_name === 'sell') {
+                   // For sell: return value is sats received
+                   sats_traded = returnValue;
+                   console.log('💸 Sats received (from result):', sats_traded);
+                 }
+               }
+             }
+             
+             // Get the input amount from function arguments
+             if (tx.contract_call.function_name === 'buy') {
+               sats_traded = inputAmount; // Sats sent
+               console.log('💸 Sats sent (from input):', sats_traded);
+             } else if (tx.contract_call.function_name === 'sell') {
+               tokens_traded = inputAmount; // Tokens sent (in micro units)
+               console.log('🎯 Tokens sent (from input):', tokens_traded);
+             }
+             
+             // If we still don't have both values, try to extract from events as fallback
+             if ((sats_traded === null || tokens_traded === null) && tx.events && tx.events.length > 0) {
+               console.log('🔍 Analyzing events for missing values:', tx.tx_id);
+               tx.events.forEach((event, index) => {
+                 console.log(`Event ${index}:`, event);
+                 
+                 // Look for transfer events that show actual amounts transferred
+                 if (event.event_type === 'stx_transfer_event' || event.event_type === 'ft_transfer_event') {
+                   console.log('💰 Found transfer event:', event);
+                   
+                   // Extract amounts from event data
+                   if (event.event_data && event.event_data.amount) {
+                     const transferAmount = parseInt(event.event_data.amount);
+                     console.log('📊 Transfer amount:', transferAmount);
+                     
+                     if (tx.contract_call.function_name === 'buy') {
+                       // For buy: we sent sats, received tokens
+                       if (event.event_data.sender === tx.sender_address && sats_traded === null) {
+                         // This is the sats we sent
+                         sats_traded = transferAmount;
+                         console.log('💸 Sats sent (from event):', sats_traded);
+                       } else if (event.event_data.recipient === tx.sender_address && tokens_traded === null) {
+                         // This is the tokens we received
+                         tokens_traded = transferAmount;
+                         console.log('🎯 Tokens received (from event):', tokens_traded);
+                       }
+                     } else if (tx.contract_call.function_name === 'sell') {
+                       // For sell: we sent tokens, received sats
+                       if (event.event_data.sender === tx.sender_address && tokens_traded === null) {
+                         // This is the tokens we sent
+                         tokens_traded = transferAmount;
+                         console.log('🎯 Tokens sent (from event):', tokens_traded);
+                       } else if (event.event_data.recipient === tx.sender_address && sats_traded === null) {
+                         // This is the sats we received
+                         sats_traded = transferAmount;
+                         console.log('💸 Sats received (from event):', sats_traded);
+                       }
+                     }
+                   }
+                 }
+               });
+             }
+            
+            // Fallback to input amount if we couldn't extract from events
+            if (sats_traded === null && tokens_traded === null) {
+              console.log('⚠️ Could not extract amounts from events, using input amount as fallback');
+              if (tx.contract_call.function_name === 'buy') {
+                sats_traded = inputAmount; // Sats sent
+                tokens_traded = Math.floor(inputAmount / 7.5); // Rough estimate
+              } else if (tx.contract_call.function_name === 'sell') {
+                tokens_traded = inputAmount; // Tokens sent (in micro units)
+                sats_traded = Math.floor((inputAmount / 1e8) * 7.5); // Rough estimate
+              }
+            }
+            
+            // Calculate price from the actual transaction data
+            let calculatedPrice = 0;
+            if (sats_traded && tokens_traded) {
+              calculatedPrice = sats_traded / (tokens_traded / 1e8);
+            }
+            
+            console.log('📈 Final trade data:', {
+              tx_id: tx.tx_id,
+              type: tx.contract_call.function_name,
+              sats_traded,
+              tokens_traded,
+              calculatedPrice
+            });
+            
+            return {
+              transaction_id: tx.tx_id,
+              type: tx.contract_call.function_name,
+              sats_traded: sats_traded,
+              tokens_traded: tokens_traded,
+              created_at: tx.block_time_iso,
+              price: calculatedPrice.toString(),
+              block_height: tx.block_height,
+              sender: tx.sender_address,
+              status: tx.tx_status
+            };
+          });
+      
+             setDexTransactions(transformedTrades);
+       console.log('✅ DEX transactions loaded for trade history:', transformedTrades.length, 'trades');
+       
+               // Share the transformed trades with parent component (reverse to chronological order for chart)
+        if (onTradesUpdate) {
+          onTradesUpdate([...transformedTrades].reverse());
+        }
+      
+    } catch (error) {
+      console.error('❌ Error fetching DEX transactions for trade history:', error);
+    } finally {
+      setLoadingTransactions(false);
+    }
+  };
+
+  // Fetch DEX transactions when component mounts or tokenData changes
+  useEffect(() => {
+    if (tokenData) {
+      fetchDexTransactions();
+    }
+  }, [tokenData]);
+
+     // Use DEX transactions if available, otherwise fall back to trades
+   const displayTrades = dexTransactions.length > 0 ? dexTransactions : (trades || []);
+   const visibleCount = 3;
+   const maxIndex = Math.max(0, displayTrades.length - visibleCount);
 
   // Function to format large numbers with K and M
   const formatLargeNumber = (num, locale = (typeof navigator !== 'undefined' ? navigator.language : 'en-US')) => {
@@ -99,6 +273,20 @@ export default function TradeHistory({ trades, pendingTransaction, isSuccessfulT
   return (
    <div className="block-history-wrapper">
   <h3 className="block-history-title">{t('market_history_title')}</h3> {/* 🔁 Title updated */}
+  
+  {/* Note about 21-trade limit */}
+  <div style={{
+    marginBottom: '12px',
+    padding: '8px 12px',
+    background: '#f0f9ff',
+    border: '1px solid #bae6fd',
+    borderRadius: '6px',
+    fontSize: '12px',
+    color: '#0369a1',
+    textAlign: 'center'
+  }}>
+    📊 Showing last 21 trades from blockchain
+  </div>
 
   <div className="block-container" style={{ position: 'relative' }}>
     {/* Awaiting block */}
@@ -252,10 +440,11 @@ export default function TradeHistory({ trades, pendingTransaction, isSuccessfulT
     {/* Sliding container */}
     <div className="slide-window">
       <div className="slide-track" ref={sliderRef}>
-        {reversedTrades.map((trade, i) => {
+                 {displayTrades.map((trade, i) => {
           const txUrl = `https://explorer.hiro.so/txid/${trade.transaction_id}?chain=testnet`;
           const isCopied = copiedTxId === trade.transaction_id;
-          const typeClass = trade.type === 'buy' ? 'buy-block' : 'sell-block';
+          // All past trades are blue boxes (completed trades)
+          const typeClass = 'trade-block';
           
 
 
@@ -271,43 +460,26 @@ export default function TradeHistory({ trades, pendingTransaction, isSuccessfulT
                 {/* Swapped line */}
                 <div className="block-line">
                   <strong>
-                    {t('swapped')}:{' '}
-                    {trade.type === 'buy'
-                      ? (trade.sats_traded ? (
-                          <>
-                            {formatLargeNumber(trade.sats_traded)}{' '}
-                            <img src="/icons/sats1.svg" alt="sats" style={{ width: '14px', height: '14px', verticalAlign: 'middle', marginLeft: '2px', marginRight: '1px' }} />
-                            <img src="/icons/Vector.svg" alt="lightning" style={{ width: '14px', height: '14px', verticalAlign: 'middle' }} />
-                          </>
-                        ) : '—')
-                      : (trade.tokens_traded ? (
-                          <>
-                            {formatMasSats(Math.abs(trade.tokens_traded))}{' '}
-                            <img src="/icons/The Mas Network.svg" alt="MAS Sats" style={{ width: '14px', height: '14px', verticalAlign: 'middle', marginLeft: '2px' }} />
-                          </>
-                        ) : '—')
-                      }
-                  </strong>
-                </div>
-                {/* Received line */}
-                <div className="block-line">
-                  <strong>
-                    {t('received')}:{' '}
-                    {trade.type === 'buy'
-                      ? (trade.tokens_traded ? (
-                          <>
-                            {formatMasSats(Math.abs(trade.tokens_traded))}{' '}
-                            <img src="/icons/The Mas Network.svg" alt="MAS Sats" style={{ width: '14px', height: '14px', verticalAlign: 'middle', marginLeft: '2px' }} />
-                          </>
-                        ) : '—')
-                      : (trade.sats_traded ? (
-                          <>
-                            {formatLargeNumber(trade.sats_traded)}{' '}
-                            <img src="/icons/sats1.svg" alt="sats" style={{ width: '14px', height: '14px', verticalAlign: 'middle', marginLeft: '2px', marginRight: '1px' }} />
-                            <img src="/icons/Vector.svg" alt="lightning" style={{ width: '14px', height: '14px', verticalAlign: 'middle' }} />
-                          </>
-                        ) : '—')
-                      }
+                                         {trade.type === 'buy' ? (
+                       <>
+                         Swapped {formatLargeNumber(trade.sats_traded || 0)}{' '}
+                         <img src="/icons/sats1.svg" alt="sats" style={{ width: '14px', height: '14px', verticalAlign: 'middle', marginLeft: '2px', marginRight: '1px' }} />
+                         <img src="/icons/Vector.svg" alt="lightning" style={{ width: '14px', height: '14px', verticalAlign: 'middle' }} />
+                         <br />
+                         Received {formatMasSats(Math.abs(trade.tokens_traded || 0))}{' '}
+                         <img src="/icons/The Mas Network.svg" alt="MAS Sats" style={{ width: '14px', height: '14px', verticalAlign: 'middle', marginLeft: '2px' }} />
+                       </>
+                     ) : (
+                       <>
+                         Swapped {formatMasSats(Math.abs(trade.tokens_traded || 0))}{' '}
+                         <img src="/icons/The Mas Network.svg" alt="MAS Sats" style={{ width: '14px', height: '14px', verticalAlign: 'middle', marginLeft: '2px' }} />
+                         <br />
+                         Received {formatLargeNumber(trade.sats_traded || 0)}{' '}
+                         <img src="/icons/sats1.svg" alt="sats" style={{ width: '14px', height: '14px', verticalAlign: 'middle', marginLeft: '2px', marginRight: '1px' }} />
+                         <img src="/icons/Vector.svg" alt="lightning" style={{ width: '14px', height: '14px', verticalAlign: 'middle' }} />
+                         {' '}sats
+                       </>
+                     )}
                   </strong>
                 </div>
                 {/* Price, time, txid, etc. remain unchanged */}
@@ -371,7 +543,7 @@ export default function TradeHistory({ trades, pendingTransaction, isSuccessfulT
         <button onClick={() => setIndex(i => Math.max(0, i - 1))} disabled={index === 0}>
           {t('prev_button')}
         </button>
-        <span>{t('trade_count', { count: index + 1, total: reversedTrades.length })}</span>
+                 <span>{t('trade_count', { count: index + 1, total: displayTrades.length })}</span>
         <button onClick={() => setIndex(i => Math.min(maxIndex, i + 1))} disabled={index >= maxIndex}>
           {t('next_button')}
         </button>
@@ -511,14 +683,16 @@ export default function TradeHistory({ trades, pendingTransaction, isSuccessfulT
                 }}>
                   {(() => {
                     const executionPrice = Number(selectedTrade.price);
+                    const currentPrice = Number(selectedTrade.current_price || selectedTrade.price);
                     const expectedPrice = Number(selectedTrade.expected_price || selectedTrade.price); // Fallback for testing
-                    const slippagePercent = expectedPrice > 0 ? 
-                      ((executionPrice - expectedPrice) / expectedPrice * 100) : 0;
+                    const slippagePercent = currentPrice > 0 ? 
+                      ((executionPrice - currentPrice) / currentPrice * 100) : 0;
                     const isPositive = slippagePercent >= 0;
                     
                     // Debug info
                     console.log('💡 Slippage calculation:', { 
                       executionPrice, 
+                      currentPrice,
                       expectedPrice: selectedTrade.expected_price, 
                       fallbackUsed: !selectedTrade.expected_price,
                       slippagePercent 
@@ -526,27 +700,98 @@ export default function TradeHistory({ trades, pendingTransaction, isSuccessfulT
                     
                     return (
                       <>
-                        <div style={{ marginBottom: '12px', fontSize: '14px', color: '#92400e' }}>
-                          <strong>Price Comparison:</strong> 
+                        <div style={{ marginBottom: '16px', fontSize: '14px', color: '#92400e' }}>
+                          <strong>📊 Three-Price Analysis</strong>
                           {!selectedTrade.expected_price && (
                             <span style={{ fontSize: '12px', color: '#f59e0b', marginLeft: '8px' }}>
-                              (Legacy trade - no expected price data)
+                              (Legacy trade - limited data)
                             </span>
                           )}
                         </div>
                         
-                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '12px' }}>
-                          <div>
-                            <span style={{ fontSize: '12px', color: '#a16207' }}>Expected Price:</span><br/>
-                            <span style={{ fontSize: '14px', fontWeight: '600', color: '#000000' }}>
-                              {expectedPrice.toFixed(8)} sats/token
-                            </span>
+                        <div style={{ 
+                          background: '#f8fafc', 
+                          padding: '12px', 
+                          borderRadius: '6px', 
+                          border: '1px solid #e2e8f0',
+                          marginBottom: '16px',
+                          fontSize: '12px',
+                          color: '#475569'
+                        }}>
+                          <div style={{ marginBottom: '8px' }}>
+                            <strong style={{ color: '#1e40af' }}>💰 Previous Market Price:</strong> Price before your trade (what the AMM showed when you clicked "{selectedTrade.type}")
+                          </div>
+                          <div style={{ marginBottom: '8px' }}>
+                            <strong style={{ color: '#7c2d12' }}>🛡️ Expected Price:</strong> Your slippage-protected acceptable price ({selectedTrade.type === 'buy' ? 'maximum you\'ll pay' : 'minimum you\'ll accept'})
                           </div>
                           <div>
-                            <span style={{ fontSize: '12px', color: '#a16207' }}>Execution Price:</span><br/>
-                            <span style={{ fontSize: '14px', fontWeight: '600', color: '#000000' }}>
-                              {executionPrice.toFixed(8)} sats/token
-                            </span>
+                            <strong style={{ color: '#15803d' }}>⚡ Execution Price:</strong> Actual price achieved on Stacks blockchain (calculated from real transaction events)
+                          </div>
+                        </div>
+                        
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '8px', marginBottom: '16px' }}>
+                          <div style={{ 
+                            background: '#eff6ff', 
+                            padding: '10px', 
+                            borderRadius: '6px', 
+                            border: '1px solid #bfdbfe',
+                            textAlign: 'center'
+                          }}>
+                            <div style={{ fontSize: '11px', color: '#1e40af', marginBottom: '4px' }}>💰 Previous Market Price</div>
+                                                         <div style={{ fontSize: '14px', fontWeight: '700', color: '#1e40af' }}>
+                               {Number(selectedTrade.current_price || selectedTrade.price).toFixed(8)}
+                             </div>
+                            <div style={{ fontSize: '10px', color: '#64748b', marginTop: '2px' }}>
+                              (Before your trade)
+                            </div>
+                          </div>
+                          <div style={{ 
+                            background: '#fef3c7', 
+                            padding: '10px', 
+                            borderRadius: '6px', 
+                            border: '1px solid #fde68a',
+                            textAlign: 'center'
+                          }}>
+                            <div style={{ fontSize: '11px', color: '#7c2d12', marginBottom: '4px' }}>🛡️ Expected Price</div>
+                            <div style={{ fontSize: '14px', fontWeight: '700', color: '#7c2d12' }}>
+                              {expectedPrice.toFixed(8)}
+                            </div>
+                            <div style={{ fontSize: '10px', color: '#64748b', marginTop: '2px' }}>
+                              (Slippage protected)
+                            </div>
+                          </div>
+                          <div style={{ 
+                            background: '#dcfce7', 
+                            padding: '10px', 
+                            borderRadius: '6px', 
+                            border: '1px solid #bbf7d0',
+                            textAlign: 'center'
+                          }}>
+                            <div style={{ fontSize: '11px', color: '#15803d', marginBottom: '4px' }}>⚡ Execution Price</div>
+                            <div style={{ fontSize: '14px', fontWeight: '700', color: '#15803d' }}>
+                              {executionPrice.toFixed(8)}
+                            </div>
+                            <div style={{ fontSize: '10px', color: '#64748b', marginTop: '2px' }}>
+                              (Blockchain result)
+                            </div>
+                          </div>
+                        </div>
+                        
+                        <div style={{
+                          background: '#f1f5f9',
+                          padding: '12px',
+                          borderRadius: '6px',
+                          border: '1px solid #cbd5e1',
+                          marginBottom: '16px'
+                        }}>
+                          <div style={{ fontSize: '13px', fontWeight: '600', color: '#374151', marginBottom: '8px' }}>
+                            🧮 How Execution Price Was Calculated:
+                          </div>
+                          <div style={{ fontSize: '12px', color: '#64748b', fontFamily: 'monospace' }}>
+                            {selectedTrade.sats_traded ? selectedTrade.sats_traded.toLocaleString() : '—'} sats ÷ {selectedTrade.tokens_traded ? Math.abs(selectedTrade.tokens_traded / 1e8).toLocaleString(undefined, {maximumFractionDigits: 8}) : '—'} tokens = {executionPrice.toFixed(8)} sats/token
+                          </div>
+                          <div style={{ fontSize: '11px', color: '#6b7280', marginTop: '4px' }}>
+                            ↑ This comes from actual blockchain transaction events, not estimates
                           </div>
                         </div>
                         
@@ -563,7 +808,7 @@ export default function TradeHistory({ trades, pendingTransaction, isSuccessfulT
                             color: isPositive ? '#15803d' : '#dc2626'
                           }}>
                             {isPositive ? '+' : ''}{slippagePercent.toFixed(3)}% 
-                            {isPositive ? ' Better than Expected' : ' Slippage'}
+                            {isPositive ? ' Better than Current Price' : ' Slippage vs Current Price'}
                           </span>
                         </div>
                         

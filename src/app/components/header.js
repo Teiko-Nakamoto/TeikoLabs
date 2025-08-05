@@ -4,7 +4,6 @@ import React, { useState, useRef, useEffect } from 'react';
 import '../components/header.css';
 import ConnectWallet from './connectwallet';
 import HowItWorks from './HowItWorks'; // ✅ Import popup component
-import Leaderboard from './Leaderboard';
 import '../../i18n';
 import { useTranslation } from 'react-i18next';
 
@@ -12,18 +11,52 @@ export default function Header() {
   const { t, i18n } = useTranslation();
   const [showPopup, setShowPopup] = useState(false);
   const [showHowItWorks, setShowHowItWorks] = useState(false); // ✅ Control modal
-  const [showLeaderboard, setShowLeaderboard] = useState(false);
   const [copied, setCopied] = useState(false);
   const walletRef = useRef(null);
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState('');
   const dropdownRef = useRef(null);
+  const [connectedAddress, setConnectedAddress] = useState('');
+  const [isAdmin, setIsAdmin] = useState(false);
+  
+  // Admin wallet address
+  const ADMIN_ADDRESS = 'ST37918Q7NBZ52AMV133VTY5C864KVK0S2HZ3CGA4';
 
   useEffect(() => {
     if (open && dropdownRef.current) {
       dropdownRef.current.scrollTop = 0;
     }
   }, [open]);
+
+  // Check wallet connection and admin status
+  useEffect(() => {
+    const checkWalletConnection = () => {
+      const savedAddress = localStorage.getItem('connectedAddress');
+      if (savedAddress) {
+        setConnectedAddress(savedAddress);
+        setIsAdmin(savedAddress === ADMIN_ADDRESS);
+      } else {
+        setConnectedAddress('');
+        setIsAdmin(false);
+      }
+    };
+
+    // Check on mount
+    checkWalletConnection();
+
+    // Listen for storage changes (when wallet connects/disconnects)
+    const handleStorageChange = (e) => {
+      if (e.key === 'connectedAddress') {
+        checkWalletConnection();
+      }
+    };
+
+    window.addEventListener('storage', handleStorageChange);
+
+    return () => {
+      window.removeEventListener('storage', handleStorageChange);
+    };
+  }, []);
 
   const handleCopy = async () => {
     try {
@@ -181,13 +214,33 @@ export default function Header() {
                 </div>
               )}
             </div>
-            <span 
+            <Link 
+              href="/profile"
               className="nav-link" 
-              onClick={() => setShowLeaderboard(true)}
               style={{ cursor: 'pointer' }}
             >
-              {t('leaderboard')}
-            </span>
+              Profile
+            </Link>
+            
+            {/* Admin Icon - Only visible to admin wallet */}
+            {isAdmin && (
+              <Link 
+                href="/admin"
+                className="nav-link" 
+                style={{ 
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '4px',
+                  color: '#fbbf24',
+                  fontWeight: 'bold'
+                }}
+                title="Admin Dashboard"
+              >
+                <span style={{ fontSize: '16px' }}>🛠️</span>
+                <span>Admin</span>
+              </Link>
+            )}
           </div>
 
           {/* ✅ Wallet button with ref */}
@@ -222,16 +275,8 @@ export default function Header() {
 
       {/* ✅ Render How It Works popup */}
       {showHowItWorks && <HowItWorks onClose={() => setShowHowItWorks(false)} />}
-      
-      {/* Render Leaderboard popup */}
-      {showLeaderboard && (
-        <div className="popup-overlay" onClick={() => setShowLeaderboard(false)}>
-          <div className="popup leaderboard-popup" onClick={(e) => e.stopPropagation()}>
-            <Leaderboard />
-            <button onClick={() => setShowLeaderboard(false)}>{t('close')}</button>
-          </div>
-        </div>
-      )}
+
+
     </>
   );
 }

@@ -7,6 +7,25 @@
   box-shadow: 0 0 12px rgba(0, 0, 0, 0.5);
 }
 
+/* Chart box outer container - matches buy-sell-box structure */
+.chart-box-outer {
+  background: #1c2d4e;
+  border-radius: 12px;
+  padding: 8px;
+  width: 100%;
+  color: #eee;
+  font-family: Arial, sans-serif;
+}
+
+/* Chart box inner container - matches buy-sell-content structure */
+.chart-box-inner {
+  border-radius: 8px;
+  padding: 16px;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
 /* Chart header and dropdown */
 .chart-header {
   display: flex;
@@ -82,4 +101,17 @@
 .pagination-controls button:disabled {
   opacity: 0.4;
   cursor: not-allowed;
+}
+
+/* Pulse animation for bouncing price effect */
+@keyframes pulse {
+  0% {
+    box-shadow: 0 0 0 0 rgba(255, 255, 255, 0.1);
+  }
+  50% {
+    box-shadow: 0 0 0 4px rgba(255, 255, 255, 0.05);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(255, 255, 255, 0.1);
+  }
 }

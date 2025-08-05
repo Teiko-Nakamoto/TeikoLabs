@@ -18,6 +18,7 @@ import { connect, disconnect, isConnected, getLocalStorage } from '@stacks/conne
 const ConnectWallet = forwardRef((props, ref) => {
   const { t } = useTranslation();
   const [userAddress, setUserAddress] = useState(null); // This keeps track of whether someone is connected
+  const { onConnect } = props; // Get the onConnect callback from props
 
   // Connect to wallet when button is clicked
   const handleConnect = async () => {
@@ -31,6 +32,11 @@ const ConnectWallet = forwardRef((props, ref) => {
         localStorage.setItem('connectedAddress', stxAddr); // Save it in the browser for future use
         localStorage.setItem('walletProvider', 'stacks-connect'); // Also save which wallet was used
         console.log('✅ Connected:', stxAddr); // Print success to the browser console
+        
+        // Call the onConnect callback if provided
+        if (onConnect) {
+          onConnect(stxAddr);
+        }
       }
     } catch (error) {
       console.error('❌ Wallet connection failed:', error); // If something breaks, log it
@@ -54,7 +60,13 @@ const ConnectWallet = forwardRef((props, ref) => {
       if (await isConnected()) { // Checks if user was already logged in
         const data = getLocalStorage(); // Gets stored data from browser
         const stxAddr = data?.addresses?.stx?.[0]?.address;
-        if (stxAddr) setUserAddress(stxAddr); // If yes, restore their wallet address
+        if (stxAddr) {
+          setUserAddress(stxAddr); // If yes, restore their wallet address
+          // Call the onConnect callback if provided
+          if (onConnect) {
+            onConnect(stxAddr);
+          }
+        }
       }
     };
     init(); // Run the code

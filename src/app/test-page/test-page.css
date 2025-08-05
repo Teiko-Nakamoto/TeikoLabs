@@ -9,8 +9,8 @@ body, html {
 /* Mobile responsive layout */
 @media (max-width: 768px) {
   .test-page {
-    padding: 10px;
-    padding-top: 80px;
+    padding: 1rem;
+    min-height: calc(100vh - 60px);
   }
   
   .main-layout {
@@ -63,32 +63,23 @@ body, html {
   }
 }
 
-/* Fix header position at the top of the screen */
+/* Header styling - using same positioning as main page */
 header {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
   z-index: 10; /* Ensures it stays above other content */
-  background-color: #000; /* Or your preferred color */
-  padding: 15px 0; /* Adjust header padding if needed */
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  color: white;
-  font-size: 1rem;
-  margin: 0; /* Remove any margin */
 }
 
-/* Ensure the content below the header does not overlap */
+/* Test page layout - matching home page structure */
 .test-page {
   display: flex;
   flex-direction: column;
   align-items: center;
-  padding-top: 80px; /* This should offset content below the fixed header */
-  min-height: 100vh;
-  background: #0a0a0a; /* Solid dark background */
+  justify-content: center;
+  min-height: calc(100vh - 80px);
+  padding: 2rem;
   color: white;
+  font-family: sans-serif;
+  max-width: 1200px;
+  margin: 0 auto;
 }
 
 /* Buy/Sell Container */
@@ -254,4 +245,40 @@ header {
   display: flex;
   align-items: center;
   justify-content: center;
+}
+
+/* Smart Contract Addresses popup styles */
+.popup-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.7);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+.popup {
+  background: #1c2d4e;
+  padding: 20px;
+  border-radius: 12px;
+  color: white;
+  max-width: 400px;
+  width: 90%;
+  text-align: center;
+}
+
+.contracts-popup {
+  max-width: 500px;
+  width: 95%;
+  max-height: 80vh;
+  overflow-y: auto;
+  text-align: left;
+}
+
+.contracts-popup h3 {
+  text-align: center;
 }

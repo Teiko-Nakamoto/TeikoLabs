@@ -2,9 +2,9 @@
 
 import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
-import { supabase } from '../utils/supabaseClient';
+import Link from 'next/link';
 
-export default function ProfitLoss() {
+export default function ProfitLoss({ tokenData, trades = [], currentPrice = 0 }) {
   const { t } = useTranslation();
   const [walletAddress, setWalletAddress] = useState(null);
   const [isConnected, setIsConnected] = useState(false);
@@ -16,7 +16,6 @@ export default function ProfitLoss() {
     loading: true
   });
   const [lastResetDate, setLastResetDate] = useState(null);
-  const [showTradeHistory, setShowTradeHistory] = useState(false);
   const [tradeHistory, setTradeHistory] = useState([]);
 
   // Check wallet connection status
@@ -47,7 +46,6 @@ export default function ProfitLoss() {
         setIsConnected(prev => prev ? false : prev);
         setLastResetDate(prev => prev ? null : prev);
         setPnlData(prev => prev.holdings !== 0 ? { holdings: 0, averageCost: 0, unrealizedPnl: 0, currentPrice: 0, loading: false } : prev);
-        setShowTradeHistory(false);
         setTradeHistory([]);
       }
     };
@@ -69,77 +67,69 @@ export default function ProfitLoss() {
     };
   }, []);
 
-  // Fetch P&L data when wallet connects (with debounce)
+  // Calculate P&L data when wallet connects or trade data changes
   useEffect(() => {
-    if (isConnected && walletAddress) {
-      const timeoutId = setTimeout(() => {
-      fetchPnlData();
-      }, 100); // Small debounce to prevent rapid successive calls
-      
-      return () => clearTimeout(timeoutId);
+    if (isConnected && walletAddress && trades) {
+      calculatePnlData();
     }
-  }, [isConnected, walletAddress, lastResetDate]);
+  }, [isConnected, walletAddress, lastResetDate, trades, currentPrice]);
 
-  const fetchPnlData = async () => {
-    if (!walletAddress) return;
+  const calculatePnlData = () => {
+    if (!walletAddress || !trades) return;
 
     setPnlData(prev => ({ ...prev, loading: true }));
 
     try {
-      // Fetch trades - either all-time or since reset date
-      let query = supabase
-        .from('TestTrades')
-        .select('*')
-        .eq('wallet_address', walletAddress);
-      
-      if (lastResetDate) {
-        // User has manually reset - only get trades since reset date
-        query = query.gte('created_at', lastResetDate.toISOString());
-        console.log('📊 Fetching trades since manual reset:', lastResetDate.toISOString());
-      } else {
-        // No reset - get all-time trades
-        console.log('📊 Fetching all-time trade data');
-      }
-      
-      const { data: trades, error } = await query.order('created_at', { ascending: true });
+      // Filter trades for this wallet and since reset date (if applicable)
+      let filteredTrades = trades.filter(trade => {
+        // Check if trade is from this wallet (using sender address)
+        const isFromWallet = trade.sender === walletAddress;
+        
+        // If reset date is set, only include trades since that date
+        if (lastResetDate) {
+          const tradeDate = new Date(trade.created_at);
+          return isFromWallet && tradeDate >= lastResetDate;
+        }
+        
+        return isFromWallet;
+      });
 
-      if (error) {
-        console.error('Error fetching trades:', error);
-        setPnlData({ holdings: 0, averageCost: 0, unrealizedPnl: 0, currentPrice: 0, loading: false });
-        return;
-      }
+      console.log('📊 PnL calculation - filtered trades:', {
+        totalTrades: trades.length,
+        walletTrades: filteredTrades.length,
+        walletAddress: walletAddress,
+        resetDate: lastResetDate
+      });
 
-      // Get current price from latest trade (across all wallets)
-      const { data: latestTrades, error: priceError } = await supabase
-        .from('TestTrades')
-        .select('price')
-        .order('created_at', { ascending: false })
-        .limit(1);
-
-      const currentPrice = latestTrades?.length > 0 ? latestTrades[0].price : 0;
-
-      // Calculate holdings and average cost from trades since reset
+      // Calculate holdings and average cost from trades
       let totalBought = 0;
       let totalSold = 0;
       let totalSpent = 0;
       let avgCostSum = 0;
       let avgCostCount = 0;
 
-      trades.forEach(trade => {
+      filteredTrades.forEach(trade => {
         if (trade.type === 'buy') {
           const tokensRaw = Math.abs(trade.tokens_traded || 0);
           const tokens = tokensRaw / 1e8; // Convert from base units to actual tokens
           const sats = Math.abs(trade.sats_traded || 0);
           const price = trade.price || 0; // Use actual recorded price
+          
           totalBought += tokens;
           totalSpent += sats;
+          
           if (tokens > 0 && price > 0) {
             avgCostSum += price * tokens; // weighted by tokens using actual price
             avgCostCount += tokens;
           }
+          
+          console.log('💰 Buy trade:', { tokens, sats, price, totalBought, totalSpent });
         } else if (trade.type === 'sell') {
           const tokensRaw = Math.abs(trade.tokens_traded || 0);
-          totalSold += tokensRaw / 1e8; // Convert from base units to actual tokens
+          const tokens = tokensRaw / 1e8; // Convert from base units to actual tokens
+          totalSold += tokens;
+          
+          console.log('💸 Sell trade:', { tokens, totalSold });
         }
       });
 
@@ -148,34 +138,38 @@ export default function ProfitLoss() {
         totalBought: totalBought,
         totalSold: totalSold,
         difference: totalBought - totalSold,
-        trades: trades.map(t => ({
+        trades: filteredTrades.map(t => ({
           type: t.type,
           tokens: Math.abs(t.tokens_traded || 0) / 1e8,
-          price: t.price
+          price: t.price,
+          sender: t.sender
         }))
       });
 
       // Prevent negative holdings - holdings cannot be negative in reality
       const calculatedHoldings = totalBought - totalSold;
-      const currentHoldings = Math.max(0, Math.floor(calculatedHoldings)); // Ensure non-negative
+      const currentHoldings = Math.max(0, calculatedHoldings); // Ensure non-negative
       const averageCost = avgCostCount > 0 ? avgCostSum / avgCostCount : 0;
+      
+      // Use current price from props or fallback to latest trade price
+      const effectiveCurrentPrice = currentPrice || (trades.length > 0 ? trades[0].price : 0);
       
       // Calculate unrealized P&L: current value - cost basis (only if holdings > 0)
       let unrealizedPnl = 0;
-      if (currentHoldings > 0 && averageCost > 0) {
-        const currentValue = currentHoldings * currentPrice;
+      if (currentHoldings > 0 && averageCost > 0 && effectiveCurrentPrice > 0) {
+        const currentValue = currentHoldings * effectiveCurrentPrice;
         const costBasis = currentHoldings * averageCost;
         unrealizedPnl = currentValue - costBasis;
         
         // Debug P&L calculation
         console.log('💰 P&L Debug:', {
           holdings: currentHoldings,
-          currentPrice: currentPrice,
+          currentPrice: effectiveCurrentPrice,
           averageCost: averageCost,
           currentValue: currentValue,
           costBasis: costBasis,
           unrealizedPnl: unrealizedPnl,
-          shouldBeProfit: currentPrice > averageCost
+          shouldBeProfit: effectiveCurrentPrice > averageCost
         });
       }
 
@@ -183,12 +177,12 @@ export default function ProfitLoss() {
         holdings: currentHoldings,
         averageCost: averageCost,
         unrealizedPnl: unrealizedPnl,
-        currentPrice: currentPrice,
+        currentPrice: effectiveCurrentPrice,
         loading: false
       });
 
       // Store trade history for detailed view
-      setTradeHistory(trades || []);
+      setTradeHistory(filteredTrades || []);
 
     } catch (error) {
       console.error('Error calculating P&L:', error);
@@ -215,8 +209,7 @@ export default function ProfitLoss() {
       const resetKey = `pnl_reset_${walletAddress}`;
       localStorage.setItem(resetKey, now.toISOString());
       console.log('🔄 Manual reset: P&L tracking reset by user');
-      setShowTradeHistory(false); // Hide trade history on reset
-      fetchPnlData(); // Refresh data immediately
+      calculatePnlData(); // Refresh data immediately
     }
   };
 
@@ -232,12 +225,18 @@ export default function ProfitLoss() {
   };
 
   const formatPrice = (price) => {
-    if (price < 1) {
-      return price.toFixed(6);
-    } else if (price < 999.99) {
-      return price.toFixed(3);
+    // Convert to number and handle invalid values
+    const numPrice = Number(price);
+    if (isNaN(numPrice) || numPrice === 0) {
+      return '0.000000';
+    }
+    
+    if (numPrice < 1) {
+      return numPrice.toFixed(6);
+    } else if (numPrice < 999.99) {
+      return numPrice.toFixed(3);
     } else {
-      return Math.round(price).toString();
+      return Math.round(numPrice).toString();
     }
   };
 
@@ -290,7 +289,7 @@ export default function ProfitLoss() {
             >
               Reset
             </button>
-              </div>
+          </div>
 
           {/* Reset Info */}
           <div style={{
@@ -303,7 +302,7 @@ export default function ProfitLoss() {
               ? `Tracking since: ${lastResetDate.toLocaleDateString()} • Click Reset to restart tracking`
               : 'Showing all-time data • Click Reset to start fresh tracking'
             }
-              </div>
+          </div>
 
           {/* Wallet Section */}
           <div style={{ marginBottom: '16px' }}>
@@ -343,8 +342,8 @@ export default function ProfitLoss() {
             }}>
               {walletAddress.slice(0, 20)}<br />
               {walletAddress.slice(20)}
-              </div>
             </div>
+          </div>
             
           {pnlData.loading ? (
             <div style={{
@@ -419,8 +418,8 @@ export default function ProfitLoss() {
                     alt="lightning" 
                     style={{ width: '16px', height: '16px', verticalAlign: 'middle' }}
                   />
-              </span>
-            </div>
+                </span>
+              </div>
             
               {/* Unrealized P&L */}
               <div style={{
@@ -450,307 +449,28 @@ export default function ProfitLoss() {
                     alt="lightning" 
                     style={{ width: '16px', height: '16px', verticalAlign: 'middle' }}
                   />
-              </span>
-            </div>
+                </span>
+              </div>
 
               {/* View Detailed Trade History Button */}
-              <button
-                onClick={() => setShowTradeHistory(!showTradeHistory)}
-                style={{
-                  width: '100%',
-                  padding: '8px',
-                  backgroundColor: '#374151',
-                  color: '#e5e7eb',
-                  border: '1px solid #4b5563',
-                  borderRadius: '6px',
-                  cursor: 'pointer',
-                  fontSize: '13px',
-                  fontWeight: 'bold',
-                  marginBottom: showTradeHistory ? '12px' : '0'
-                }}
-              >
-                {showTradeHistory ? '📊 Hide' : '📊 View'} Detailed Trade History ({tradeHistory.length} trades)
-              </button>
-
-              {/* Trade History Display */}
-              {showTradeHistory && (
-                <div style={{
-                  backgroundColor: '#111827',
-                  border: '1px solid #374151',
-                  borderRadius: '6px',
-                  padding: '12px',
-                  maxHeight: '300px',
-                  overflowY: 'auto'
-                }}>
-                  <div style={{
-                    fontSize: '12px',
+              <Link href="/profile" style={{ textDecoration: 'none' }}>
+                <button
+                  style={{
+                    width: '100%',
+                    padding: '8px',
+                    backgroundColor: '#374151',
+                    color: '#e5e7eb',
+                    border: '1px solid #4b5563',
+                    borderRadius: '6px',
+                    cursor: 'pointer',
+                    fontSize: '13px',
                     fontWeight: 'bold',
-                    color: '#fbbf24',
-                    marginBottom: '8px',
-                    borderBottom: '1px solid #374151',
-                    paddingBottom: '4px'
-                  }}>
-                    Trade History {lastResetDate ? '(Since Reset)' : '(All-Time)'}
-                  </div>
-                  
-                  {tradeHistory.length === 0 ? (
-                    <div style={{ color: '#9ca3af', fontSize: '12px', textAlign: 'center', padding: '20px' }}>
-                      No trades found
-                    </div>
-                  ) : (
-                    tradeHistory.map((trade, index) => {
-                      const tradeDate = new Date(trade.created_at);
-                      const tokensRaw = Math.abs(trade.tokens_traded || 0);
-                      const tokens = Math.floor(tokensRaw / 1e8); // Convert from base units and round down
-                      const sats = Math.abs(trade.sats_traded || 0);
-                      // Use the actual recorded price from the database
-                      const pricePerToken = trade.price || 0;
-                      
-                      // Calculate profit/loss for sell orders
-                      let profitLoss = null;
-                      let profitLossPerToken = null;
-                      if (trade.type === 'sell' && pnlData.averageCost > 0) {
-                        profitLossPerToken = pricePerToken - pnlData.averageCost;
-                        profitLoss = profitLossPerToken * tokens;
-                      }
-                      
-                      return (
-                        <div key={trade.transaction_id || index} style={{
-                          display: 'flex',
-                          justifyContent: 'space-between',
-                          alignItems: 'center',
-                          padding: '6px 0',
-                          borderBottom: index < tradeHistory.length - 1 ? '1px solid #374151' : 'none',
-                          fontSize: '11px'
-                        }}>
-                          <div style={{ flex: 1 }}>
-                            <div style={{ 
-                              color: trade.type === 'buy' ? '#22c55e' : '#ef4444',
-                              fontWeight: 'bold'
-                            }}>
-                              {trade.type.toUpperCase()}
-                            </div>
-                            <div style={{ color: '#9ca3af', fontSize: '10px' }}>
-                              {tradeDate.toLocaleDateString()} {tradeDate.toLocaleTimeString()}
-                            </div>
-                          </div>
-                          
-                          <div style={{ flex: 2, textAlign: 'right' }}>
-                            <div style={{ color: '#e5e7eb' }}>
-                              {formatNumber(tokens)}{' '}
-                              <img 
-                                src="/icons/The Mas Network.svg" 
-                                alt="MAS Sats" 
-                                style={{ width: '14px', height: '14px', verticalAlign: 'middle' }}
-                              />
-                            </div>
-                            <div style={{ color: '#9ca3af', fontSize: '10px' }}>
-                              @ {formatPrice(pricePerToken)}{' '}
-                              <img 
-                                src="/icons/sats1.svg" 
-                                alt="sats" 
-                                style={{ width: '12px', height: '12px', verticalAlign: 'middle', marginRight: '1px' }}
-                              />
-                              <img 
-                                src="/icons/Vector.svg" 
-                                alt="lightning" 
-                                style={{ width: '12px', height: '12px', verticalAlign: 'middle' }}
-                              /> each
-                            </div>
-                            {/* Show profit/loss for sell orders */}
-                            {profitLoss !== null && (
-                              <div style={{ 
-                                fontSize: '9px', 
-                                color: profitLoss >= 0 ? '#22c55e' : '#ef4444',
-                                marginTop: '2px'
-                              }}>
-                                {profitLoss >= 0 ? '+' : ''}{formatNumber(Math.abs(profitLoss))}{' '}
-                                <img 
-                                  src="/icons/sats1.svg" 
-                                  alt="sats" 
-                                  style={{ width: '10px', height: '10px', verticalAlign: 'middle', marginRight: '1px' }}
-                                />
-                                <img 
-                                  src="/icons/Vector.svg" 
-                                  alt="lightning" 
-                                  style={{ width: '10px', height: '10px', verticalAlign: 'middle' }}
-                                /> {profitLoss >= 0 ? 'profit' : 'loss'}
-                              </div>
-                            )}
-                          </div>
-                          
-                          <div style={{ flex: 1, textAlign: 'right', paddingLeft: '8px' }}>
-                            <div style={{ color: '#fbbf24' }}>
-                              {formatNumber(sats)}{' '}
-                              <img 
-                                src="/icons/sats1.svg" 
-                                alt="sats" 
-                                style={{ width: '14px', height: '14px', verticalAlign: 'middle', marginRight: '1px' }}
-                              />
-                              <img 
-                                src="/icons/Vector.svg" 
-                                alt="lightning" 
-                                style={{ width: '14px', height: '14px', verticalAlign: 'middle' }}
-                              />
-                            </div>
-                          </div>
-                        </div>
-                      );
-                    })
-                  )}
-                  
-                  {tradeHistory.length > 0 && (() => {
-                    // Calculate holdings and weighted average cost from displayed trades
-                    let totalCost = 0;
-                    let totalBought = 0;
-                    let totalSold = 0;
-                    let buyTrades = 0;
-                    let sellTrades = 0;
-                    
-                    tradeHistory.forEach(trade => {
-                      const tokensRaw = Math.abs(trade.tokens_traded || 0);
-                      const tokens = tokensRaw / 1e8; // Convert from base units to actual tokens
-                      const price = trade.price || 0;
-                      
-                      if (trade.type === 'buy') {
-                        totalCost += (price * tokens);
-                        totalBought += tokens;
-                        buyTrades++;
-                      } else {
-                        totalSold += tokens;
-                        sellTrades++;
-                      }
-                    });
-                    
-                    // Round down to nearest whole number
-                    const currentHoldings = Math.floor(totalBought - totalSold);
-                    const calculatedAvgCost = totalBought > 0 ? totalCost / totalBought : 0;
-                    
-                    return (
-                      <>
-                        {/* Average Cost Calculation */}
-                        <div style={{
-                          marginTop: '8px',
-                          paddingTop: '8px',
-                          borderTop: '1px solid #374151',
-                          backgroundColor: '#0f172a',
-                          padding: '8px',
-                          borderRadius: '4px'
-                        }}>
-                          <div style={{
-                            fontSize: '11px',
-                            fontWeight: 'bold',
-                            color: '#fbbf24',
-                            marginBottom: '6px'
-                          }}>
-                            📊 Average Cost Calculation {lastResetDate ? '(Since Reset)' : '(All-Time)'}
-                          </div>
-                          
-                          <div style={{ fontSize: '10px', color: '#e5e7eb', lineHeight: '1.4' }}>
-                            <div style={{ marginBottom: '4px' }}>
-                              <strong>Buy Trades:</strong> {buyTrades} | <strong>Sell Trades:</strong> {sellTrades}
-                            </div>
-                            <div style={{ marginBottom: '4px' }}>
-                              <strong>Total Tokens Bought:</strong> {formatNumber(Math.floor(totalBought))}{' '}
-                              <img 
-                                src="/icons/The Mas Network.svg" 
-                                alt="MAS Sats" 
-                                style={{ width: '14px', height: '14px', verticalAlign: 'middle' }}
-                              />
-                            </div>
-                            <div style={{ marginBottom: '4px' }}>
-                              <strong>Total Tokens Sold:</strong> {formatNumber(Math.floor(totalSold))}{' '}
-                              <img 
-                                src="/icons/The Mas Network.svg" 
-                                alt="MAS Sats" 
-                                style={{ width: '14px', height: '14px', verticalAlign: 'middle' }}
-                              />
-                            </div>
-                            <div style={{ 
-                              marginBottom: '4px',
-                              padding: '3px',
-                              backgroundColor: '#1e293b',
-                              borderRadius: '3px',
-                              border: '1px solid #334155'
-                            }}>
-                              <strong style={{ color: '#22c55e' }}>
-                                Current Holdings: {formatNumber(currentHoldings)}{' '}
-                                <img 
-                                  src="/icons/The Mas Network.svg" 
-                                  alt="MAS Sats" 
-                                  style={{ width: '14px', height: '14px', verticalAlign: 'middle' }}
-                                />
-                              </strong>
-                            </div>
-                            <div style={{ marginBottom: '4px' }}>
-                              <strong>Total Cost (Buys):</strong> {formatNumber(totalCost)}{' '}
-                              <img 
-                                src="/icons/sats1.svg" 
-                                alt="sats" 
-                                style={{ width: '14px', height: '14px', verticalAlign: 'middle', marginRight: '1px' }}
-                              />
-                              <img 
-                                src="/icons/Vector.svg" 
-                                alt="lightning" 
-                                style={{ width: '14px', height: '14px', verticalAlign: 'middle' }}
-                              />
-                            </div>
-                            <div style={{ 
-                              padding: '4px',
-                              backgroundColor: '#374151',
-                              borderRadius: '3px',
-                              border: '1px solid #4b5563'
-                            }}>
-                              <strong style={{ color: '#fbbf24' }}>
-                                Weighted Avg Cost: {formatPrice(calculatedAvgCost)}{' '}
-                                <img 
-                                  src="/icons/sats1.svg" 
-                                  alt="sats" 
-                                  style={{ width: '14px', height: '14px', verticalAlign: 'middle', marginRight: '1px' }}
-                                />
-                                <img 
-                                  src="/icons/Vector.svg" 
-                                  alt="lightning" 
-                                  style={{ width: '14px', height: '14px', verticalAlign: 'middle' }}
-                                /> per token
-                              </strong>
-                              <div style={{ fontSize: '9px', color: '#9ca3af', marginTop: '2px' }}>
-                                (From buy orders only - does not change with sells)
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-                        
-                        {/* Explanation */}
-                        <div style={{
-                          marginTop: '8px',
-                          paddingTop: '8px',
-                          borderTop: '1px solid #374151',
-                          fontSize: '10px',
-                          color: '#9ca3af'
-                        }}>
-                          💡 Current Holdings = Total Bought - Total Sold. Average cost is calculated only from BUY orders. For SELL orders, profit/loss = (sell price - avg cost) × tokens sold. This breakdown shows exactly how we calculated your holdings ({formatNumber(pnlData.holdings)}{' '}
-                          <img 
-                            src="/icons/The Mas Network.svg" 
-                            alt="MAS Sats" 
-                            style={{ width: '12px', height: '12px', verticalAlign: 'middle' }}
-                          />) and average cost ({formatPrice(pnlData.averageCost)}{' '}
-                          <img 
-                            src="/icons/sats1.svg" 
-                            alt="sats" 
-                            style={{ width: '12px', height: '12px', verticalAlign: 'middle', marginRight: '1px' }}
-                          />
-                          <img 
-                            src="/icons/Vector.svg" 
-                            alt="lightning" 
-                            style={{ width: '12px', height: '12px', verticalAlign: 'middle' }}
-                          />) from the trades above.
-                        </div>
-                      </>
-                    );
-                  })()}
-                </div>
-              )}
+                    marginBottom: '0'
+                  }}
+                >
+                  📊 View Detailed Trade History
+                </button>
+              </Link>
             </>
           )}
         </>
@@ -771,7 +491,7 @@ export default function ProfitLoss() {
             opacity: 0.5
           }}>
             👛
-            </div>
+          </div>
           <div style={{
             fontSize: '16px',
             fontWeight: '600',
@@ -779,7 +499,7 @@ export default function ProfitLoss() {
             color: '#e5e7eb'
           }}>
             {t('connect_wallet')}
-            </div>
+          </div>
           <div style={{
             fontSize: '14px',
             lineHeight: '1.4',

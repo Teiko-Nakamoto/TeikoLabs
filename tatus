@@ -1,0 +1,10 @@
+[33m7a86863[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmain[m[33m, [m[1;31morigin/main[m[33m, [m[1;31morigin/HEAD[m[33m)[m Remove favicon.ico to allow logo.png to display as site icon
+[33mbd95add[m Fix unescaped apostrophe causing Vercel build failure
+[33mf5bc672[m Fix logo path in layout.js - correct path to /logo.png
+[33m0faf681[m Implement smart transaction retry, replace text with icons, fix P&L calculations
+[33m470bab3[m[33m ([m[1;32mworking-version[m[33m)[m Update ProfitLoss component, main page, and token data fetching logic
+[33m1531f12[m[33m ([m[1;33mtag: [m[1;33mv5[m[33m, [m[1;33mtag: [m[1;33mv4[m[33m)[m v4: Fixed buy estimation logic, added real wallet balances, improved internationalization
+[33m06d163e[m[33m ([m[1;33mtag: [m[1;33mv3[m[33m)[m v3: Mobile optimization and responsive design - Added comprehensive mobile responsive layout - Fixed header text wrapping on mobile devices - Implemented responsive breakpoints (768px, 480px) - Optimized component sizing for mobile screens - Added touch-friendly button sizes and spacing - Improved layout stacking on mobile (column vs row) - Enhanced ProfitLoss component mobile responsiveness - Added CSS media queries for mobile-first design
+[33m5adad5f[m[33m ([m[1;33mtag: [m[1;33mv2[m[33m)[m v2: UI improvements and bug fixes - Moved navigation buttons inside BuySellBox card - Updated trade history text (Swapped/Received) - Removed ring blend effects and shadows - Recreated ProfitLoss component with clean design - Fixed sell button styling - Added proper copy button with clipboard icon
+[33m07513cf[m[33m ([m[1;33mtag: [m[1;33mv2.0.0[m[33m)[m feat: replace text with images and improve mobile responsiveness - Updated chart header to use sats, lightning bolt, and Mas Network icons - Improved mobile responsive design to prevent text overlap - Added proper flex layout and sizing for mobile devices
+[33maecddce[m[33m ([m[1;33mtag: [m[1;33miteration-2025-07-26[m[33m, [m[1;33mtag: [m[1;33miteration-1[m[33m)[m Finish current iteration before next phase

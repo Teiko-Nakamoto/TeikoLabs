@@ -1,13 +1,13 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { handleTransaction } from '../utils/swapLogic';
 import TransactionToast from './TransactionToast';
 import { getUserTokenBalance, getUserSatsBalance, calculateEstimatedTokensForSats, calculateEstimatedSatsForTokens, getCurrentPrice, getSbtcBalance, getTotalTokenBalance, getTotalLockedTokens } from '../utils/fetchTokenData';
 import ProfitLoss from './ProfitLoss';
 import TokenStats from './TokenStats';
 import './BuySellBox.css';
-import { useTranslation } from 'react-i18next';
 
 // Network health check function
 async function checkNetworkHealth() {
@@ -27,7 +27,33 @@ async function checkNetworkHealth() {
   }
 }
 
-export default function BuySellBox({ tab, setTab, amount, setAmount, refreshTrades, setErrorMessage, setPendingTransaction, setIsSuccessfulTransaction, trades, activeSection, setActiveSection }) {
+export default function BuySellBox({ 
+  tab, 
+  setTab, 
+  amount, 
+  setAmount, 
+  refreshTrades, 
+  setPendingTransaction, 
+  setIsSuccessfulTransaction, 
+  trades, 
+  activeSection, 
+  setActiveSection, 
+  revenue, 
+  liquidity, 
+  remainingSupply
+}) {
+  // Restore tab selection from localStorage on component mount
+  useEffect(() => {
+    const savedTab = localStorage.getItem('selectedTab');
+    if (savedTab && (savedTab === 'buy' || savedTab === 'sell')) {
+      setTab(savedTab);
+    }
+  }, [setTab]);
+
+  // Save tab selection to localStorage whenever it changes
+  useEffect(() => {
+    localStorage.setItem('selectedTab', tab);
+  }, [tab]);
   const { t } = useTranslation();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -39,6 +65,12 @@ export default function BuySellBox({ tab, setTab, amount, setAmount, refreshTrad
   const [currentPrice, setCurrentPrice] = useState(0);
   const [showPriceModal, setShowPriceModal] = useState(false);
   const [priceSnapshot, setPriceSnapshot] = useState(null);
+  
+  // Slippage protection state
+  const [slippageEnabled, setSlippageEnabled] = useState(false);
+  const [slippage, setSlippage] = useState(5); // Default 5%
+  const [showCustomSlippage, setShowCustomSlippage] = useState(false);
+  const [customSlippage, setCustomSlippage] = useState('');
 
   const [toast, setToast] = useState({ message: '', txId: '', visible: false, status: 'pending' });
   const [useNetworkPrecheck, setUseNetworkPrecheck] = useState(() => {
@@ -61,29 +93,24 @@ export default function BuySellBox({ tab, setTab, amount, setAmount, refreshTrad
         getTotalLockedTokens()
       ]);
       
+      // Calculate derived values
+      const virtualSbtc = 1500000; // 1.5M sats virtual liquidity
       const availableTokens = totalTokens - lockedTokens;
-      const virtualSbtc = 1500000;
-      // Calculate price per token (tokens are in base units, so divide by 1e8 to get actual tokens)
-      const calculatedPrice = (sbtcBalance + virtualSbtc) / (availableTokens / 1e8);
+      const calculatedPrice = (sbtcBalance + virtualSbtc) / availableTokens;
       
-      const snapshot = {
+      setPriceSnapshot({
         sbtcBalance,
         totalTokens,
         lockedTokens,
-        availableTokens,
-        totalTokensFormatted: totalTokens / 1e8,
-        lockedTokensFormatted: lockedTokens / 1e8,
-        availableTokensFormatted: availableTokens / 1e8,
         virtualSbtc,
+        availableTokensFormatted: availableTokens,
+        totalTokensFormatted: totalTokens,
+        lockedTokensFormatted: lockedTokens,
         calculatedPrice,
         timestamp: Date.now()
-      };
-      
-      setPriceSnapshot(snapshot);
-      return snapshot;
+      });
     } catch (error) {
       console.error('Failed to fetch price snapshot:', error);
-      return null;
     }
   };
 
@@ -115,12 +142,17 @@ export default function BuySellBox({ tab, setTab, amount, setAmount, refreshTrad
   // Fetch SATS or MAS Sats depending on the active tab
   useEffect(() => {
     const fetchBalance = async () => {
-      if (tab === 'sell') {
-        const tokenBalance = await getUserTokenBalance(); // base units
-        setUserBalance(tokenBalance / 1e8); // Convert to MAS Sats
-      } else {
-        const satsBalance = await getUserSatsBalance(); // base units
-        setUserBalance(Math.floor(satsBalance)); // Whole SATS only
+      try {
+        if (tab === 'sell') {
+          const tokenBalance = await getUserTokenBalance(); // Already in whole tokens
+          setUserBalance(tokenBalance); // No conversion needed
+        } else {
+          const satsBalance = await getUserSatsBalance(); // base units
+          setUserBalance(Math.floor(satsBalance)); // Whole SATS only
+        }
+      } catch (error) {
+        console.error('Error fetching balance:', error);
+        setUserBalance(0);
       }
     };
     fetchBalance();
@@ -143,18 +175,13 @@ export default function BuySellBox({ tab, setTab, amount, setAmount, refreshTrad
     } else {
       // Fallback to calculated price if no trades
       const fetchCurrentPrice = async () => {
-        console.log('🔍 No trades found, fetching calculated price...');
-        const price = await getCurrentPrice();
-        console.log('🔍 Received calculated price:', {
-          price,
-          type: typeof price,
-          needsConversion: price < 1
-        });
-        
-        // If price is in SBTC units (very small), convert to SATS
-        const adjustedPrice = price < 1 ? price * 100000000 : price;
-        console.log('🔍 Adjusted price for SATS units:', adjustedPrice);
-        setCurrentPrice(adjustedPrice);
+        try {
+          const price = await getCurrentPrice();
+          setCurrentPrice(price);
+        } catch (error) {
+          console.error('Error fetching current price:', error);
+          setCurrentPrice(0);
+        }
       };
       fetchCurrentPrice();
     }
@@ -308,9 +335,28 @@ export default function BuySellBox({ tab, setTab, amount, setAmount, refreshTrad
     };
     setPendingTransaction(transactionData);
 
-    // Capture the current price as the expected price at time of trade
-    const expectedPriceAtTrade = currentPrice;
-    console.log('🎯 Expected price at trade initiation:', expectedPriceAtTrade);
+    // Calculate both current price and slippage-adjusted expected price
+    const currentPriceAtTrade = currentPrice;
+    let expectedPriceAtTrade = currentPrice; // Default to current price
+    
+    // If slippage protection is enabled, calculate the slippage-adjusted expected price
+    if (slippageEnabled && slippage > 0) {
+      const slippagePercent = slippage / 100;
+      if (tab === 'sell') {
+        // For sells: expect at least (current price - slippage)
+        expectedPriceAtTrade = currentPrice * (1 - slippagePercent);
+      } else {
+        // For buys: expect at most (current price + slippage)  
+        expectedPriceAtTrade = currentPrice * (1 + slippagePercent);
+      }
+    }
+    
+    console.log('📊 Price data at trade initiation:');
+    console.log('  Current market price:', currentPriceAtTrade);
+    console.log('  Expected price (with slippage):', expectedPriceAtTrade);
+    console.log('  Slippage tolerance:', slippage + '%');
+    
+    // Note: Slippage protection is now handled via blockchain post conditions in swapLogic.js
     
     // Handle duplicate detection callback
     const handleDuplicate = () => {
@@ -327,7 +373,32 @@ export default function BuySellBox({ tab, setTab, amount, setAmount, refreshTrad
       }, 5000);
     };
 
-    const result = await handleTransaction(tab, cleanAmount, setErrorMessage, setToast, expectedPriceAtTrade, handleDuplicate);
+    // Get connected wallet address for post conditions
+    const connectedAddress = localStorage.getItem('connectedAddress');
+
+    // Create slippage protection parameters
+    const slippageProtectionParams = slippageEnabled ? {
+      enabled: true,
+      tolerance: slippage,
+      userAddress: connectedAddress
+    } : null;
+    
+    console.log('🛡️ Slippage protection params:', slippageProtectionParams);
+
+    // Pass the appropriate estimated output based on trade type
+    const estimatedOutput = tab === 'buy' ? estimatedTokens : estimatedSats;
+    
+    console.log('🔍 BuySellBox Debug:');
+    console.log('  Original amount:', amount);
+    console.log('  Clean amount:', cleanAmount);
+    console.log('  Tab:', tab);
+    console.log('  Slippage enabled:', slippageEnabled);
+    console.log('  Estimated output:', estimatedOutput);
+    console.log('  Token specific:', false); // No longer token specific
+    console.log('  Token data:', null); // No longer token data
+    
+    let result;
+    result = await handleTransaction(tab, cleanAmount, null, setToast, expectedPriceAtTrade, handleDuplicate, slippageProtectionParams, estimatedOutput, currentPriceAtTrade);
 
     setLoading(false);
 
@@ -351,12 +422,12 @@ export default function BuySellBox({ tab, setTab, amount, setAmount, refreshTrad
           if (isHealthy) {
             console.log('✅ Network recovered - retrying transaction...');
             setError('Network recovered. Retrying...');
-            setTimeout(() => {
+        setTimeout(() => {
               setError(null);
               setIsNetworkRetry(false);
               handleClick(); // Retry the transaction
             }, 1000);
-          } else {
+      } else {
             setError('Connectivity issues persist. Refreshing again in 5 seconds...');
         setTimeout(() => {
               setError(null);
@@ -369,7 +440,7 @@ export default function BuySellBox({ tab, setTab, amount, setAmount, refreshTrad
         // Only show error message if network precheck is disabled
         setIsNetworkRetry(false);
         setError('Transaction failed. Please try again.');
-        setErrorMessage('Transaction failed. Please try again.');
+        // Error handled via local state - no top banner needed
       }
     }
   };
@@ -514,20 +585,41 @@ export default function BuySellBox({ tab, setTab, amount, setAmount, refreshTrad
                   style={{ width: '16px', height: '16px', verticalAlign: 'middle' }}
                 />
               </div>
-              <div>
-                {t('estimated_receive')}:{" "}
-                {Math.floor(estimatedSats).toLocaleString()}{" "}
-                <img 
-                  src="/icons/sats1.svg" 
-                  alt="sats" 
-                  style={{ width: '16px', height: '16px', verticalAlign: 'middle', marginRight: '2px' }}
-                />
-                <img 
-                  src="/icons/Vector.svg" 
-                  alt="lightning" 
-                  style={{ width: '16px', height: '16px', verticalAlign: 'middle' }}
-                />
-              </div>
+              {slippageEnabled ? (
+                <>
+                  <div>
+                    Max to receive:{" "}
+                    {Math.floor(estimatedSats).toLocaleString()}{" "}
+                    <img 
+                      src="/icons/sats1.svg" 
+                      alt="sats" 
+                      style={{ width: '16px', height: '16px', verticalAlign: 'middle', marginRight: '2px' }}
+                    />
+                    <img 
+                      src="/icons/Vector.svg" 
+                      alt="lightning" 
+                      style={{ width: '16px', height: '16px', verticalAlign: 'middle' }}
+                    />
+                  </div>
+
+
+                </>
+              ) : (
+                <div>
+                  {t('estimated_receive')}:{" "}
+                  {Math.floor(estimatedSats).toLocaleString()}{" "}
+                  <img 
+                    src="/icons/sats1.svg" 
+                    alt="sats" 
+                    style={{ width: '16px', height: '16px', verticalAlign: 'middle', marginRight: '2px' }}
+                  />
+                  <img 
+                    src="/icons/Vector.svg" 
+                    alt="lightning" 
+                    style={{ width: '16px', height: '16px', verticalAlign: 'middle' }}
+                  />
+                </div>
+              )}
             </>
           ) : (
             <>
@@ -545,15 +637,31 @@ export default function BuySellBox({ tab, setTab, amount, setAmount, refreshTrad
                   style={{ width: '16px', height: '16px', verticalAlign: 'middle' }}
                 />
               </div>
-              <div>
-                {t('estimated_receive')}:{" "}
-                {Math.floor(estimatedTokens).toLocaleString()}{" "}
-                <img 
-                  src="/icons/The Mas Network.svg" 
-                  alt="MAS Sats" 
-                  style={{ width: '16px', height: '16px', verticalAlign: 'middle' }}
-                />
-              </div>
+              {slippageEnabled ? (
+                <>
+                  <div>
+                    Max to receive:{" "}
+                    {Math.floor(estimatedTokens).toLocaleString()}{" "}
+                    <img 
+                      src="/icons/The Mas Network.svg" 
+                      alt="MAS Sats" 
+                      style={{ width: '16px', height: '16px', verticalAlign: 'middle' }}
+                    />
+                  </div>
+
+
+                </>
+              ) : (
+                <div>
+                  {t('estimated_receive')}:{" "}
+                  {Math.floor(estimatedTokens).toLocaleString()}{" "}
+                  <img 
+                    src="/icons/The Mas Network.svg" 
+                    alt="MAS Sats" 
+                    style={{ width: '16px', height: '16px', verticalAlign: 'middle' }}
+                  />
+                </div>
+              )}
             </>
           )}
         </div>
@@ -645,6 +753,211 @@ export default function BuySellBox({ tab, setTab, amount, setAmount, refreshTrad
           ))}
         </div>
 
+        {/* Slippage Protection Settings */}
+        <div style={{ marginTop: '16px', marginBottom: '16px' }}>
+          {/* Slippage Toggle */}
+          <div style={{ 
+            display: 'flex', 
+            alignItems: 'center', 
+            marginBottom: '12px',
+            padding: '8px',
+            background: '#f8fafc',
+            borderRadius: '8px',
+            border: '1px solid #e2e8f0'
+          }}>
+            <input
+              type="checkbox"
+              id="slippage-toggle"
+              checked={slippageEnabled}
+              onChange={(e) => setSlippageEnabled(e.target.checked)}
+              style={{ marginRight: '8px' }}
+            />
+            <label htmlFor="slippage-toggle" style={{ 
+              fontSize: '14px', 
+              color: '#374151',
+              cursor: 'pointer',
+              flex: 1
+            }}>
+              🛡️ Swap Price Protection
+            </label>
+            {slippageEnabled && (
+              <span style={{ 
+                fontSize: '12px', 
+                color: '#10b981',
+                fontWeight: 'bold'
+              }}>
+                {slippage}%
+              </span>
+            )}
+          </div>
+
+          {/* Slippage Preset Buttons */}
+          {slippageEnabled && (
+            <div style={{ marginBottom: '8px' }}>
+              <div style={{ 
+                fontSize: '12px', 
+                color: 'white', 
+                marginBottom: '6px' 
+              }}>
+                Slippage Tolerance:
+              </div>
+              <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
+                {[5, 10, 20, 50].map(percent => (
+                  <button
+                    key={percent}
+                    onClick={() => {
+                      setSlippage(percent);
+                      setShowCustomSlippage(false);
+                      setCustomSlippage('');
+                    }}
+                    style={{
+                      padding: '6px 10px',
+                      borderRadius: '4px',
+                      border: slippage === percent ? '2px solid #eab308' : '1px solid #6b7280',
+                      backgroundColor: '#374151',
+                      color: '#eab308',
+                      cursor: 'pointer',
+                      fontSize: '11px',
+                      fontWeight: '500'
+                    }}
+                  >
+                    {percent}%
+                  </button>
+                ))}
+                <button
+                  onClick={() => {
+                    setShowCustomSlippage(true);
+                    setCustomSlippage(slippage.toString());
+                  }}
+                  style={{
+                    padding: '6px 10px',
+                    borderRadius: '4px',
+                    border: showCustomSlippage ? '2px solid #eab308' : '1px solid #6b7280',
+                    backgroundColor: '#374151',
+                    color: '#eab308',
+                    cursor: 'pointer',
+                    fontSize: '11px',
+                    fontWeight: '500'
+                  }}
+                >
+                  Custom
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* Custom Slippage Input */}
+          {slippageEnabled && showCustomSlippage && (
+            <div style={{ marginTop: '8px' }}>
+              <input
+                type="number"
+                step="1"
+                min="0"
+                max="100"
+                placeholder="Enter custom %"
+                value={customSlippage}
+                onChange={(e) => {
+                  setCustomSlippage(e.target.value);
+                  const value = parseInt(e.target.value);
+                  if (!isNaN(value) && value >= 0 && value <= 100) {
+                    setSlippage(value);
+                  }
+                }}
+                style={{
+                  width: '100px',
+                  padding: '4px 8px',
+                  borderRadius: '4px',
+                  border: '1px solid #d1d5db',
+                  fontSize: '12px'
+                }}
+              />
+              <span style={{ 
+                marginLeft: '4px', 
+                fontSize: '12px', 
+                color: '#6b7280' 
+              }}>
+                %
+              </span>
+            </div>
+          )}
+        </div>
+
+        {/* Slippage Price Information */}
+        {slippageEnabled && slippage > 0 && (
+          <div style={{ 
+            marginBottom: '12px',
+            padding: '8px 12px',
+            background: 'white',
+            borderRadius: '8px',
+            border: '1px solid #e2e8f0'
+          }}>
+            <div style={{ fontSize: '12px', color: 'black', marginBottom: '4px', fontWeight: '600' }}>
+              {tab === 'sell' ? 'Minimum Sell Price:' : 'Maximum Buy Price:'}
+            </div>
+            <div style={{ fontSize: '12px', color: 'black', fontWeight: '600' }}>
+              {tab === 'sell' 
+                ? (currentPrice * (1 - slippage / 100)).toFixed(8)
+                : (currentPrice * (1 + slippage / 100)).toFixed(8)
+              }{" "}
+              <img 
+                src="/icons/sats1.svg" 
+                alt="sats" 
+                style={{ width: '12px', height: '12px', verticalAlign: 'middle', marginRight: '1px' }}
+              />
+              <img 
+                src="/icons/Vector.svg" 
+                alt="lightning" 
+                style={{ width: '12px', height: '12px', verticalAlign: 'middle' }}
+              />
+              {" "}/ {" "}
+              <img 
+                src="/icons/The Mas Network.svg" 
+                alt="MAS Sats" 
+                style={{ width: '12px', height: '12px', verticalAlign: 'middle' }}
+              />
+            </div>
+          </div>
+        )}
+
+        {/* Min Guaranteed Amount */}
+        {slippageEnabled && slippage > 0 && (
+          <div style={{ 
+            marginBottom: '16px',
+            padding: '8px 12px',
+            background: '#f8fafc',
+            borderRadius: '8px',
+            border: '1px solid #e2e8f0'
+          }}>
+            <div style={{ fontSize: '12px', color: '#374151', fontWeight: '600' }}>
+              Minimum to Receive:{" "}
+              {tab === 'sell' ? (
+                <>
+                  {Math.floor(estimatedSats * (1 - slippage / 100)).toLocaleString()}{" "}
+                  <img 
+                    src="/icons/sats1.svg" 
+                    alt="sats" 
+                    style={{ width: '14px', height: '14px', verticalAlign: 'middle', marginRight: '2px' }}
+                  />
+                  <img 
+                    src="/icons/Vector.svg" 
+                    alt="lightning" 
+                    style={{ width: '14px', height: '14px', verticalAlign: 'middle' }}
+                  />
+                </>
+              ) : (
+                <>
+                  {Math.floor(estimatedTokens * (1 - slippage / 100)).toLocaleString()}{" "}
+                  <img 
+                    src="/icons/The Mas Network.svg" 
+                    alt="MAS Sats" 
+                    style={{ width: '14px', height: '14px', verticalAlign: 'middle' }}
+                  />
+                </>
+              )}
+            </div>
+          </div>
+        )}
+
         <button
           onClick={handleClick}
           disabled={loading}
@@ -652,6 +965,35 @@ export default function BuySellBox({ tab, setTab, amount, setAmount, refreshTrad
         >
           {loading ? t('processing') : tab === 'buy' ? t('buy') : t('sell')}
         </button>
+
+        {/* Slippage Protection Indicator */}
+        {slippageEnabled && slippage > 0 && (
+          <div style={{ 
+            marginTop: '8px', 
+            padding: '6px 8px', 
+            background: tab === 'buy' ? '#1e3a8a' : '#92400e', 
+            borderRadius: '6px',
+            border: tab === 'buy' ? '1px solid #3b82f6' : '1px solid #d97706',
+            fontSize: '12px',
+            color: '#dbeafe',
+            textAlign: 'center'
+          }}>
+            {tab === 'buy' ? (
+              <>
+                🛡️ {slippage}% Price Swap Protection
+              </>
+            ) : (
+              <>
+                🛡️ {slippage}% Price Swap Protection
+                {currentPrice > 0 && amount && (
+                  <div style={{ marginTop: '2px', fontSize: '10px', color: '#fbbf24' }}>
+                    Max send limit: {(parseFloat(amount.replace(/,/g, '') || 0) * 1.5).toFixed(1)} DCY tokens
+                  </div>
+                )}
+              </>
+            )}
+          </div>
+        )}
 
         <div style={{ 
           marginTop: '12px', 
@@ -714,7 +1056,7 @@ export default function BuySellBox({ tab, setTab, amount, setAmount, refreshTrad
         {activeSection === 'profit' && <ProfitLoss />}
 
         {/* Show TokenStats when stats section is selected */}
-        {activeSection === 'stats' && <TokenStats />}
+        {activeSection === 'stats' && <TokenStats revenue={revenue} liquidity={liquidity} remainingSupply={remainingSupply} />}
       </div>
 
       {/* Price Information Modal */}

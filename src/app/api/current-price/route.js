@@ -1,6 +1,7 @@
 // API Route: Get Current Token Price (Server-side with API key + caching)
 import { NextResponse } from 'next/server';
-import { getCachedBlockchainData } from '../../utils/hiro-config';
+import { fetchCallReadOnlyFunction } from '@stacks/transactions';
+import { STACKS_TESTNET } from '@stacks/network';
 
 // Contract configuration
 const DEX_CONTRACT_ADDRESS = 'ST37918Q7NBZ52AMV133VTY5C864KVK0S2HZ3CGA4';
@@ -10,27 +11,30 @@ export async function GET() {
   try {
     console.log('🔍 API: Calculating current price with cached data...');
 
-    // Get cached blockchain data (uses your API key server-side)
+    // Get blockchain data
     const [sbtcBalance, tokenBalance, totalLocked] = await Promise.all([
-      getCachedBlockchainData({
+      fetchCallReadOnlyFunction({
         contractAddress: DEX_CONTRACT_ADDRESS,
         contractName: DEX_CONTRACT_NAME,
         functionName: 'get-sbtc-balance',
         functionArgs: [],
+        network: STACKS_TESTNET,
         senderAddress: DEX_CONTRACT_ADDRESS,
       }),
-      getCachedBlockchainData({
+      fetchCallReadOnlyFunction({
         contractAddress: DEX_CONTRACT_ADDRESS,
         contractName: DEX_CONTRACT_NAME,
         functionName: 'get-token-balance',
         functionArgs: [],
+        network: STACKS_TESTNET,
         senderAddress: DEX_CONTRACT_ADDRESS,
       }),
-      getCachedBlockchainData({
+      fetchCallReadOnlyFunction({
         contractAddress: DEX_CONTRACT_ADDRESS,
         contractName: DEX_CONTRACT_NAME,
         functionName: 'get-total-locked',
         functionArgs: [],
+        network: STACKS_TESTNET,
         senderAddress: DEX_CONTRACT_ADDRESS,
       })
     ]);

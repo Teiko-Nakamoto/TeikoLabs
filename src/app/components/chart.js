@@ -5,9 +5,12 @@ import { createChart, CandlestickSeries } from 'lightweight-charts';
 import { useTranslation } from 'react-i18next';
 import './token-chart.css';
 
-export default function Chart({ trades, tradesPerCandle, setTradesPerCandle, tradeLimit, setTradeLimit }) {
+export default function Chart({ trades, tradesPerCandle, setTradesPerCandle, tradeLimit, setTradeLimit, currentPrice }) {
   const { t } = useTranslation();
   const chartRef = useRef(null);
+  const chartInstanceRef = useRef(null);
+  const priceLineRef = useRef(null);
+  const animationRef = useRef(null);
 
   // Initialize tradesPerCandle to 1 for resting state
   const [localTradesPerCandle, setLocalTradesPerCandle] = useState(1);  // Default to 1 trade per candle
@@ -15,6 +18,90 @@ export default function Chart({ trades, tradesPerCandle, setTradesPerCandle, tra
   
   // State to track current market sentiment for background color
   const [isCurrentlyGreen, setIsCurrentlyGreen] = useState(true); // Default to green/blue
+  
+  // Animation state
+  const [isAnimating, setIsAnimating] = useState(false);
+  const [animationDirection, setAnimationDirection] = useState(1); // 1 for up, -1 for down
+
+  // Function to create bouncing animation
+  const startBouncingAnimation = (currentPrice, lastExecutedPrice) => {
+    if (!priceLineRef.current || !chartInstanceRef.current) return;
+    
+    setIsAnimating(true);
+    let startTime = Date.now();
+    const stepDuration = 1500; // 1.5 seconds per step
+    const totalDuration = 6000; // 6 seconds total cycle
+    const stepsPerDirection = 4; // 4 steps to go from one price to the other (6 seconds / 1.5 seconds = 4 steps)
+    
+    // Calculate price difference and step size
+    const priceDifference = lastExecutedPrice - currentPrice;
+    const stepSize = priceDifference / (stepsPerDirection - 1); // Divide by (steps-1) to hit exact endpoints
+    
+    let currentStep = 0;
+    let direction = 1; // 1 for going up, -1 for going down
+    let basePrice = currentPrice;
+    
+    const animate = () => {
+      const elapsed = Date.now() - startTime;
+      const currentStepTime = elapsed % stepDuration;
+      
+      // Check if it's time to move to the next step
+      if (currentStepTime < 50) { // Small buffer to ensure step change
+        // Calculate which step we should be on
+        const totalSteps = Math.floor(elapsed / stepDuration);
+        const newStep = totalSteps % (stepsPerDirection * 2);
+        
+        if (newStep !== currentStep) {
+          currentStep = newStep;
+          
+          // Determine direction and base price
+          if (currentStep < stepsPerDirection) {
+            // Going from current price to last executed price
+            direction = 1;
+            basePrice = currentPrice;
+          } else {
+            // Going from last executed price back to current price
+            direction = -1;
+            basePrice = lastExecutedPrice;
+          }
+        }
+      }
+      
+      // Calculate the current price based on step
+      let stepProgress;
+      if (currentStep < stepsPerDirection) {
+        // Going up: 0, 1, 2, 3
+        stepProgress = currentStep;
+      } else {
+        // Going down: 0, 1, 2, 3 (but from last executed price)
+        stepProgress = currentStep - stepsPerDirection;
+      }
+      
+      const animatedPrice = basePrice + (direction * stepSize * stepProgress);
+      
+      // Update the price line with the discrete price
+      if (priceLineRef.current) {
+        priceLineRef.current.applyOptions({
+          price: animatedPrice,
+          axisLabelText: `Current Price: ${animatedPrice.toFixed(8)} sats/token`,
+        });
+      }
+      
+      // Continue animation
+      animationRef.current = requestAnimationFrame(animate);
+    };
+    
+    animate();
+  };
+
+  // Function to stop animation
+  const stopBouncingAnimation = () => {
+    if (animationRef.current) {
+      cancelAnimationFrame(animationRef.current);
+      animationRef.current = null;
+    }
+    setIsAnimating(false);
+  };
 
   useEffect(() => {
     if (!trades || trades.length === 0 || !chartRef.current) return;
@@ -43,13 +130,13 @@ export default function Chart({ trades, tradesPerCandle, setTradesPerCandle, tra
 
       candles.push({
         time: ((i / groupSize) + 1) * groupSize,  // Proper cumulative trade count on X-axis
-        open: previousClose !== null ? previousClose : open,  // Continuity of candles
+        open: previousClose !== null ? previousClose : open,  // Use previous close for continuity, or first price for first candle
         high,
         low,
         close,
       });
 
-      previousClose = close;
+      previousClose = close;  // Set this candle's close as the next candle's open
     }
 
     chartRef.current.innerHTML = '';
@@ -84,22 +171,39 @@ export default function Chart({ trades, tradesPerCandle, setTradesPerCandle, tra
       },
     });
 
+    // Store chart instance for animation
+    chartInstanceRef.current = chart;
+
     const series = chart.addSeries(CandlestickSeries);
     series.setData(candles);
     series.applyOptions({ lastValueVisible: false, priceLineVisible: false });
 
-    // Add current price line with color based on last candle movement
-    const lastCandle = candles[candles.length - 1];
-    if (lastCandle && typeof lastCandle.close === 'number') {
-      const isGreen = lastCandle.close >= lastCandle.open;
+    // Add current price line using real-time AMM price or last candle close as fallback
+    const effectiveCurrentPrice = currentPrice || (candles.length > 0 ? candles[candles.length - 1]?.close : null);
+    const lastExecutedPrice = candles.length > 0 ? candles[candles.length - 1]?.close : effectiveCurrentPrice;
+    
+    if (effectiveCurrentPrice && typeof effectiveCurrentPrice === 'number') {
+      // Determine color based on the last trade type (buy/sell)
+      let isGreen = true; // Default to green/blue
+      
+      if (limitedTrades.length > 0) {
+        // Get the last trade and check its type
+        const lastTrade = limitedTrades[limitedTrades.length - 1];
+        if (lastTrade && lastTrade.type) {
+          // Blue for buy (bullish), red for sell (bearish)
+          isGreen = lastTrade.type.toLowerCase() === 'buy';
+        }
+      }
+      
       const lineColor = isGreen ? '#26a69a' : '#ef5350';
       const lineStyle = 2;
 
       // Update the background sentiment state
       setIsCurrentlyGreen(isGreen);
 
-      series.createPriceLine({
-        price: lastCandle.close,
+      // Create price line and store reference
+      priceLineRef.current = series.createPriceLine({
+        price: effectiveCurrentPrice,
         color: lineColor,
         lineWidth: 2,
         lineStyle,
@@ -108,8 +212,25 @@ export default function Chart({ trades, tradesPerCandle, setTradesPerCandle, tra
         axisLabelBackgroundColor: '#111',
         axisLabelFontSize: 13,
         axisLabelFontWeight: 'bold',
-        axisLabelText: `Current Price: ${lastCandle.close.toFixed(7)} sats/token`,
+        axisLabelText: `Current Price: ${effectiveCurrentPrice.toFixed(8)} sats/token`,
       });
+
+      // Start bouncing animation if we have both current and last executed prices
+      if (lastExecutedPrice && lastExecutedPrice !== effectiveCurrentPrice) {
+        // Only animate if the difference is meaningful (more than 0.05% of the price)
+        const priceDifference = Math.abs(effectiveCurrentPrice - lastExecutedPrice);
+        const priceThreshold = effectiveCurrentPrice * 0.0005; // 0.05% threshold (more sensitive)
+        
+        if (priceDifference > priceThreshold) {
+          // Stop any existing animation
+          stopBouncingAnimation();
+          
+          // Start new bouncing animation
+          setTimeout(() => {
+            startBouncingAnimation(effectiveCurrentPrice, lastExecutedPrice);
+          }, 500); // Start after 0.5 seconds
+        }
+      }
     }
 
     // Center and zoom out a bit
@@ -126,29 +247,26 @@ export default function Chart({ trades, tradesPerCandle, setTradesPerCandle, tra
 
     return () => {
       window.removeEventListener('resize', handleResize);
+      stopBouncingAnimation();
       chart.remove();
     };
-  }, [trades, tradesPerCandle, localTradesPerCandle, tradeLimit, localTradeLimit]);
-
-  // Dynamic background style based on market sentiment
-  const dynamicWrapperStyle = {
-    background: isCurrentlyGreen 
-      ? 'linear-gradient(135deg, rgba(59, 130, 246, 0.1) 0%, rgba(59, 130, 246, 0.05) 100%)' // Blue gradient for green/bullish
-      : 'linear-gradient(135deg, rgba(236, 72, 153, 0.1) 0%, rgba(236, 72, 153, 0.05) 100%)', // Pink gradient for red/bearish
-    border: isCurrentlyGreen 
-      ? '1px solid rgba(59, 130, 246, 0.2)' // Blue border for green/bullish
-      : '1px solid rgba(236, 72, 153, 0.2)', // Pink border for red/bearish
-    transition: 'all 0.3s ease', // Smooth transition between colors
-  };
+  }, [trades, tradesPerCandle, localTradesPerCandle, tradeLimit, localTradeLimit, currentPrice]);
 
   return (
-    <div className="chart-wrapper" style={dynamicWrapperStyle}>
-      <div style={{ 
-        display: 'flex', 
-        flexDirection: 'column', 
-        gap: '12px',
-        padding: '8px 0'
-      }}>
+    <div className="chart-box-outer">
+      <div 
+        className="chart-box-inner"
+        style={{
+          background: isCurrentlyGreen ? '#3776c6' : '#ec4899', // Blue for green candles, pink for red candles
+          transition: 'background 0.3s ease', // Smooth transition between colors
+        }}
+      >
+        <div style={{ 
+          display: 'flex', 
+          flexDirection: 'column', 
+          gap: '12px',
+          padding: '8px 0'
+        }}>
         {/* Mobile-first header layout */}
         <div style={{ 
           display: 'flex', 
@@ -205,87 +323,48 @@ export default function Chart({ trades, tradesPerCandle, setTradesPerCandle, tra
             />
           </div>
 
-          {/* Dropdown controls container */}
-          <div style={{
-            display: 'flex',
-            gap: '16px',
-            alignItems: 'flex-end',
-            flexWrap: 'wrap'
-          }}>
-            {/* Trade Limit Control */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-              <label style={{
-                fontSize: 'clamp(10px, 2vw, 12px)',
-                color: '#ccc',
-                fontWeight: '500'
-              }}>
-                Trades to Show
-              </label>
-              <select
-                value={tradeLimit || localTradeLimit}
-                onChange={e => {
-                  const value = parseInt(e.target.value);
-                  setLocalTradeLimit(value);
-                  if (setTradeLimit) setTradeLimit(value);
-                }}
-                style={{ 
-                  background: '#222', 
-                  color: '#fff', 
-                  border: '1px solid #444', 
-                  padding: '4px 8px',
-                  borderRadius: '4px',
-                  fontSize: 'clamp(12px, 2.5vw, 14px)',
-                  minWidth: '70px',
-                  flex: '0 0 auto'
-                }}
-              >
-                <option value={5}>5 Trades</option>
-                <option value={10}>10 Trades</option>
-                <option value={20}>20 Trades</option>
-                <option value={40}>40 Trades</option>
-                <option value={80}>80 Trades</option>
-              </select>
-            </div>
-
-            {/* Candle Grouping Control */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-              <label style={{
-                fontSize: 'clamp(10px, 2vw, 12px)',
-                color: '#ccc',
-                fontWeight: '500'
-              }}>
-                Trades per Candle
-              </label>
-              <select
-                value={tradesPerCandle || localTradesPerCandle}
-                onChange={e => {
-                  const value = parseInt(e.target.value);
-                  setLocalTradesPerCandle(value);
-                  if (setTradesPerCandle) setTradesPerCandle(value);
-                }}
-                style={{ 
-                  background: '#222', 
-                  color: '#fff', 
-                  border: '1px solid #444', 
-                  padding: '4px 8px',
-                  borderRadius: '4px',
-                  fontSize: 'clamp(12px, 2.5vw, 14px)',
-                  minWidth: '80px',
-                  flex: '0 0 auto'
-                }}
-              >
-                <option value={1}>{t('one_trade')}</option>
-                <option value={2}>{t('two_trades')}</option>
-                <option value={3}>{t('three_trades')}</option>
-                <option value={5}>{t('five_trades')}</option>
-                <option value={8}>{t('eight_trades')}</option>
-              </select>
-            </div>
+          {/* Candle Grouping Control */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+            <label style={{
+              fontSize: 'clamp(10px, 2vw, 12px)',
+              color: '#ccc',
+              fontWeight: '500'
+            }}>
+              Trades per Candle
+            </label>
+            <select
+              value={tradesPerCandle || localTradesPerCandle}
+              onChange={e => {
+                const value = parseInt(e.target.value);
+                setLocalTradesPerCandle(value);
+                if (setTradesPerCandle) setTradesPerCandle(value);
+              }}
+              style={{ 
+                background: '#222', 
+                color: '#fff', 
+                border: '1px solid #444', 
+                padding: '4px 8px',
+                borderRadius: '4px',
+                fontSize: 'clamp(12px, 2.5vw, 14px)',
+                minWidth: '80px',
+                flex: '0 0 auto'
+              }}
+            >
+              <option value={1}>1 Trade</option>
+              <option value={2}>2 Trades</option>
+              <option value={3}>3 Trades</option>
+              <option value={4}>4 Trades</option>
+              <option value={5}>5 Trades</option>
+            </select>
           </div>
         </div>
-      </div>
+        </div>
 
-      <div ref={chartRef} className="chart-container" />
+        <div 
+          ref={chartRef} 
+          className="chart-container" 
+        />
+      </div>
     </div>
   );
 }
