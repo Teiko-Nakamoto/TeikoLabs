@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { request } from '@stacks/connect';
 import { uintCV, Pc, postConditionToHex } from '@stacks/transactions';
@@ -29,7 +29,7 @@ async function checkNetworkHealth() {
   }
 }
 
-export default function TokenBuySellBox({ 
+const TokenBuySellBox = React.memo(function TokenBuySellBox({ 
   tab, 
   setTab, 
   amount, 
@@ -70,6 +70,21 @@ export default function TokenBuySellBox({
   const [showPriceModal, setShowPriceModal] = useState(false);
   const [priceSnapshot, setPriceSnapshot] = useState(null);
   
+  // Cache for price data to prevent unnecessary API calls
+  const [priceCache, setPriceCache] = useState({
+    lastFetch: 0,
+    lastPrice: 0,
+    lastTokenData: null
+  });
+  
+  // Cache for balance data to prevent unnecessary API calls
+  const [balanceCache, setBalanceCache] = useState({
+    lastFetch: 0,
+    lastBalance: 0,
+    lastTab: null,
+    lastTokenData: null
+  });
+  
   // Slippage protection state
   const [slippageEnabled, setSlippageEnabled] = useState(false);
   const [slippage, setSlippage] = useState(5); // Default 5%
@@ -94,6 +109,64 @@ export default function TokenBuySellBox({
       onCurrentPriceChange(currentPrice);
     }
   }, [currentPrice, onCurrentPriceChange]);
+
+  // Continuous price updates every 10 seconds with intelligent caching
+  useEffect(() => {
+    if (!tokenData) return;
+
+    const updatePrice = async () => {
+      try {
+        const now = Date.now();
+        const cacheAge = now - priceCache.lastFetch;
+        const cacheValid = cacheAge < 5000; // Cache valid for 5 seconds
+        
+        // Check if we can use cached data
+        if (cacheValid && priceCache.lastTokenData === tokenData.dexInfo && priceCache.lastPrice > 0) {
+          console.log('✅ Using cached price data (age:', Math.round(cacheAge / 1000), 's):', priceCache.lastPrice);
+          return;
+        }
+        
+        console.log('🔄 Fetching fresh price data...');
+        const price = await getTokenCurrentPrice(tokenData);
+        
+        // Only update state if price has actually changed (with small tolerance for floating point precision)
+        const priceDifference = Math.abs(price - currentPrice);
+        const tolerance = 0.00000001; // 8 decimal places tolerance
+        
+        if (priceDifference > tolerance) {
+          console.log('🔄 Price updated:', { old: currentPrice, new: price, difference: priceDifference });
+          setCurrentPrice(price);
+          
+          // Update cache
+          setPriceCache({
+            lastFetch: now,
+            lastPrice: price,
+            lastTokenData: tokenData.dexInfo
+          });
+        } else {
+          console.log('✅ Price unchanged, updating cache only:', price);
+          
+          // Update cache even if price didn't change
+          setPriceCache({
+            lastFetch: now,
+            lastPrice: price,
+            lastTokenData: tokenData.dexInfo
+          });
+        }
+      } catch (error) {
+        console.error('Error updating current price:', error);
+        // Don't reset to 0, keep the last known price
+      }
+    };
+
+    // Initial price fetch
+    updatePrice();
+
+    // Set up interval for continuous updates
+    const interval = setInterval(updatePrice, 10000); // Update every 10 seconds
+
+    return () => clearInterval(interval);
+  }, [tokenData, currentPrice, priceCache]);
 
   // Function to fetch recent DEX transactions
   const fetchRecentDexTransactions = async () => {
@@ -220,36 +293,67 @@ export default function TokenBuySellBox({
     setShowPriceModal(false);
   };
 
-  // Fetch user balance, current price, and recent transactions
+  // Fetch user balance with intelligent caching
   useEffect(() => {
     const fetchBalance = async () => {
       try {
-        if (tab === 'sell') {
-          const tokenBalance = await getTokenUserBalance(tokenData);
-          setUserBalance(tokenBalance);
-        } else {
-          const satsBalance = await getUserSatsBalance();
-          setUserBalance(satsBalance);
+        const now = Date.now();
+        const cacheAge = now - balanceCache.lastFetch;
+        const cacheValid = cacheAge < 30000; // Cache valid for 30 seconds
+        
+        // Check if we can use cached balance data
+        if (cacheValid && 
+            balanceCache.lastTab === tab && 
+            balanceCache.lastTokenData === tokenData?.dexInfo && 
+            balanceCache.lastBalance > 0) {
+          console.log('✅ Using cached balance data (age:', Math.round(cacheAge / 1000), 's):', balanceCache.lastBalance);
+          setUserBalance(balanceCache.lastBalance);
+          return;
         }
+        
+        console.log('🔄 Fetching fresh balance data...');
+        let newBalance = 0;
+        
+        if (tab === 'sell') {
+          newBalance = await getTokenUserBalance(tokenData);
+        } else {
+          newBalance = await getUserSatsBalance();
+        }
+        
+        // Only update if balance has changed significantly
+        const balanceDifference = Math.abs(newBalance - userBalance);
+        const tolerance = 0.00000001; // Small tolerance for floating point precision
+        
+        if (balanceDifference > tolerance) {
+          console.log('🔄 Balance updated:', { old: userBalance, new: newBalance, difference: balanceDifference });
+          setUserBalance(newBalance);
+        } else {
+          console.log('✅ Balance unchanged:', newBalance);
+        }
+        
+        // Update cache
+        setBalanceCache({
+          lastFetch: now,
+          lastBalance: newBalance,
+          lastTab: tab,
+          lastTokenData: tokenData?.dexInfo
+        });
+        
       } catch (error) {
         console.error('Error fetching balance:', error);
         setUserBalance(0);
       }
     };
 
-    const fetchCurrentPrice = async () => {
-      try {
-        const price = await getTokenCurrentPrice(tokenData);
-        setCurrentPrice(price);
-      } catch (error) {
-        console.error('Error fetching current price:', error);
-      }
-    };
-
     fetchBalance();
-    fetchCurrentPrice();
-    fetchRecentDexTransactions(); // Fetch recent DEX transactions
-  }, [tokenData, tab]);
+  }, [tokenData, tab, balanceCache, userBalance]);
+
+  // Fetch recent DEX transactions (separate from balance fetching)
+  useEffect(() => {
+    if (tokenData?.dexInfo) {
+      fetchRecentDexTransactions();
+    }
+  }, [tokenData?.dexInfo]); // Only run when tokenData.dexInfo changes
 
   const calculateEstimates = async () => {
     if (!amount || isNaN(amount) || Number(amount) <= 0) {
@@ -260,13 +364,27 @@ export default function TokenBuySellBox({
 
     try {
       if (tab === 'buy') {
-        const estimatedTokens = await calculateTokenEstimatedTokensForSats(parseInt(amount), tokenData);
-        setEstimatedTokens(estimatedTokens);
-        setEstimatedSats(parseInt(amount));
+        const newEstimatedTokens = await calculateTokenEstimatedTokensForSats(parseInt(amount), tokenData);
+        const newEstimatedSats = parseInt(amount);
+        
+        // Only update if values have changed
+        if (Math.abs(newEstimatedTokens - estimatedTokens) > 0.00000001) {
+          setEstimatedTokens(newEstimatedTokens);
+        }
+        if (Math.abs(newEstimatedSats - estimatedSats) > 0.00000001) {
+          setEstimatedSats(newEstimatedSats);
+        }
       } else {
-        const estimatedSats = await calculateTokenEstimatedSatsForTokens(parseFloat(amount), tokenData);
-        setEstimatedSats(estimatedSats);
-        setEstimatedTokens(parseFloat(amount));
+        const newEstimatedSats = await calculateTokenEstimatedSatsForTokens(parseFloat(amount), tokenData);
+        const newEstimatedTokens = parseFloat(amount);
+        
+        // Only update if values have changed
+        if (Math.abs(newEstimatedSats - estimatedSats) > 0.00000001) {
+          setEstimatedSats(newEstimatedSats);
+        }
+        if (Math.abs(newEstimatedTokens - estimatedTokens) > 0.00000001) {
+          setEstimatedTokens(newEstimatedTokens);
+        }
       }
     } catch (error) {
       console.error('Error calculating estimates:', error);
@@ -275,7 +393,7 @@ export default function TokenBuySellBox({
 
   useEffect(() => {
     calculateEstimates();
-  }, [amount, tab]);
+  }, [amount, tab, tokenData]);
 
   const handleCloseToast = () => {
     setToast({ message: '', txId: '', visible: false, status: 'pending' });
@@ -1438,4 +1556,6 @@ export default function TokenBuySellBox({
 
     </div>
   );
-} 
+});
+
+export default TokenBuySellBox;

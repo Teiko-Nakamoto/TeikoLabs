@@ -178,11 +178,10 @@ export default function Chart({ trades, tradesPerCandle, setTradesPerCandle, tra
     series.setData(candles);
     series.applyOptions({ lastValueVisible: false, priceLineVisible: false });
 
-    // Add current price line using real-time AMM price or last candle close as fallback
-    const effectiveCurrentPrice = currentPrice || (candles.length > 0 ? candles[candles.length - 1]?.close : null);
-    const lastExecutedPrice = candles.length > 0 ? candles[candles.length - 1]?.close : effectiveCurrentPrice;
+    // Simple approach: Always use the last executed price from the chart
+    const lastExecutedPrice = candles.length > 0 ? candles[candles.length - 1]?.close : null;
     
-    if (effectiveCurrentPrice && typeof effectiveCurrentPrice === 'number') {
+    if (lastExecutedPrice && typeof lastExecutedPrice === 'number') {
       // Determine color based on the last trade type (buy/sell)
       let isGreen = true; // Default to green/blue
       
@@ -203,7 +202,7 @@ export default function Chart({ trades, tradesPerCandle, setTradesPerCandle, tra
 
       // Create price line and store reference
       priceLineRef.current = series.createPriceLine({
-        price: effectiveCurrentPrice,
+        price: lastExecutedPrice,
         color: lineColor,
         lineWidth: 2,
         lineStyle,
@@ -212,25 +211,8 @@ export default function Chart({ trades, tradesPerCandle, setTradesPerCandle, tra
         axisLabelBackgroundColor: '#111',
         axisLabelFontSize: 13,
         axisLabelFontWeight: 'bold',
-        axisLabelText: `Current Price: ${effectiveCurrentPrice.toFixed(8)} sats/token`,
+        axisLabelText: `Execution Price: ${lastExecutedPrice.toFixed(8)} sats/token`,
       });
-
-      // Start bouncing animation if we have both current and last executed prices
-      if (lastExecutedPrice && lastExecutedPrice !== effectiveCurrentPrice) {
-        // Only animate if the difference is meaningful (more than 0.05% of the price)
-        const priceDifference = Math.abs(effectiveCurrentPrice - lastExecutedPrice);
-        const priceThreshold = effectiveCurrentPrice * 0.0005; // 0.05% threshold (more sensitive)
-        
-        if (priceDifference > priceThreshold) {
-          // Stop any existing animation
-          stopBouncingAnimation();
-          
-          // Start new bouncing animation
-          setTimeout(() => {
-            startBouncingAnimation(effectiveCurrentPrice, lastExecutedPrice);
-          }, 500); // Start after 0.5 seconds
-        }
-      }
     }
 
     // Center and zoom out a bit

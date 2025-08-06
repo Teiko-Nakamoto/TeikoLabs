@@ -117,16 +117,21 @@ export default function Header() {
 
         <nav className="nav-links">
           <div className="center-link">
-            {/* Link to themasnetwork.com */}
-            <a 
-              href="https://themasnetwork.com" 
-              target="_blank" 
-              rel="noopener noreferrer"
+            {/* How It Works button */}
+            <button 
+              onClick={() => setShowHowItWorks(true)}
               className="nav-link"
-              style={{ textDecoration: 'none' }}
+              style={{ 
+                textDecoration: 'none',
+                background: 'none',
+                border: 'none',
+                cursor: 'pointer',
+                color: 'inherit',
+                font: 'inherit'
+              }}
             >
               {t('how_it_works')}
-            </a>
+            </button>
           </div>
           <div className="language-profile">
             <div style={{ position: 'relative', display: 'inline-block' }}>

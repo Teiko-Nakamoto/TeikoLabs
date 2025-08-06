@@ -221,28 +221,38 @@ export default function HomePage() {
     <>
       <Header />
       <main className="home-page">
-        <div className="page-header-centered">
+                <div className="page-header-centered">
           <h1 style={{ 
-            display: 'flex', 
-            alignItems: 'center', 
-            justifyContent: 'center',
-            gap: '12px',
+            textAlign: 'center',
             color: '#fbbf24',
             fontWeight: 'bold',
             fontSize: '2rem',
-            fontFamily: 'Arial, sans-serif'
+            fontFamily: 'Arial, sans-serif',
+            marginBottom: '16px'
           }}>
-            <img 
-              src="/icons/The Mas Network.svg" 
-              alt="MAS Sats" 
-              style={{ 
-                width: '60px', 
-                height: '60px'
-              }} 
-            />
-            <span style={{ color: '#fbbf24' }}>Trade on Bitcoin Layer 3</span>
+            The Future of Bitcoin DeFi
           </h1>
-        </div>
+           
+            <div style={{ 
+              display: 'flex', 
+              alignItems: 'center', 
+              justifyContent: 'center',
+              gap: '8px',
+              fontSize: '1.5rem',
+              color: '#fbbf24',
+              fontWeight: 'bold'
+            }}>
+              <span>Powered by</span>
+              <img 
+                src="/icons/The Mas Network.svg" 
+                alt="MAS Sats" 
+                style={{ 
+                  width: '30px', 
+                  height: '30px'
+                }} 
+              />
+            </div>
+          </div>
 
         <div className="top-controls">
           <div className="tab-toggle">

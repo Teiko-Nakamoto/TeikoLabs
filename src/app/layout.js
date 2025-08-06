@@ -12,7 +12,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata = {
-  title: "Teiko Labs: Trade on Bitcoin Layer 3",
+  title: "Teiko Labs: The Future of Bitcoin DeFi",
   description: "Trade on The MAS Network Protocol, Bitcoin's Layer 3 and unlock the power of MAS Sats",
   icons: {
     icon: "/logo.png",     // favicon for browser tab

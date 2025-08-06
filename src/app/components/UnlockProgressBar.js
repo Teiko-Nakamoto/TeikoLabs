@@ -38,7 +38,7 @@ import React, { useState, useEffect } from 'react';
  *   showButtons={false}
  * />
  */
-export default function UnlockProgressBar({ 
+const UnlockProgressBar = React.memo(function UnlockProgressBar({ 
   tokenSymbol = 'TOKEN', 
   revenue = '0', 
   liquidity = '0',
@@ -104,12 +104,15 @@ export default function UnlockProgressBar({
   const minimumRevenueThreshold = contractThreshold || Math.floor(currentLiquidity / 2) + 1;
   const progressPercentage = Math.min(100, Math.max(0, (currentRevenue / minimumRevenueThreshold) * 100));
 
-  console.log('🔍 Threshold calculation debug:', {
-    contractThreshold,
-    currentLiquidity,
-    minimumRevenueThreshold,
-    isUsingContractThreshold: contractThreshold > 0
-  });
+  // Only log threshold calculation when values actually change
+  useEffect(() => {
+    console.log('🔍 Threshold calculation debug:', {
+      contractThreshold,
+      currentLiquidity,
+      minimumRevenueThreshold,
+      isUsingContractThreshold: contractThreshold > 0
+    });
+  }, [contractThreshold, currentLiquidity, minimumRevenueThreshold]);
 
   return (
     <div style={{
@@ -163,7 +166,11 @@ export default function UnlockProgressBar({
             textAlign: 'center',
             width: '50%'
           }}>
-            Progress to Unlock {tokenSymbol}
+            Progress to Unlock <img 
+              src="/icons/The Mas Network.svg" 
+              alt="MAS Sats" 
+              style={{ width: '18px', height: '18px', verticalAlign: 'middle', marginLeft: '4px' }}
+            />
           </div>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-start', gap: '8px' }}>
             <div style={{
@@ -252,33 +259,7 @@ export default function UnlockProgressBar({
         </div>
       </div>
       
-      {/* Bottom Text with Mas Sats Logo */}
-      <div style={{
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        gap: '8px',
-        marginTop: '12px',
-        padding: '8px',
-        background: 'rgba(255, 255, 255, 0.05)',
-        borderRadius: '6px'
-      }}>
-        <span style={{ fontSize: '12px', color: '#ccc' }}>
-          Minimum revenue needed to unlock
-        </span>
-        <img 
-          src="/icons/sats1.svg" 
-          alt="Mas Sats" 
-          style={{ 
-            width: '16px', 
-            height: '16px',
-            filter: 'brightness(0) invert(1)'
-          }} 
-        />
-        <span style={{ fontSize: '12px', color: '#ccc' }}>
-          mas sats
-        </span>
-      </div>
+
 
       {/* Action Buttons Section - Optional */}
       {showButtons && (
@@ -296,9 +277,9 @@ export default function UnlockProgressBar({
           <button
             onClick={onShowContracts}
             style={{
-              background: '#f97316', 
+              background: '#3b82f6', 
               color: '#fff', 
-              border: '1px solid #ea580c', 
+              border: '1px solid #2563eb', 
               padding: '12px 20px',
               borderRadius: '8px',
               fontSize: '12px',
@@ -306,19 +287,22 @@ export default function UnlockProgressBar({
               whiteSpace: 'nowrap',
               fontWeight: '600',
               transition: 'all 0.2s ease',
-              boxShadow: '0 2px 4px rgba(249, 115, 22, 0.2)',
+              boxShadow: '0 2px 4px rgba(59, 130, 246, 0.2)',
               width: '220px',
-              height: '40px'
+              height: '40px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center'
             }}
             onMouseEnter={(e) => {
-              e.target.style.background = '#ea580c';
+              e.target.style.background = '#2563eb';
               e.target.style.transform = 'translateY(-2px)';
-              e.target.style.boxShadow = '0 4px 8px rgba(249, 115, 22, 0.3)';
+              e.target.style.boxShadow = '0 4px 8px rgba(59, 130, 246, 0.3)';
             }}
             onMouseLeave={(e) => {
-              e.target.style.background = '#f97316';
+              e.target.style.background = '#3b82f6';
               e.target.style.transform = 'translateY(0)';
-              e.target.style.boxShadow = '0 2px 4px rgba(249, 115, 22, 0.2)';
+              e.target.style.boxShadow = '0 2px 4px rgba(59, 130, 246, 0.2)';
             }}
           >
             📋 Smart Contract Addresses
@@ -327,9 +311,9 @@ export default function UnlockProgressBar({
           <button
             onClick={onClaimRevenue}
             style={{
-              background: '#f97316', 
+              background: '#3b82f6', 
               color: '#fff', 
-              border: '1px solid #ea580c', 
+              border: '1px solid #2563eb', 
               padding: '12px 20px',
               borderRadius: '8px',
               fontSize: '12px',
@@ -337,19 +321,22 @@ export default function UnlockProgressBar({
               whiteSpace: 'nowrap',
               fontWeight: '600',
               transition: 'all 0.2s ease',
-              boxShadow: '0 2px 4px rgba(249, 115, 22, 0.2)',
+              boxShadow: '0 2px 4px rgba(59, 130, 246, 0.2)',
               width: '220px',
-              height: '40px'
+              height: '40px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center'
             }}
             onMouseEnter={(e) => {
-              e.target.style.background = '#ea580c';
+              e.target.style.background = '#2563eb';
               e.target.style.transform = 'translateY(-2px)';
-              e.target.style.boxShadow = '0 4px 8px rgba(249, 115, 22, 0.3)';
+              e.target.style.boxShadow = '0 4px 8px rgba(59, 130, 246, 0.3)';
             }}
             onMouseLeave={(e) => {
-              e.target.style.background = '#f97316';
+              e.target.style.background = '#3b82f6';
               e.target.style.transform = 'translateY(0)';
-              e.target.style.boxShadow = '0 2px 4px rgba(249, 115, 22, 0.2)';
+              e.target.style.boxShadow = '0 2px 4px rgba(59, 130, 246, 0.2)';
             }}
           >
             💰 Claim Revenue
@@ -361,11 +348,17 @@ export default function UnlockProgressBar({
               tokenId={tokenId}
               className="lock-unlock-button"
             >
-              🔒 Lock/Unlock Tokens
+              🔒 Lock/Unlock <img 
+                src="/icons/The Mas Network.svg" 
+                alt="MAS Sats" 
+                style={{ width: '16px', height: '16px', verticalAlign: 'middle', marginLeft: '4px' }}
+              />
             </LockUnlockButton>
           )}
         </div>
       )}
     </div>
   );
-} 
+});
+
+export default UnlockProgressBar;

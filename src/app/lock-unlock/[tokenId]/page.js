@@ -25,12 +25,16 @@ export default function LockUnlockPage() {
   const [isProcessing, setIsProcessing] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
-  const [toast, setToast] = useState({ message: '', txId: '', visible: false, status: 'pending' });
-  
-  // Progress bar data
-  const [revenue, setRevenue] = useState('--');
-  const [liquidity, setLiquidity] = useState('--');
-  const [threshold, setThreshold] = useState('--');
+     const [toast, setToast] = useState({ message: '', txId: '', visible: false, status: 'pending' });
+   
+   // Consent state
+   const [hasAgreedToTerms, setHasAgreedToTerms] = useState(false);
+   const [showConsentModal, setShowConsentModal] = useState(false);
+   
+   // Progress bar data
+   const [revenue, setRevenue] = useState('--');
+   const [liquidity, setLiquidity] = useState('--');
+   const [threshold, setThreshold] = useState('--');
   
   // Calculate if unlock is available
   const canUnlock = threshold !== '--' && revenue !== '--' && parseFloat(revenue.replace(/,/g, '')) >= parseFloat(threshold.replace(/,/g, ''));
@@ -230,10 +234,28 @@ export default function LockUnlockPage() {
     setToast({ message: '', txId: '', visible: false, status: 'pending' });
   };
 
-  // Navigate to trading page
-  const handleGoToTrading = () => {
-    router.push(`/trade/${tokenId}`);
-  };
+     // Navigate to trading page
+   const handleGoToTrading = () => {
+     router.push(`/trade/${tokenId}`);
+   };
+
+   // Handle consent agreement
+   const handleAgreeToTerms = () => {
+     setHasAgreedToTerms(true);
+     setShowConsentModal(false);
+   };
+
+   // Handle lock tab click
+   const handleLockTabClick = () => {
+     setAction('lock');
+   };
+
+   // Handle input focus - show consent if not agreed and trying to lock
+   const handleInputFocus = () => {
+     if (action === 'lock' && !hasAgreedToTerms) {
+       setShowConsentModal(true);
+     }
+   };
 
   if (loading) {
     return (
@@ -272,17 +294,108 @@ export default function LockUnlockPage() {
             <button onClick={handleBack} className="back-button">
               ← Back
             </button>
-            <h1>Lock/Unlock {tokenData.symbol} Tokens</h1>
+                         <h1>Lock/Unlock <img 
+               src="/icons/The Mas Network.svg" 
+               alt="MAS Sats" 
+               style={{ width: '32px', height: '32px', verticalAlign: 'middle', marginLeft: '8px', marginRight: '8px' }}
+             /></h1>
           </div>
 
-          <div className="token-info">
-            <h2>{tokenData.symbol} Token</h2>
-            <div className="contract-details">
-              <p><strong>DEX Contract:</strong> {tokenData.dexInfo}</p>
-              <p><strong>Token Contract:</strong> {tokenData.tokenInfo}</p>
-              <p><strong>Your Wallet:</strong> {getConnectedWalletAddress()}</p>
-            </div>
-          </div>
+                     <div className="token-info">
+             <h2>Contract Details</h2>
+             <div className="contract-details">
+               <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
+                 <strong>DEX Contract:</strong>
+                 <a 
+                   href={`https://explorer.stacks.co/txid/${tokenData.dexInfo}`} 
+                   target="_blank" 
+                   rel="noopener noreferrer"
+                   style={{ color: '#3b82f6', textDecoration: 'none' }}
+                 >
+                   {tokenData.dexInfo}
+                 </a>
+                 <button
+                   onClick={() => {
+                     navigator.clipboard.writeText(tokenData.dexInfo);
+                     // You could add a toast notification here
+                   }}
+                   style={{
+                     background: '#374151',
+                     border: '1px solid #4b5563',
+                     borderRadius: '4px',
+                     padding: '4px 8px',
+                     color: '#fff',
+                     cursor: 'pointer',
+                     fontSize: '12px'
+                   }}
+                   onMouseEnter={(e) => e.target.style.background = '#4b5563'}
+                   onMouseLeave={(e) => e.target.style.background = '#374151'}
+                 >
+                   Copy
+                 </button>
+               </div>
+               <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
+                 <strong>Token Contract:</strong>
+                 <a 
+                   href={`https://explorer.stacks.co/txid/${tokenData.tokenInfo}`} 
+                   target="_blank" 
+                   rel="noopener noreferrer"
+                   style={{ color: '#3b82f6', textDecoration: 'none' }}
+                 >
+                   {tokenData.tokenInfo}
+                 </a>
+                 <button
+                   onClick={() => {
+                     navigator.clipboard.writeText(tokenData.tokenInfo);
+                     // You could add a toast notification here
+                   }}
+                   style={{
+                     background: '#374151',
+                     border: '1px solid #4b5563',
+                     borderRadius: '4px',
+                     padding: '4px 8px',
+                     color: '#fff',
+                     cursor: 'pointer',
+                     fontSize: '12px'
+                   }}
+                   onMouseEnter={(e) => e.target.style.background = '#4b5563'}
+                   onMouseLeave={(e) => e.target.style.background = '#374151'}
+                 >
+                   Copy
+                 </button>
+               </div>
+               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                 <strong>Your Wallet:</strong>
+                 <a 
+                   href={`https://explorer.stacks.co/address/${getConnectedWalletAddress()}`} 
+                   target="_blank" 
+                   rel="noopener noreferrer"
+                   style={{ color: '#3b82f6', textDecoration: 'none' }}
+                 >
+                   {getConnectedWalletAddress()}
+                 </a>
+                 <button
+                   onClick={() => {
+                     navigator.clipboard.writeText(getConnectedWalletAddress());
+                     // You could add a toast notification here
+                   }}
+                   style={{
+                     background: '#374151',
+                     border: '1px solid #4b5563',
+                     borderRadius: '4px',
+                     padding: '4px 8px',
+                     color: '#fff',
+                     cursor: 'pointer',
+                     fontSize: '12px'
+                   }}
+                   onMouseEnter={(e) => e.target.style.background = '#4b5563'}
+                   onMouseLeave={(e) => e.target.style.background = '#374151'}
+                 >
+                   Copy
+                 </button>
+               </div>
+             </div>
+           </div>
 
           {/* Simple Progress to Unlock Info */}
           <div style={{
@@ -300,7 +413,11 @@ export default function LockUnlockPage() {
               marginBottom: '12px',
               textAlign: 'center'
             }}>
-              Progress to Unlock {tokenData.symbol}
+              Progress to Unlock <img 
+                src="/icons/The Mas Network.svg" 
+                alt="MAS Sats" 
+                style={{ width: '18px', height: '18px', verticalAlign: 'middle', marginLeft: '4px' }}
+              />
             </div>
             
             {/* Visual Progress Bar */}
@@ -390,34 +507,91 @@ export default function LockUnlockPage() {
 
           <div className="user-stats">
             <div className="stat-card">
-              <h3>Your Locked Tokens</h3>
+                             <h3>Your Locked <img 
+                 src="/icons/The Mas Network.svg" 
+                 alt="MAS Sats" 
+                 style={{ width: '16px', height: '16px', verticalAlign: 'middle', marginLeft: '4px' }}
+               /></h3>
               <p className="stat-value">{userLockedTokens.toLocaleString(undefined, { maximumFractionDigits: 8 })}</p>
             </div>
             <div className="stat-card">
-              <h3>Your Token Balance</h3>
+                             <h3>Your <img 
+                 src="/icons/The Mas Network.svg" 
+                 alt="MAS Sats" 
+                 style={{ width: '16px', height: '16px', verticalAlign: 'middle', marginLeft: '4px', marginRight: '4px' }}
+               /> Balance</h3>
               <p className="stat-value">{userTokenBalance.toLocaleString(undefined, { maximumFractionDigits: 8 })}</p>
             </div>
           </div>
 
                      <div className="action-section">
              <div className="action-tabs">
-               <button 
-                 className={`tab ${action === 'lock' ? 'active' : ''}`}
-                 onClick={() => setAction('lock')}
-               >
-                 🔒 Lock Tokens
-               </button>
-               <button 
-                 className={`tab ${action === 'unlock' ? 'active' : ''} ${!canUnlock ? 'disabled' : ''}`}
-                 onClick={() => canUnlock && setAction('unlock')}
-                 disabled={!canUnlock}
-                 style={{
-                   opacity: canUnlock ? 1 : 0.5,
-                   cursor: canUnlock ? 'pointer' : 'not-allowed'
-                 }}
-               >
-                 🔓 Unlock Tokens
-               </button>
+                               <button 
+                  className={`tab ${action === 'lock' ? 'active' : ''}`}
+                  onClick={handleLockTabClick}
+                  style={{
+                    background: action === 'lock' ? '#3b82f6' : '#374151',
+                    color: '#fff',
+                    border: '1px solid #2563eb',
+                    padding: '12px 20px',
+                    borderRadius: '8px',
+                    fontSize: '14px',
+                    cursor: 'pointer',
+                    fontWeight: '600',
+                    transition: 'all 0.2s ease',
+                    boxShadow: action === 'lock' ? '0 2px 4px rgba(59, 130, 246, 0.2)' : 'none'
+                  }}
+                  onMouseEnter={(e) => {
+                    if (action !== 'lock') {
+                      e.target.style.background = '#4b5563';
+                    }
+                  }}
+                  onMouseLeave={(e) => {
+                    if (action !== 'lock') {
+                      e.target.style.background = '#374151';
+                    }
+                  }}
+                >
+                  🔒 Lock <img 
+                    src="/icons/The Mas Network.svg" 
+                    alt="MAS Sats" 
+                    style={{ width: '14px', height: '14px', verticalAlign: 'middle', marginLeft: '4px' }}
+                  />
+                </button>
+                <button 
+                  className={`tab ${action === 'unlock' ? 'active' : ''} ${!canUnlock ? 'disabled' : ''}`}
+                  onClick={() => canUnlock && setAction('unlock')}
+                  disabled={!canUnlock}
+                  style={{
+                    background: action === 'unlock' ? '#3b82f6' : '#374151',
+                    color: '#fff',
+                    border: '1px solid #2563eb',
+                    padding: '12px 20px',
+                    borderRadius: '8px',
+                    fontSize: '14px',
+                    cursor: canUnlock ? 'pointer' : 'not-allowed',
+                    fontWeight: '600',
+                    transition: 'all 0.2s ease',
+                    opacity: canUnlock ? 1 : 0.5,
+                    boxShadow: action === 'unlock' ? '0 2px 4px rgba(59, 130, 246, 0.2)' : 'none'
+                  }}
+                  onMouseEnter={(e) => {
+                    if (canUnlock && action !== 'unlock') {
+                      e.target.style.background = '#4b5563';
+                    }
+                  }}
+                  onMouseLeave={(e) => {
+                    if (canUnlock && action !== 'unlock') {
+                      e.target.style.background = '#374151';
+                    }
+                  }}
+                >
+                  🔓 Unlock <img 
+                    src="/icons/The Mas Network.svg" 
+                    alt="MAS Sats" 
+                    style={{ width: '14px', height: '14px', verticalAlign: 'middle', marginLeft: '4px' }}
+                  />
+                </button>
              </div>
 
                          <div className="action-form">
@@ -442,7 +616,7 @@ export default function LockUnlockPage() {
                      ⚠️ Unlock Not Available
                    </div>
                    <p style={{ marginBottom: '12px', fontSize: '14px' }}>
-                     Trading fees need to reach the minimum threshold before you can unlock tokens.
+                                           Trading fees need to reach the minimum threshold before you can unlock.
                    </p>
                    <div style={{ fontSize: '13px', color: '#a0aec0', marginBottom: '16px' }}>
                      <p><strong>Current Revenue:</strong> {revenue} sats</p>
@@ -459,8 +633,8 @@ export default function LockUnlockPage() {
                        <strong>💡 How to increase trading fees:</strong>
                      </p>
                      <ul style={{ fontSize: '12px', color: '#a0aec0', margin: 0, paddingLeft: '16px' }}>
-                       <li>Trade more tokens to generate fees</li>
-                       <li>Encourage others to trade on this token</li>
+                                               <li>Trade more to generate fees</li>
+                                               <li>Encourage others to trade</li>
                        <li>Wait for more trading activity</li>
                      </ul>
                    </div>
@@ -487,16 +661,17 @@ export default function LockUnlockPage() {
 
                <div className="input-group">
                  <label htmlFor="amount">Amount to {action}:</label>
-                 <input
-                   type="number"
-                   id="amount"
-                   value={amount}
-                   onChange={(e) => setAmount(e.target.value)}
-                   placeholder={`Enter amount to ${action}`}
-                   min="0"
-                   step="0.00000001"
-                   disabled={isProcessing || (action === 'unlock' && !canUnlock)}
-                 />
+                                   <input
+                    type="number"
+                    id="amount"
+                    value={amount}
+                    onChange={(e) => setAmount(e.target.value)}
+                    onFocus={handleInputFocus}
+                    placeholder={`Enter amount to ${action}`}
+                    min="0"
+                    step="0.00000001"
+                    disabled={isProcessing || (action === 'unlock' && !canUnlock)}
+                  />
                </div>
 
               {error && (
@@ -511,26 +686,57 @@ export default function LockUnlockPage() {
                 </div>
               )}
 
-                             <button
-                 onClick={() => {
-                   console.log('🔍 Button clicked!');
-                   handleAction();
-                 }}
-                 disabled={isProcessing || !amount || parseFloat(amount) <= 0 || (action === 'unlock' && !canUnlock)}
-                 className={`action-button ${isProcessing ? 'processing' : ''} ${action === 'unlock' && !canUnlock ? 'disabled' : ''}`}
-                 style={{
-                   opacity: (action === 'unlock' && !canUnlock) ? 0.5 : 1,
-                   cursor: (action === 'unlock' && !canUnlock) ? 'not-allowed' : 'pointer'
-                 }}
-               >
+                                                           <button
+                  onClick={() => {
+                    console.log('🔍 Button clicked!');
+                    handleAction();
+                  }}
+                  disabled={isProcessing || !amount || parseFloat(amount) <= 0 || (action === 'unlock' && !canUnlock) || (action === 'lock' && !hasAgreedToTerms)}
+                  className={`action-button ${isProcessing ? 'processing' : ''} ${action === 'unlock' && !canUnlock ? 'disabled' : ''}`}
+                  style={{
+                    background: '#3b82f6',
+                    color: '#fff',
+                    border: '1px solid #2563eb',
+                    padding: '12px 20px',
+                    borderRadius: '8px',
+                    fontSize: '14px',
+                    cursor: (action === 'unlock' && !canUnlock) ? 'not-allowed' : 'pointer',
+                    fontWeight: '600',
+                    transition: 'all 0.2s ease',
+                    opacity: (action === 'unlock' && !canUnlock) ? 0.5 : 1,
+                    boxShadow: '0 2px 4px rgba(59, 130, 246, 0.2)',
+                    width: '100%',
+                    marginTop: '16px'
+                  }}
+                  onMouseEnter={(e) => {
+                    if (!(action === 'unlock' && !canUnlock)) {
+                      e.target.style.background = '#2563eb';
+                      e.target.style.transform = 'translateY(-2px)';
+                      e.target.style.boxShadow = '0 4px 8px rgba(59, 130, 246, 0.3)';
+                    }
+                  }}
+                  onMouseLeave={(e) => {
+                    if (!(action === 'unlock' && !canUnlock)) {
+                      e.target.style.background = '#3b82f6';
+                      e.target.style.transform = 'translateY(0)';
+                      e.target.style.boxShadow = '0 2px 4px rgba(59, 130, 246, 0.2)';
+                    }
+                  }}
+                >
                 {isProcessing ? (
                   <>
                     <div className="spinner"></div>
                     {action === 'lock' ? 'Locking...' : 'Unlocking...'}
                   </>
-                ) : (
-                  `${action === 'lock' ? 'Lock' : 'Unlock'} Tokens`
-                )}
+                                 ) : (
+                   <>
+                     {action === 'lock' ? 'Lock' : 'Unlock'} <img 
+                       src="/icons/The Mas Network.svg" 
+                       alt="MAS Sats" 
+                       style={{ width: '14px', height: '14px', verticalAlign: 'middle', marginLeft: '4px' }}
+                     />
+                   </>
+                 )}
               </button>
             </div>
           </div>
@@ -539,30 +745,147 @@ export default function LockUnlockPage() {
             <h3>About Locking/Unlocking</h3>
             <div className="info-cards">
               <div className="info-card">
-                <h4>🔒 Locking Tokens</h4>
-                <p>Locking tokens makes you eligible to claim revenue. The more tokens you lock, the higher your chance of becoming the majority holder.</p>
+                                 <h4>🔒 Locking <img 
+                   src="/icons/The Mas Network.svg" 
+                   alt="MAS Sats" 
+                   style={{ width: '14px', height: '14px', verticalAlign: 'middle', marginLeft: '4px' }}
+                 /></h4>
+                 <p>Locking makes you eligible to claim revenue. The more you lock, the higher your chance of becoming the majority holder.</p>
               </div>
               <div className="info-card">
-                <h4>🔓 Unlocking Tokens</h4>
-                <p>Unlocking tokens removes them from the revenue pool. You can only unlock tokens that you previously locked.</p>
+                                 <h4>🔓 Unlocking <img 
+                   src="/icons/The Mas Network.svg" 
+                   alt="MAS Sats" 
+                   style={{ width: '14px', height: '14px', verticalAlign: 'middle', marginLeft: '4px' }}
+                 /></h4>
+                 <p>Unlocking removes them from the revenue pool. You can only unlock that you previously locked.</p>
               </div>
               <div className="info-card">
-                <h4>👑 Majority Holder</h4>
-                <p>The address with the most locked tokens becomes the majority holder and can claim all accumulated revenue.</p>
+                                 <h4>👑 Majority Holder</h4>
+                 <p>The address with the most locked becomes the majority holder and can claim all accumulated revenue.</p>
               </div>
             </div>
           </div>
         </div>
 
-        {/* Transaction Toast */}
-        {toast.visible && (
-          <TransactionToast
-            message={toast.message}
-            txId={toast.txId}
-            status={toast.status}
-            onClose={handleCloseToast}
-          />
-        )}
+                 {/* Transaction Toast */}
+         {toast.visible && (
+           <TransactionToast
+             message={toast.message}
+             txId={toast.txId}
+             status={toast.status}
+             onClose={handleCloseToast}
+           />
+         )}
+
+         {/* Consent Modal */}
+         {showConsentModal && (
+           <div style={{
+             position: 'fixed',
+             top: 0,
+             left: 0,
+             right: 0,
+             bottom: 0,
+             background: 'rgba(0, 0, 0, 0.8)',
+             display: 'flex',
+             alignItems: 'center',
+             justifyContent: 'center',
+             zIndex: 1000
+           }}>
+             <div style={{
+               background: '#1c2d4e',
+               borderRadius: '12px',
+               padding: '24px',
+               maxWidth: '500px',
+               width: '90%',
+               color: '#fff',
+               border: '1px solid #374151'
+             }}>
+               <div style={{
+                 display: 'flex',
+                 alignItems: 'center',
+                 gap: '12px',
+                 marginBottom: '20px'
+               }}>
+                 <img 
+                   src="/icons/The Mas Network.svg" 
+                   alt="MAS Sats" 
+                   style={{ width: '32px', height: '32px' }}
+                 />
+                 <h2 style={{ margin: 0, color: '#fff' }}>Important: Locking Agreement</h2>
+               </div>
+               
+               <div style={{ marginBottom: '20px' }}>
+                 <p style={{ marginBottom: '16px', lineHeight: '1.6' }}>
+                   <strong>Before you can lock your MAS Sats, you must understand:</strong>
+                 </p>
+                 
+                 <div style={{
+                   background: '#2d3748',
+                   borderRadius: '8px',
+                   padding: '16px',
+                   marginBottom: '16px',
+                   border: '1px solid #e53e3e'
+                 }}>
+                                       <p style={{ margin: 0, color: '#fbbf24', fontWeight: 'bold' }}>
+                      ⚠️ You CANNOT unlock your <img 
+                        src="/icons/The Mas Network.svg" 
+                        alt="MAS Sats" 
+                        style={{ width: '14px', height: '14px', verticalAlign: 'middle', marginLeft: '4px', marginRight: '4px' }}
+                      /> until the protocol generates enough trading fees to reach the minimum threshold.
+                    </p>
+                 </div>
+                 
+                 <ul style={{ margin: 0, paddingLeft: '20px', lineHeight: '1.6' }}>
+                   <li>Locking makes you eligible to claim revenue from trading fees</li>
+                   <li>You can only unlock once the minimum threshold is reached</li>
+                   <li>The more you lock, the higher your chance of becoming the majority holder</li>
+                   <li>There is no guarantee when the threshold will be reached</li>
+                 </ul>
+               </div>
+               
+               <div style={{
+                 display: 'flex',
+                 gap: '12px',
+                 justifyContent: 'flex-end'
+               }}>
+                 <button
+                   onClick={() => setShowConsentModal(false)}
+                   style={{
+                     background: '#374151',
+                     color: '#fff',
+                     border: '1px solid #4b5563',
+                     padding: '10px 20px',
+                     borderRadius: '6px',
+                     cursor: 'pointer',
+                     fontSize: '14px'
+                   }}
+                   onMouseEnter={(e) => e.target.style.background = '#4b5563'}
+                   onMouseLeave={(e) => e.target.style.background = '#374151'}
+                 >
+                   Cancel
+                 </button>
+                 <button
+                   onClick={handleAgreeToTerms}
+                   style={{
+                     background: '#3b82f6',
+                     color: '#fff',
+                     border: '1px solid #2563eb',
+                     padding: '10px 20px',
+                     borderRadius: '6px',
+                     cursor: 'pointer',
+                     fontSize: '14px',
+                     fontWeight: '600'
+                   }}
+                   onMouseEnter={(e) => e.target.style.background = '#2563eb'}
+                   onMouseLeave={(e) => e.target.style.background = '#3b82f6'}
+                 >
+                   I Understand & Agree
+                 </button>
+               </div>
+             </div>
+           </div>
+         )}
       </main>
     </>
   );

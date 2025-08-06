@@ -1,10 +1,10 @@
 'use client';
 
-import { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import './tradeHistory.css';
 
-export default function TradeHistory({ trades, pendingTransaction, isSuccessfulTransaction, tokenData, onTradesUpdate }) {
+const TradeHistory = React.memo(function TradeHistory({ trades, pendingTransaction, isSuccessfulTransaction, tokenData, onTradesUpdate }) {
   const { t } = useTranslation();
   const [index, setIndex] = useState(0); // sliding index
   const [copiedTxId, setCopiedTxId] = useState(null);
@@ -18,15 +18,44 @@ export default function TradeHistory({ trades, pendingTransaction, isSuccessfulT
 
   const [dexTransactions, setDexTransactions] = useState([]);
   const [loadingTransactions, setLoadingTransactions] = useState(false);
+  
+  // Caching and activity tracking
+  const [lastFetchTime, setLastFetchTime] = useState(0);
+  const [isUserActive, setIsUserActive] = useState(true);
+  const [fetchInterval, setFetchInterval] = useState(null);
+  const cacheTimeout = 30000; // 30 seconds cache (increased from 15 seconds)
 
-  // Fetch real DEX transactions
-  const fetchDexTransactions = async () => {
+  // Fetch real DEX transactions with caching
+  const fetchDexTransactions = async (forceRefresh = false) => {
     if (!tokenData || !tokenData.dexInfo) {
       console.error('❌ Token data or dexInfo not available for transaction fetch');
       return;
     }
 
-    setLoadingTransactions(true);
+    // Check cache and user activity
+    const now = Date.now();
+    const timeSinceLastFetch = now - lastFetchTime;
+    
+    if (!forceRefresh && timeSinceLastFetch < cacheTimeout) {
+      console.log('📦 Using cached transactions (cache valid for', Math.round((cacheTimeout - timeSinceLastFetch) / 1000), 'more seconds)');
+      return;
+    }
+    
+    if (!isUserActive && !forceRefresh) {
+      console.log('😴 User inactive, skipping fetch');
+      return;
+    }
+    
+    // Additional check: if we have recent data and no new transactions, skip fetch
+    if (!forceRefresh && dexTransactions.length > 0 && timeSinceLastFetch < 60000) { // 1 minute
+      console.log('📦 Recent data available, skipping fetch to prevent unnecessary API calls');
+      return;
+    }
+
+    // Only set loading if we're actually going to fetch
+    if (forceRefresh || timeSinceLastFetch >= cacheTimeout) {
+      setLoadingTransactions(true);
+    }
     try {
       const dexContractId = tokenData.dexInfo;
       const apiUrl = 'https://api.testnet.hiro.so'; // Change to mainnet for production
@@ -34,7 +63,7 @@ export default function TradeHistory({ trades, pendingTransaction, isSuccessfulT
       console.log('🔍 Fetching DEX transactions for trade history:', dexContractId);
       
       const response = await fetch(
-        `${apiUrl}/extended/v1/tx/?contract_id=${dexContractId}&limit=21&sort_by=block_height&order=desc`
+        `${apiUrl}/extended/v1/tx/?contract_id=${dexContractId}&limit=50&sort_by=block_height&order=desc`
       );
       
       if (!response.ok) {
@@ -167,13 +196,27 @@ export default function TradeHistory({ trades, pendingTransaction, isSuccessfulT
             };
           });
       
-             setDexTransactions(transformedTrades);
-       console.log('✅ DEX transactions loaded for trade history:', transformedTrades.length, 'trades');
+             // Only update state if data has actually changed
+             const currentTxIds = dexTransactions.map(tx => tx.transaction_id).join(',');
+             const newTxIds = transformedTrades.map(tx => tx.transaction_id).join(',');
+             
+             if (currentTxIds !== newTxIds) {
+               console.log('🔄 DEX transactions updated:', transformedTrades.length, 'trades');
+               setDexTransactions(transformedTrades);
+             } else {
+               console.log('✅ DEX transactions unchanged, skipping state update');
+               // Still update cache timestamp to prevent unnecessary API calls
+               setLastFetchTime(now);
+               return;
+             }
        
-               // Share the transformed trades with parent component (reverse to chronological order for chart)
-        if (onTradesUpdate) {
-          onTradesUpdate([...transformedTrades].reverse());
-        }
+       // Update cache timestamp
+       setLastFetchTime(now);
+       
+       // Share the transformed trades with parent component (reverse to chronological order for chart)
+       if (onTradesUpdate) {
+         onTradesUpdate([...transformedTrades].reverse());
+       }
       
     } catch (error) {
       console.error('❌ Error fetching DEX transactions for trade history:', error);
@@ -182,12 +225,72 @@ export default function TradeHistory({ trades, pendingTransaction, isSuccessfulT
     }
   };
 
-  // Fetch DEX transactions when component mounts or tokenData changes
+  // User activity tracking
   useEffect(() => {
-    if (tokenData) {
-      fetchDexTransactions();
-    }
-  }, [tokenData]);
+    const handleUserActivity = () => {
+      if (!isUserActive) {
+        console.log('👤 User became active, resuming fetches');
+        setIsUserActive(true);
+        fetchDexTransactions(true); // Force refresh when user becomes active
+      }
+    };
+
+    const handleUserInactivity = () => {
+      console.log('😴 User inactive, pausing fetches');
+      setIsUserActive(false);
+    };
+
+    // Track user activity
+    const events = ['mousedown', 'mousemove', 'keypress', 'scroll', 'touchstart', 'click'];
+    
+    events.forEach(event => {
+      document.addEventListener(event, handleUserActivity, true);
+    });
+
+    // Set up inactivity timer (5 minutes)
+    let inactivityTimer;
+    const resetInactivityTimer = () => {
+      clearTimeout(inactivityTimer);
+      inactivityTimer = setTimeout(handleUserInactivity, 5 * 60 * 1000); // 5 minutes
+    };
+
+    events.forEach(event => {
+      document.addEventListener(event, resetInactivityTimer, true);
+    });
+
+    resetInactivityTimer();
+
+    return () => {
+      events.forEach(event => {
+        document.removeEventListener(event, handleUserActivity, true);
+        document.removeEventListener(event, resetInactivityTimer, true);
+      });
+      clearTimeout(inactivityTimer);
+    };
+  }, [isUserActive]);
+
+  // Set up interval for periodic fetching
+  useEffect(() => {
+    if (!tokenData) return;
+
+    // Initial fetch
+    fetchDexTransactions(true);
+
+    // Set up 30-second interval for active users (matching cache timeout)
+    const interval = setInterval(() => {
+      if (isUserActive) {
+        fetchDexTransactions();
+      }
+    }, 30000);
+
+    setFetchInterval(interval);
+
+    return () => {
+      if (interval) {
+        clearInterval(interval);
+      }
+    };
+  }, [tokenData, isUserActive]);
 
      // Use DEX transactions if available, otherwise fall back to trades
    const displayTrades = dexTransactions.length > 0 ? dexTransactions : (trades || []);
@@ -272,21 +375,16 @@ export default function TradeHistory({ trades, pendingTransaction, isSuccessfulT
 
   return (
    <div className="block-history-wrapper">
-  <h3 className="block-history-title">{t('market_history_title')}</h3> {/* 🔁 Title updated */}
+  <h3 className="block-history-title">
+    <img 
+      src="/icons/The Mas Network.svg" 
+      alt="MAS Sats" 
+      style={{ width: '20px', height: '20px', verticalAlign: 'middle', marginRight: '8px' }}
+    />
+    {t('swap_history_title')}
+  </h3> {/* 🔁 Title updated */}
   
-  {/* Note about 21-trade limit */}
-  <div style={{
-    marginBottom: '12px',
-    padding: '8px 12px',
-    background: '#f0f9ff',
-    border: '1px solid #bae6fd',
-    borderRadius: '6px',
-    fontSize: '12px',
-    color: '#0369a1',
-    textAlign: 'center'
-  }}>
-    📊 Showing last 21 trades from blockchain
-  </div>
+
 
   <div className="block-container" style={{ position: 'relative' }}>
     {/* Awaiting block */}
@@ -950,4 +1048,6 @@ export default function TradeHistory({ trades, pendingTransaction, isSuccessfulT
       )}
     </div>
   );
-}
+});
+
+export default TradeHistory;
