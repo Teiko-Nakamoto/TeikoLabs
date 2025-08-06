@@ -18,6 +18,7 @@ export async function GET() {
     const tokenCards = data.map(card => ({
       id: card.id,
       isComingSoon: card.is_coming_soon,
+      isHidden: card.is_hidden || false,
       tabType: card.tab_type || 'featured',
       dexInfo: card.dex_info,
       tokenInfo: card.token_info,

@@ -238,16 +238,6 @@ export default function UnlockProgressBar({
               }} 
             />
           </div>
-          {/* Debug info - remove this later */}
-          <div style={{
-            fontSize: '10px',
-            color: '#ccc',
-            textAlign: 'center',
-            marginTop: '4px',
-            width: '50%'
-          }}>
-            Debug: tokenId={tokenId}, dexInfo={dexInfo}, tokenInfo={tokenInfo}
-          </div>
           {/* DUMMY DATA indicator */}
           <div style={{
             fontSize: '10px',

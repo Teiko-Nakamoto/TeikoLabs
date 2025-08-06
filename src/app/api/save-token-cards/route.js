@@ -21,6 +21,7 @@ export async function POST(request) {
         tokenCards.map(card => ({
           id: card.id,
           is_coming_soon: card.isComingSoon,
+          is_hidden: card.isHidden || false,
           tab_type: card.tabType || 'featured',
           dex_info: card.dexInfo,
           token_info: card.tokenInfo,

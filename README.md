@@ -48,7 +48,7 @@ Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/bui
 | **`src/app/`**          | Core application logic (Next.js App Router structure)                                                                             |
 | ├── `components/`       | Shared UI components (e.g., header, nav)                                                                                          |
 | ├── `create-token/`     | Core token creation page with form + logic                                                                                        |
-| ├── `profile/`          | User profile page (token stats, wallet info, etc.)                                                                                |
+
 | ├── `globals.css`       | Global styles that apply across all pages                                                                                         |
 | ├── `layout.js`         | Root layout wrapper for theming, nav, etc.                                                                                        |
 | ├── `page.js`           | Home/landing page                                                                                                                 |

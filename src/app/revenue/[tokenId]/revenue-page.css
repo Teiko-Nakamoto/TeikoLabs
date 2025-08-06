@@ -1433,4 +1433,40 @@
   cursor: not-allowed;
   transform: none;
   box-shadow: none;
-} 
+}
+
+/* Percentage-based withdrawal options */
+.percentage-options {
+  margin-top: 1rem;
+  padding: 1rem;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.percentage-label {
+  display: block;
+  margin-bottom: 0.75rem;
+  color: #ffffff;
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+
+.percentage-buttons {
+  display: flex;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.percentage-button {
+  min-width: 120px;
+  text-align: center;
+  height: auto;
+  line-height: 1.2;
+}
+
+.percentage-button:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}

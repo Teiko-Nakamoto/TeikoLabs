@@ -400,37 +400,7 @@ a {
   color: black;
 }
 
-/* ========== Profile Page Layout ========== */
-.profile-page {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  min-height: calc(100vh - 80px);
-  padding: 2rem;
-  color: white;
-  font-family: sans-serif;
-  max-width: 800px;
-  margin: 0 auto;
-}
 
-.profile-container {
-  width: 100%;
-  max-width: 600px;
-  text-align: center;
-}
-
-.wallet-info {
-  text-align: left;
-}
-
-.not-connected {
-  text-align: center;
-  padding: 2rem;
-  background: rgba(28, 45, 78, 0.5);
-  border-radius: 12px;
-  border: 1px solid rgba(255, 255, 255, 0.1);
-}
 
 /* Lock/Unlock Button Styles */
 .lock-unlock-button {

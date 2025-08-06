@@ -61,8 +61,7 @@
   "get_free_fake_bitcoin": "ट्रेडिंग के लिए मुफ्त फेक बिटकॉइन प्राप्त करें",
   "loading": "लोड हो रहा है...",
   "page_refreshing": "रुकिए, पेज रिफ्रेश हो रहा है...",
-  "profile_page": "प्रोफाइल पेज",
-  "profile_description": "यह आपका वॉलेट-कनेक्टेड प्रोफाइल पेज है।",
+
   "admin_dashboard": "एडमिन डैशबोर्ड",
   "manage_all_tokens": "सभी टोकन प्रबंधित करें",
   "view_statistics": "आंकड़े देखें",

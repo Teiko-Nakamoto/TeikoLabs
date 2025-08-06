@@ -120,151 +120,7 @@ export default function EditHomePage() {
     setIsEditing(true);
   };
 
-  const testDatabase = async () => {
-    try {
-      console.log('🔍 Testing database connection...');
-      const response = await fetch('/api/test-db');
-      const result = await response.json();
-      
-      if (result.success) {
-        console.log('✅ Database test successful:', result);
-        alert(`Database connection successful!\nToken cards: ${result.tokenCardsCount}\nPage settings: ${result.pageSettingsCount}`);
-      } else {
-        console.error('❌ Database test failed:', result);
-        alert(`Database test failed: ${result.error}\n\nDetails: ${result.details}\n\nHint: ${result.hint}`);
-      }
-    } catch (error) {
-      console.error('❌ Database test error:', error);
-      alert(`Database test error: ${error.message}`);
-    }
-  };
 
-  const debugTokenCards = async () => {
-    try {
-      console.log('🔍 Debug: Checking token cards...');
-      const response = await fetch('/api/debug-token-cards');
-      const result = await response.json();
-      
-      if (result.success) {
-        console.log('✅ Debug: Token cards found:', result);
-        
-        const debugMessage = `Debug Results:
-
-Token Cards: ${result.tokenCardsCount}
-
-Token Cards Data:
-${JSON.stringify(result.tokenCards, null, 2)}
-
-Page Settings:
-${JSON.stringify(result.pageSettings, null, 2)}`;
-
-        const modal = document.createElement('div');
-        modal.style.cssText = `
-          position: fixed;
-          top: 0;
-          left: 0;
-          width: 100%;
-          height: 100%;
-          background: rgba(0, 0, 0, 0.8);
-          display: flex;
-          justify-content: center;
-          align-items: center;
-          z-index: 10000;
-        `;
-
-        const modalContent = document.createElement('div');
-        modalContent.style.cssText = `
-          background: #1f2937;
-          color: #f9fafb;
-          padding: 20px;
-          border-radius: 8px;
-          max-width: 80%;
-          max-height: 80%;
-          overflow: auto;
-          border: 1px solid #374151;
-        `;
-
-        const title = document.createElement('h3');
-        title.textContent = '🐛 Debug Results';
-        title.style.cssText = 'color: #fbbf24; margin-bottom: 15px;';
-
-        const copyButton = document.createElement('button');
-        copyButton.textContent = '📋 Copy to Clipboard';
-        copyButton.style.cssText = `
-          background: #4CAF50;
-          color: white;
-          border: none;
-          padding: 10px 20px;
-          border-radius: 5px;
-          cursor: pointer;
-          margin-bottom: 15px;
-          font-size: 14px;
-        `;
-
-        const closeButton = document.createElement('button');
-        closeButton.textContent = '❌ Close';
-        closeButton.style.cssText = `
-          background: #ef4444;
-          color: white;
-          border: none;
-          padding: 10px 20px;
-          border-radius: 5px;
-          cursor: pointer;
-          margin-left: 10px;
-          font-size: 14px;
-        `;
-
-        const pre = document.createElement('pre');
-        pre.textContent = debugMessage;
-        pre.style.cssText = `
-          background: #111827;
-          padding: 15px;
-          border-radius: 5px;
-          overflow-x: auto;
-          white-space: pre-wrap;
-          word-wrap: break-word;
-          font-size: 12px;
-          line-height: 1.4;
-        `;
-
-        const buttonContainer = document.createElement('div');
-        buttonContainer.appendChild(copyButton);
-        buttonContainer.appendChild(closeButton);
-
-        copyButton.onclick = async () => {
-          try {
-            await navigator.clipboard.writeText(debugMessage);
-            copyButton.textContent = '✅ Copied!';
-            copyButton.style.background = '#059669';
-            setTimeout(() => {
-              copyButton.textContent = '📋 Copy to Clipboard';
-              copyButton.style.background = '#4CAF50';
-            }, 2000);
-          } catch (err) {
-            console.error('Failed to copy:', err);
-            alert('Failed to copy to clipboard. Please select and copy manually.');
-          }
-        };
-
-        closeButton.onclick = () => {
-          document.body.removeChild(modal);
-        };
-
-        modalContent.appendChild(title);
-        modalContent.appendChild(buttonContainer);
-        modalContent.appendChild(pre);
-        modal.appendChild(modalContent);
-        document.body.appendChild(modal);
-
-      } else {
-        console.error('❌ Debug failed:', result);
-        alert(`Debug failed: ${result.error}`);
-      }
-    } catch (error) {
-      console.error('❌ Debug error:', error);
-      alert(`Debug error: ${error.message}`);
-    }
-  };
 
   const handleSave = async () => {
     try {
@@ -507,6 +363,7 @@ ${JSON.stringify(result.pageSettings, null, 2)}`;
       id: newId,
       isComingSoon: true, // Default is coming soon until contracts are validated
       tabType: 'featured',
+      isHidden: false, // Default is visible
       dexInfo: '',
       tokenInfo: '',
       symbol: '',
@@ -576,12 +433,6 @@ ${JSON.stringify(result.pageSettings, null, 2)}`;
           <button onClick={() => router.push('/admin/dashboard')} className="back-button">
             ← Back to Dashboard
           </button>
-          <button onClick={testDatabase} className="test-db-button">
-            🔍 Test Database
-          </button>
-          <button onClick={debugTokenCards} className="test-db-button" style={{ backgroundColor: '#8B5CF6' }}>
-            🐛 Debug Token Cards
-          </button>
           {isEditing ? (
             <div className="edit-controls">
               <button onClick={handleSave} className="save-button">
@@ -606,6 +457,38 @@ ${JSON.stringify(result.pageSettings, null, 2)}`;
               <p>Manage all tokens and their tab assignments</p>
             </div>
 
+            {/* Default Tab Selection */}
+            <div className="default-tab-section">
+              <h3>🎯 Default Tab Selection</h3>
+              <p>Choose which tab users will see first when they visit the home page:</p>
+              <div className="default-tab-controls">
+                <label className="default-tab-option">
+                  <input
+                    type="radio"
+                    name="defaultTab"
+                    value="featured"
+                    checked={defaultTab === 'featured'}
+                    onChange={(e) => setDefaultTab(e.target.value)}
+                  />
+                  <span className="radio-label">
+                    <strong>Featured (Mainnet)</strong> - Real tokens with real value
+                  </span>
+                </label>
+                <label className="default-tab-option">
+                  <input
+                    type="radio"
+                    name="defaultTab"
+                    value="practice"
+                    checked={defaultTab === 'practice'}
+                    onChange={(e) => setDefaultTab(e.target.value)}
+                  />
+                  <span className="radio-label">
+                    <strong>Practice Trading (Testnet)</strong> - Test tokens for learning
+                  </span>
+                </label>
+              </div>
+            </div>
+
             {/* Filter Controls */}
             <div className="filter-controls">
               <span>Filter by tab:</span>
@@ -627,6 +510,12 @@ ${JSON.stringify(result.pageSettings, null, 2)}`;
               >
                 Practice (Testnet) ({tokenCards.filter(card => card.tabType === 'practice').length})
               </button>
+              <button 
+                onClick={() => setFilterView('hidden')} 
+                className={`filter-button ${filterView === 'hidden' ? 'active' : ''}`}
+              >
+                Hidden ({tokenCards.filter(card => card.isHidden).length})
+              </button>
             </div>
 
             {/* Add Token Button */}
@@ -643,6 +532,7 @@ ${JSON.stringify(result.pageSettings, null, 2)}`;
                   <tr>
                     <th>ID</th>
                     <th>Status</th>
+                    <th>Hidden</th>
                     <th>Tab Assignment</th>
                     <th>DEX Contract</th>
                     <th>Token Contract</th>
@@ -654,7 +544,11 @@ ${JSON.stringify(result.pageSettings, null, 2)}`;
                 </thead>
                 <tbody>
                   {tokenCards
-                    .filter(card => filterView === 'all' || card.tabType === filterView)
+                    .filter(card => {
+                      if (filterView === 'all') return true;
+                      if (filterView === 'hidden') return card.isHidden;
+                      return card.tabType === filterView;
+                    })
                     .map((card) => (
                     <tr key={card.id} className="token-row">
                       <td className="token-id">{card.id}</td>
@@ -662,6 +556,19 @@ ${JSON.stringify(result.pageSettings, null, 2)}`;
                         <span className={`status-badge ${card.isComingSoon ? 'coming-soon' : 'active'}`}>
                           {card.isComingSoon ? '🚧 Coming Soon' : '✅ Active'}
                         </span>
+                      </td>
+                      <td className="token-hidden">
+                        <label className="hidden-toggle">
+                          <input
+                            type="checkbox"
+                            checked={card.isHidden || false}
+                            onChange={(e) => updateTokenCard(card.id, 'isHidden', e.target.checked)}
+                            className="hidden-checkbox"
+                          />
+                          <span className="toggle-label">
+                            {card.isHidden ? '👁️ Hidden' : '👁️ Visible'}
+                          </span>
+                        </label>
                       </td>
                       <td className="token-tab">
                         <select
@@ -722,9 +629,20 @@ ${JSON.stringify(result.pageSettings, null, 2)}`;
                 </tbody>
               </table>
               
-              {tokenCards.filter(card => filterView === 'all' || card.tabType === filterView).length === 0 && (
+              {tokenCards.filter(card => {
+                if (filterView === 'all') return true;
+                if (filterView === 'hidden') return card.isHidden;
+                return card.tabType === filterView;
+              }).length === 0 && (
                 <div className="empty-state">
-                  <p>No tokens found. Click "Add New Token" to get started.</p>
+                  <p>
+                    {filterView === 'hidden' 
+                      ? 'No hidden tokens found.' 
+                      : filterView === 'all'
+                      ? 'No tokens found. Click "Add New Token" to get started.'
+                      : `No tokens found in ${filterView} tab.`
+                    }
+                  </p>
                 </div>
               )}
             </div>
@@ -775,7 +693,7 @@ ${JSON.stringify(result.pageSettings, null, 2)}`;
             </div>
 
             <div className="token-grid">
-              {tokenCards.filter(card => card.tabType === previewActiveTab).map((card) => {
+              {tokenCards.filter(card => card.tabType === previewActiveTab && !card.isHidden).map((card) => {
                 if (card.isComingSoon) {
                   return (
                     <div key={`coming-soon-${card.id}`} className="token-card coming-soon">
@@ -818,9 +736,9 @@ ${JSON.stringify(result.pageSettings, null, 2)}`;
                 );
               })}
               
-              {tokenCards.filter(card => card.tabType === previewActiveTab).length === 0 && (
+              {tokenCards.filter(card => card.tabType === previewActiveTab && !card.isHidden).length === 0 && (
                 <div className="empty-preview">
-                  <p>No tokens assigned to {previewActiveTab === 'featured' ? 'Featured' : 'Practice Trading'} tab</p>
+                  <p>No visible tokens assigned to {previewActiveTab === 'featured' ? 'Featured' : 'Practice Trading'} tab</p>
                 </div>
               )}
             </div>

@@ -199,7 +199,7 @@
   width: 100%;
 }
 
-/* Right side: language + profile */
+/* Right side: language */
 .language-profile {
   display: flex;
   align-items: center;
@@ -216,8 +216,6 @@
   height: 18px;
   width: 18px;
 }
-
-/* View Profile styling */
 .nav-link {
   color: white;
   cursor: pointer;

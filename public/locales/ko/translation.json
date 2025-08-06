@@ -61,8 +61,7 @@
   "get_free_fake_bitcoin": "거래용 무료 가짜 비트코인 받기",
   "loading": "로딩 중...",
   "page_refreshing": "잠시만 기다려주세요, 페이지 새로고침 중...",
-  "profile_page": "프로필 페이지",
-  "profile_description": "이것은 지갑에 연결된 프로필 페이지입니다.",
+
   "admin_dashboard": "관리자 대시보드",
   "manage_all_tokens": "모든 토큰 관리",
   "view_statistics": "통계 보기",

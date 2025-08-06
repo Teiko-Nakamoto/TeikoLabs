@@ -452,25 +452,7 @@ export default function ProfitLoss({ tokenData, trades = [], currentPrice = 0 })
                 </span>
               </div>
 
-              {/* View Detailed Trade History Button */}
-              <Link href="/profile" style={{ textDecoration: 'none' }}>
-                <button
-                  style={{
-                    width: '100%',
-                    padding: '8px',
-                    backgroundColor: '#374151',
-                    color: '#e5e7eb',
-                    border: '1px solid #4b5563',
-                    borderRadius: '6px',
-                    cursor: 'pointer',
-                    fontSize: '13px',
-                    fontWeight: 'bold',
-                    marginBottom: '0'
-                  }}
-                >
-                  📊 View Detailed Trade History
-                </button>
-              </Link>
+
             </>
           )}
         </>

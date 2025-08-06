@@ -15,8 +15,14 @@ export default function RevenuePage() {
   const [currentStep, setCurrentStep] = useState(1);
   const [userWallet, setUserWallet] = useState(null);
   const [isMajorityHolder, setIsMajorityHolder] = useState(false);
-  const [showClaimModal, setShowClaimModal] = useState(false);
-  const [claimAmount, setClaimAmount] = useState('');
+
+  const [claimAmount, setClaimAmount] = useState(() => {
+    // Load saved claim amount from localStorage on component mount
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem(`revenue-claim-amount-${tokenId}`) || '';
+    }
+    return '';
+  });
   const [isClaiming, setIsClaiming] = useState(false);
   const [revenueData, setRevenueData] = useState({
     totalRevenue: '2,500,000',
@@ -44,9 +50,17 @@ export default function RevenuePage() {
     localStorage.setItem(`revenue-step-${tokenId}`, currentStep.toString());
   }, [currentStep, tokenId]);
 
+  // Save claim amount to localStorage whenever it changes
+  useEffect(() => {
+    if (claimAmount) {
+      localStorage.setItem(`revenue-claim-amount-${tokenId}`, claimAmount);
+    }
+  }, [claimAmount, tokenId]);
+
   // Function to clear saved step from localStorage
   const clearSavedStep = () => {
     localStorage.removeItem(`revenue-step-${tokenId}`);
+    localStorage.removeItem(`revenue-claim-amount-${tokenId}`);
   };
 
   // Function to get connected wallet address
@@ -331,29 +345,60 @@ export default function RevenuePage() {
     }
 
     setIsClaiming(true);
+    let formattedTxId = '';
+
     try {
       console.log('💰 Claiming revenue for token:', tokenId, 'Amount:', claimAmount);
-      // TODO: Implement actual revenue claiming logic
-      alert('Revenue claiming functionality will be implemented soon!');
       
-      // Close modal and proceed to step 4 (completion)
-      setShowClaimModal(false);
+      // Import required functions
+      const { request } = await import('@stacks/connect');
+      const { uintCV } = await import('@stacks/transactions');
+      
+      // Get token data for contract address
+      const [dexAddress, dexName] = tokenData.dexInfo.split('.');
+      
+      console.log('🚀 Calling withdraw-fees contract function:', {
+        contract: `${dexAddress}.${dexName}`,
+        functionName: 'withdraw-fees',
+        functionArgs: [uintCV(requestedAmount)],
+        network: 'testnet'
+      });
+
+      const response = await request('stx_callContract', {
+        contract: `${dexAddress}.${dexName}`,
+        functionName: 'withdraw-fees',
+        functionArgs: [uintCV(requestedAmount)],
+        postConditionMode: 'allow',
+        postConditions: [],
+        network: 'testnet',
+      });
+      
+      console.log('✅ Withdraw-fees request completed, response:', response);
+
+      const { txid: txId } = response;
+      formattedTxId = `0x${txId}`;
+
+      console.log('View transaction:', `https://explorer.hiro.so/txid/${formattedTxId}?chain=testnet`);
+
+      // Show success toast
+      alert(`✅ Revenue claim submitted! Transaction ID: ${formattedTxId}`);
+      
+      // Store transaction ID and claim amount for step 4
+      localStorage.setItem('lastClaimTxId', formattedTxId);
+      localStorage.setItem('lastClaimAmount', claimAmount);
+      
+      // Proceed to step 4 (completion)
       setCurrentStep(4);
     } catch (error) {
       console.error('❌ Error claiming revenue:', error);
-      alert('Failed to claim revenue. Please try again.');
+      alert(`Failed to claim revenue: ${error.message}`);
     } finally {
       setIsClaiming(false);
     }
   };
 
   const nextStep = () => {
-    if (currentStep === 2 && revenueData.isUserMajorityHolder) {
-      // Show claim modal instead of going to step 3
-      setShowClaimModal(true);
-    } else {
-      setCurrentStep(prev => Math.min(prev + 1, 4));
-    }
+    setCurrentStep(prev => Math.min(prev + 1, 4));
   };
 
   const prevStep = () => {
@@ -667,14 +712,17 @@ export default function RevenuePage() {
                     <h3>💰 Available Revenue</h3>
                     <div className="available-amount">
                       <span className="amount">{revenueData.availableToClaim}</span>
-                      <span className="unit">sats</span>
+                      <span className="unit">
+                        <img src="/icons/sats1.svg" alt="sats" style={{ width: '16px', height: '16px', verticalAlign: 'middle', marginRight: '2px' }} />
+                        <img src="/icons/Vector.svg" alt="lightning" style={{ width: '16px', height: '16px', verticalAlign: 'middle' }} />
+                      </span>
                     </div>
                     <p className="summary-text">You can claim up to the full available amount</p>
                   </div>
                   
                   <div className="claim-form">
                     <div className="form-group">
-                      <label htmlFor="claimAmount">Amount to Claim (sats)</label>
+                      <label htmlFor="claimAmount">Amount to Claim</label>
                       <input
                         type="number"
                         id="claimAmount"
@@ -700,21 +748,76 @@ export default function RevenuePage() {
                           Clear
                         </button>
                       </div>
+                      
+                      {/* Percentage-based withdrawal options */}
+                      <div className="percentage-options">
+                        <label className="percentage-label">Quick Withdrawal Options:</label>
+                        <div className="percentage-buttons">
+                          {[10, 15, 21, 50, 100].map((percentage) => {
+                            const availableAmount = parseFloat(revenueData.availableToClaim.replace(/,/g, '') || '0');
+                            const percentageAmount = Math.floor((availableAmount * percentage) / 100);
+                            return (
+                              <button
+                                key={percentage}
+                                onClick={() => setClaimAmount(percentageAmount.toString())}
+                                className="percentage-button"
+                                style={{
+                                  background: '#374151',
+                                  color: '#fff',
+                                  border: '1px solid rgba(255, 255, 255, 0.2)',
+                                  padding: '12px 16px',
+                                  borderRadius: '8px',
+                                  fontSize: '11px',
+                                  cursor: 'pointer',
+                                  transition: 'all 0.2s ease',
+                                  fontWeight: 'normal',
+                                  minWidth: '120px',
+                                  display: 'flex',
+                                  flexDirection: 'column',
+                                  alignItems: 'center',
+                                  gap: '4px'
+                                }}
+                                onMouseEnter={(e) => {
+                                  e.target.style.background = '#f97316';
+                                  e.target.style.transform = 'translateY(-1px)';
+                                }}
+                                onMouseLeave={(e) => {
+                                  e.target.style.background = '#374151';
+                                  e.target.style.transform = 'translateY(0)';
+                                }}
+                              >
+                                <span style={{ fontSize: '14px', fontWeight: 'bold' }}>{percentage}%</span>
+                                <span style={{ fontSize: '10px', opacity: '0.9', display: 'flex', alignItems: 'center', gap: '2px' }}>
+                                  {percentageAmount.toLocaleString()}
+                                  <img src="/icons/sats1.svg" alt="sats" style={{ width: '10px', height: '10px', verticalAlign: 'middle' }} />
+                                  <img src="/icons/Vector.svg" alt="lightning" style={{ width: '10px', height: '10px', verticalAlign: 'middle' }} />
+                                </span>
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </div>
                     </div>
                     
                     <div className="claim-preview">
                       <h4>Claim Preview</h4>
                       <div className="preview-item">
                         <span className="label">Amount to Claim:</span>
-                        <span className="value">{claimAmount || '0'} sats</span>
+                        <span className="value" style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                          {claimAmount || '0'}
+                          <img src="/icons/sats1.svg" alt="sats" style={{ width: '14px', height: '14px', verticalAlign: 'middle' }} />
+                          <img src="/icons/Vector.svg" alt="lightning" style={{ width: '14px', height: '14px', verticalAlign: 'middle' }} />
+                        </span>
                       </div>
                       <div className="preview-item">
                         <span className="label">Remaining After Claim:</span>
-                        <span className="value">
+                        <span className="value" style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
                           {claimAmount ? 
                             (parseFloat(revenueData.availableToClaim.replace(/,/g, '')) - parseFloat(claimAmount)).toLocaleString() : 
                             revenueData.availableToClaim
-                          } sats
+                          }
+                          <img src="/icons/sats1.svg" alt="sats" style={{ width: '14px', height: '14px', verticalAlign: 'middle' }} />
+                          <img src="/icons/Vector.svg" alt="lightning" style={{ width: '14px', height: '14px', verticalAlign: 'middle' }} />
                         </span>
                       </div>
                     </div>
@@ -746,16 +849,48 @@ export default function RevenuePage() {
                 <div className="success-message">
                   <div className="success-icon">🎉</div>
                   <h3>Revenue Claimed Successfully!</h3>
-                  <p>Your {claimAmount} sats have been transferred to your wallet.</p>
+                  <p style={{ display: 'flex', alignItems: 'center', gap: '4px', justifyContent: 'center' }}>
+                    Your {localStorage.getItem('lastClaimAmount') || claimAmount || '0'}
+                    <img src="/icons/sats1.svg" alt="sats" style={{ width: '16px', height: '16px', verticalAlign: 'middle' }} />
+                    <img src="/icons/Vector.svg" alt="lightning" style={{ width: '16px', height: '16px', verticalAlign: 'middle' }} />
+                    have been transferred to your wallet.
+                  </p>
                   
                   <div className="transaction-details">
                     <div className="detail-item">
                       <span className="label">Transaction ID:</span>
-                      <span className="value">0xABC123...XYZ789</span>
+                      <span className="value" style={{ 
+                        wordBreak: 'break-all', 
+                        overflowWrap: 'break-word',
+                        maxWidth: '100%',
+                        display: 'block'
+                      }}>
+                        {localStorage.getItem('lastClaimTxId') ? (
+                          <a 
+                            href={`https://explorer.hiro.so/txid/${localStorage.getItem('lastClaimTxId')}?chain=testnet`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            style={{ 
+                              color: '#3b82f6', 
+                              textDecoration: 'underline',
+                              wordBreak: 'break-all',
+                              overflowWrap: 'break-word'
+                            }}
+                          >
+                            {localStorage.getItem('lastClaimTxId')}
+                          </a>
+                        ) : (
+                          '0xABC123...XYZ789'
+                        )}
+                      </span>
                     </div>
                     <div className="detail-item">
                       <span className="label">Claimed Amount:</span>
-                      <span className="value">{claimAmount} sats</span>
+                      <span className="value" style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                        {localStorage.getItem('lastClaimAmount') || claimAmount || '0'}
+                        <img src="/icons/sats1.svg" alt="sats" style={{ width: '14px', height: '14px', verticalAlign: 'middle' }} />
+                        <img src="/icons/Vector.svg" alt="lightning" style={{ width: '14px', height: '14px', verticalAlign: 'middle' }} />
+                      </span>
                     </div>
                     <div className="detail-item">
                       <span className="label">Claim Date:</span>

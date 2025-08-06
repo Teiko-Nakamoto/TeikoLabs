@@ -61,8 +61,7 @@
   "get_free_fake_bitcoin": "获取免费模拟比特币进行交易",
   "loading": "加载中...",
   "page_refreshing": "请稍候，页面刷新中...",
-  "profile_page": "个人资料页面",
-  "profile_description": "这是您的钱包连接个人资料页面。",
+
   "admin_dashboard": "管理仪表板",
   "manage_all_tokens": "管理所有代币",
   "view_statistics": "查看统计",

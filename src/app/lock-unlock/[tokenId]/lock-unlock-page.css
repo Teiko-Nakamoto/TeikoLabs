@@ -65,6 +65,23 @@
   font-size: 0.9rem;
 }
 
+.contract-details {
+  margin-top: 1rem;
+  padding: 1rem;
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.contract-details p {
+  margin: 0.5rem 0;
+  word-break: break-all;
+}
+
+.contract-details strong {
+  color: #fbbf24;
+}
+
 .user-stats {
   display: grid;
   grid-template-columns: 1fr 1fr;

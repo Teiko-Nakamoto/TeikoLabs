@@ -61,8 +61,7 @@
   "get_free_fake_bitcoin": "取引用の無料偽ビットコインを取得",
   "loading": "読み込み中...",
   "page_refreshing": "お待ちください、ページ更新中...",
-  "profile_page": "プロファイルページ",
-  "profile_description": "これはウォレット接続されたプロファイルページです。",
+
   "admin_dashboard": "管理ダッシュボード",
   "manage_all_tokens": "全トークン管理",
   "view_statistics": "統計を表示",

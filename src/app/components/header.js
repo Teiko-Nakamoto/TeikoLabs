@@ -68,14 +68,7 @@ export default function Header() {
     }
   };
 
-  const handleViewProfile = () => {
-    const saved = localStorage.getItem('connectedAddress');
-    if (saved) {
-      window.location.href = '/profile';
-    } else {
-      walletRef.current?.openConnectModal();
-    }
-  };
+
 
   const languages = [
     { code: 'en', label: 'English' },
@@ -124,10 +117,16 @@ export default function Header() {
 
         <nav className="nav-links">
           <div className="center-link">
-            {/* ✅ Show popup instead of navigating */}
-            <span onClick={() => setShowHowItWorks(true)} className="nav-link">
+            {/* Link to themasnetwork.com */}
+            <a 
+              href="https://themasnetwork.com" 
+              target="_blank" 
+              rel="noopener noreferrer"
+              className="nav-link"
+              style={{ textDecoration: 'none' }}
+            >
               {t('how_it_works')}
-            </span>
+            </a>
           </div>
           <div className="language-profile">
             <div style={{ position: 'relative', display: 'inline-block' }}>
@@ -214,13 +213,7 @@ export default function Header() {
                 </div>
               )}
             </div>
-            <Link 
-              href="/profile"
-              className="nav-link" 
-              style={{ cursor: 'pointer' }}
-            >
-              Profile
-            </Link>
+
             
             {/* Admin Icon - Only visible to admin wallet */}
             {isAdmin && (

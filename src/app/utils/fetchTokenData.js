@@ -169,7 +169,7 @@ export async function getUserTokenBalance() {
       console.log('✅ User token balance looks reasonable:', tokensInWholeUnits);
     }
     
-    return tokensInWholeUnits; // Return the actual value, not rounded up
+    return Math.floor(tokensInWholeUnits); // Round down to nearest whole number
   } catch (err) {
     console.error('❌ Failed to fetch user token balance:', err);
     return 0;
@@ -1053,7 +1053,7 @@ export async function getTokenStatsData(tokenData) {
     const totalSupply = parseInt(totalSupplyResult?.value?.value || totalSupplyResult?.value || 0);
     const lockedTokens = parseInt(lockedTokensResult?.value?.value || lockedTokensResult?.value || 0);
 
-    const remainingSupply = totalSupply - lockedTokens;
+    const remainingSupply = (totalSupply - lockedTokens) / 100000000; // Convert from micro units to actual tokens
 
     // Calculate current price
     const currentPrice = liquidity > 0 && remainingSupply > 0 ? liquidity / remainingSupply : 0;

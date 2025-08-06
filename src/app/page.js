@@ -190,15 +190,15 @@ export default function HomePage() {
     );
   }
 
-  // Filter token cards based on active tab
+  // Filter token cards based on active tab (exclude hidden tokens)
   let displayedCards = [];
   if (activeTab === 'featured') {
-    // Featured tab: Show cards assigned to featured tab
-    displayedCards = tokenCards.filter(card => card.tabType === 'featured');
+    // Featured tab: Show cards assigned to featured tab (not hidden)
+    displayedCards = tokenCards.filter(card => card.tabType === 'featured' && !card.isHidden);
     console.log('📋 Featured tab - Admin-configured cards:', displayedCards.length);
   } else if (activeTab === 'practice') {
-    // Practice trading tab: Show cards assigned to practice tab
-    displayedCards = tokenCards.filter(card => card.tabType === 'practice');
+    // Practice trading tab: Show cards assigned to practice tab (not hidden)
+    displayedCards = tokenCards.filter(card => card.tabType === 'practice' && !card.isHidden);
     console.log('📋 Practice tab - Admin-configured cards:', displayedCards.length);
   }
   
