@@ -738,6 +738,7 @@ export default function EditHomePage() {
               
               {tokenCards.filter(card => card.tabType === previewActiveTab && !card.isHidden).length === 0 && (
                 <div className="empty-preview">
+                  {/* eslint-disable-next-line react/no-unescaped-entities */}
                   <p>No visible tokens assigned to {previewActiveTab === 'featured' ? 'Featured' : 'Practice Trading'} tab</p>
                 </div>
               )}

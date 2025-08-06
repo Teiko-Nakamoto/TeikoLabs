@@ -719,6 +719,7 @@ export default function TradeHistory({ trades, pendingTransaction, isSuccessfulT
                           color: '#475569'
                         }}>
                           <div style={{ marginBottom: '8px' }}>
+                            {/* eslint-disable-next-line react/no-unescaped-entities */}
                             <strong style={{ color: '#1e40af' }}>💰 Previous Market Price:</strong> Price before your trade (what the AMM showed when you clicked &quot;{selectedTrade.type}&quot;)
                           </div>
                           <div style={{ marginBottom: '8px' }}>
