@@ -719,10 +719,10 @@ export default function TradeHistory({ trades, pendingTransaction, isSuccessfulT
                           color: '#475569'
                         }}>
                           <div style={{ marginBottom: '8px' }}>
-                            <strong style={{ color: '#1e40af' }}>💰 Previous Market Price:</strong> Price before your trade (what the AMM showed when you clicked "{selectedTrade.type}")
+                            <strong style={{ color: '#1e40af' }}>💰 Previous Market Price:</strong> Price before your trade (what the AMM showed when you clicked &quot;{selectedTrade.type}&quot;)
                           </div>
                           <div style={{ marginBottom: '8px' }}>
-                            <strong style={{ color: '#7c2d12' }}>🛡️ Expected Price:</strong> Your slippage-protected acceptable price ({selectedTrade.type === 'buy' ? 'maximum you\'ll pay' : 'minimum you\'ll accept'})
+                            <strong style={{ color: '#7c2d12' }}>🛡️ Expected Price:</strong> Your slippage-protected acceptable price ({selectedTrade.type === 'buy' ? 'maximum you&apos;ll pay' : 'minimum you&apos;ll accept'})
                           </div>
                           <div>
                             <strong style={{ color: '#15803d' }}>⚡ Execution Price:</strong> Actual price achieved on Stacks blockchain (calculated from real transaction events)
