@@ -280,7 +280,7 @@ export default function HomePage() {
             return (
               <div key={`token-${card.id}`} className="token-card-wrapper">
                 <Link
-                  href={card.id === 1 ? "/test-page" : `/trade/${card.id}`}
+                  href={`/trade/${card.id}`}
                   style={{ textDecoration: 'none', color: 'inherit' }}
                 >
                   <div className="token-card">
@@ -311,8 +311,8 @@ export default function HomePage() {
                   </div>
                 </Link>
 
-                {/* Button to Get Fake Bitcoin - Only for first card */}
-                {card.id === 1 && (
+                {/* Button to Get Fake Bitcoin - Only for practice trading cards */}
+                {activeTab === 'practice' && (
                   <div style={{ marginTop: '20px' }}>
                     <a
                       href="https://platform.hiro.so/faucet"

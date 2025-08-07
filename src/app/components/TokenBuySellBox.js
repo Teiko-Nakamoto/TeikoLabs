@@ -556,6 +556,42 @@ const TokenBuySellBox = React.memo(function TokenBuySellBox({
     console.log('  DEX Contract:', tokenData.dexInfo);
     
     try {
+      // 🔧 Enhanced wallet readiness check before transaction
+      console.log('🔍 Checking wallet readiness before transaction...');
+      
+      // Check if Stacks Connect is available
+      if (typeof window === 'undefined' || !window.StacksProvider) {
+        throw new Error('Stacks Connect not available. Please refresh the page and try again.');
+      }
+
+      // Check if user is connected
+      const { isConnected, getLocalStorage } = await import('@stacks/connect');
+      const connected = await isConnected();
+      
+      if (!connected) {
+        throw new Error('Wallet not connected. Please connect your wallet first.');
+      }
+
+      // Verify we have a valid address
+      const data = getLocalStorage();
+      const stxAddr = data?.addresses?.stx?.[0]?.address;
+      
+      if (!stxAddr) {
+        throw new Error('No wallet address found. Please reconnect your wallet.');
+      }
+
+      // Check if connection is recent (within last 5 minutes)
+      const lastConnectionTime = localStorage.getItem('lastConnectionTime');
+      if (lastConnectionTime) {
+        const timeSinceConnection = Date.now() - parseInt(lastConnectionTime);
+        if (timeSinceConnection > 5 * 60 * 1000) { // 5 minutes
+          console.log('⚠️ Connection may be stale, requesting reconnection...');
+          throw new Error('Connection stale. Please reconnect your wallet.');
+        }
+      }
+
+      console.log('✅ Wallet ready for transaction:', stxAddr);
+
       // Use token-specific contract addresses
       const dexContractAddress = tokenData.dexInfo.split('.')[0];
       const dexContractName = tokenData.dexInfo.split('.')[1];
@@ -634,14 +670,53 @@ const TokenBuySellBox = React.memo(function TokenBuySellBox({
         slippageEnabled: slippageEnabled
       });
 
-      const response = await request('stx_callContract', {
-        contract: `${dexContractAddress}.${dexContractName}`,
-        functionName,
-        functionArgs,
-        postConditionMode,
-        postConditions,
-        network: 'testnet',
-      });
+      // 🔧 Enhanced transaction submission with retry logic
+      let response = null;
+      let lastError = null;
+      const maxRetries = 2;
+      
+      for (let attempt = 0; attempt <= maxRetries; attempt++) {
+        try {
+          console.log(`🚀 Submitting transaction (attempt ${attempt + 1}/${maxRetries + 1})...`);
+          
+          // Add a small delay between retries
+          if (attempt > 0) {
+            await new Promise(resolve => setTimeout(resolve, 1000));
+          }
+          
+          response = await request('stx_callContract', {
+            contract: `${dexContractAddress}.${dexContractName}`,
+            functionName,
+            functionArgs,
+            postConditionMode,
+            postConditions,
+            network: 'testnet',
+          });
+          
+          console.log('✅ Transaction submitted successfully:', response);
+          break; // Success, exit retry loop
+          
+        } catch (error) {
+          lastError = error;
+          console.error(`❌ Transaction attempt ${attempt + 1} failed:`, error.message);
+          
+          // Don't retry on certain errors
+          if (error.message.includes('User rejected') || 
+              error.message.includes('cancelled') ||
+              error.message.includes('not connected')) {
+            throw error;
+          }
+          
+          // Wait before retry
+          if (attempt < maxRetries) {
+            await new Promise(resolve => setTimeout(resolve, 2000));
+          }
+        }
+      }
+      
+      if (!response) {
+        throw lastError || new Error('Transaction failed after all retries');
+      }
       
       console.log('✅ Request completed, response:', response);
 
@@ -702,6 +777,35 @@ const TokenBuySellBox = React.memo(function TokenBuySellBox({
       setLoading(false);
       setIsSuccessfulTransaction(false);
       setPendingTransaction(null);
+      
+      // Enhanced error handling with specific messages
+      let errorMessage = 'Transaction failed';
+      
+      if (error.message.includes('not connected')) {
+        errorMessage = 'Please connect your wallet first';
+      } else if (error.message.includes('User rejected')) {
+        errorMessage = 'Transaction was cancelled';
+      } else if (error.message.includes('Connection stale')) {
+        errorMessage = 'Please reconnect your wallet';
+      } else if (error.message.includes('insufficient balance')) {
+        errorMessage = 'Insufficient balance for transaction';
+      } else if (error.message.includes('Stacks Connect not available')) {
+        errorMessage = 'Wallet not ready. Please refresh the page and try again';
+      } else if (error.message.includes('No wallet address found')) {
+        errorMessage = 'Wallet connection issue. Please reconnect your wallet';
+      } else {
+        errorMessage = error.message || 'Transaction failed';
+      }
+      
+      setError(errorMessage);
+      
+      // Show error toast
+      setToast({
+        message: `❌ ${tab.toUpperCase()} transaction failed`,
+        txId: '',
+        visible: true,
+        status: 'failed',
+      });
       
       if (useNetworkPrecheck) {
         console.log('🔄 Network connectivity issues - checking and retrying...');

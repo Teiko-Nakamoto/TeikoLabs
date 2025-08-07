@@ -4,7 +4,7 @@ import { supabase } from '../../utils/supabaseClient';
 
 export async function POST(req) {
   try {
-    const { txid } = await req.json();
+    const { txid, tokenId } = await req.json();
 
     if (!txid) {
       return new Response(JSON.stringify({ error: 'Transaction ID is required.' }), {
@@ -12,8 +12,11 @@ export async function POST(req) {
       });
     }
 
+    // Use dynamic table name based on tokenId, fallback to TestTrades for backward compatibility
+    const tableName = tokenId ? `trades_${tokenId}` : 'TestTrades';
+
     const { data, error } = await supabase
-      .from('TestTrades') // Replace with your exact table name
+      .from(tableName)
       .select('transaction_id')
       .eq('transaction_id', txid)
       .limit(1);

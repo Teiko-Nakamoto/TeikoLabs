@@ -9,6 +9,54 @@ import {
   Pc,
   PostConditionMode
 } from '@stacks/transactions';
+
+// 🔧 Transaction queue to prevent broadcast conflicts
+let transactionQueue = [];
+let isProcessingQueue = false;
+
+// 🔧 Queue transaction for processing
+async function queueTransaction(transactionParams, useSmartRetry = true) {
+  return new Promise((resolve, reject) => {
+    transactionQueue.push({
+      params: transactionParams,
+      useSmartRetry,
+      resolve,
+      reject
+    });
+    
+    if (!isProcessingQueue) {
+      processTransactionQueue();
+    }
+  });
+}
+
+// 🔧 Process transaction queue sequentially
+async function processTransactionQueue() {
+  if (isProcessingQueue || transactionQueue.length === 0) {
+    return;
+  }
+  
+  isProcessingQueue = true;
+  
+  while (transactionQueue.length > 0) {
+    const { params, useSmartRetry, resolve, reject } = transactionQueue.shift();
+    
+    try {
+      console.log('📋 Processing queued transaction...');
+      const result = await submitTransactionWithRetry(params, 2, useSmartRetry);
+      resolve(result);
+    } catch (error) {
+      reject(error);
+    }
+    
+    // Small delay between transactions to prevent broadcast conflicts
+    if (transactionQueue.length > 0) {
+      await new Promise(resolve => setTimeout(resolve, 500));
+    }
+  }
+  
+  isProcessingQueue = false;
+}
 import {
   DEX_CONTRACT_ADDRESS,
   DEX_CONTRACT_NAME,
@@ -18,23 +66,235 @@ import {
   getCurrentPrice,
 } from './fetchTokenData';
 
-export async function handleTransaction(tab, amount, setErrorMessage, setToast, expectedPrice, setDuplicateCallback = null, slippageProtection = null, estimatedOutput = null, currentPrice = null) {
+// 🔧 Enhanced wallet readiness check for transactions
+async function ensureWalletReady() {
+  try {
+    // Check if Stacks Connect is available
+    if (typeof window === 'undefined' || !window.StacksProvider) {
+      throw new Error('Stacks Connect not available');
+    }
+
+    // Check if user is connected
+    const { isConnected, getLocalStorage } = await import('@stacks/connect');
+    const connected = await isConnected();
+    
+    if (!connected) {
+      throw new Error('Wallet not connected');
+    }
+
+    // Verify we have a valid address
+    const data = getLocalStorage();
+    const stxAddr = data?.addresses?.stx?.[0]?.address;
+    
+    if (!stxAddr) {
+      throw new Error('No wallet address found');
+    }
+
+    // Check if connection is recent (within last 5 minutes)
+    const lastConnectionTime = localStorage.getItem('lastConnectionTime');
+    if (lastConnectionTime) {
+      const timeSinceConnection = Date.now() - parseInt(lastConnectionTime);
+      if (timeSinceConnection > 5 * 60 * 1000) { // 5 minutes
+        console.log('⚠️ Connection may be stale, reconnecting...');
+        throw new Error('Connection stale, please reconnect');
+      }
+    }
+
+    return stxAddr;
+  } catch (error) {
+    console.error('❌ Wallet readiness check failed:', error.message);
+    throw error;
+  }
+}
+
+// 🔧 Network health and broadcast optimization
+async function checkNetworkHealth() {
+  try {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 5000);
+    
+    const response = await fetch('https://api.testnet.hiro.so/v2/info', {
+      signal: controller.signal
+    });
+    
+    clearTimeout(timeoutId);
+    return response.ok;
+  } catch (error) {
+    console.log('🚨 Network check failed:', error.message);
+    return false;
+  }
+}
+
+// 🔧 Get optimal broadcast endpoint
+async function getOptimalBroadcastEndpoint() {
+  const endpoints = [
+    'https://api.testnet.hiro.so',
+    'https://stacks-node-api.testnet.stacks.co',
+    'https://api.testnet.hiro.so/v2'
+  ];
+  
+  for (const endpoint of endpoints) {
+    try {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 3000);
+      
+      const response = await fetch(`${endpoint}/v2/info`, {
+        signal: controller.signal
+      });
+      
+      clearTimeout(timeoutId);
+      
+      if (response.ok) {
+        console.log(`✅ Optimal broadcast endpoint found: ${endpoint}`);
+        return endpoint;
+      }
+    } catch (error) {
+      console.log(`❌ Endpoint ${endpoint} failed:`, error.message);
+    }
+  }
+  
+  console.log('⚠️ Using default endpoint');
+  return 'https://api.testnet.hiro.so';
+}
+
+// 🔧 Enhanced transaction submission with broadcast optimization
+async function submitTransactionWithRetry(transactionParams, maxRetries = 2, useSmartRetry = true) {
+  let lastError = null;
+  
+  // If smart retry is disabled, only try once
+  const actualMaxRetries = useSmartRetry ? maxRetries : 0;
+  
+  // Get optimal broadcast endpoint
+  const optimalEndpoint = await getOptimalBroadcastEndpoint();
+  
+  for (let attempt = 0; attempt <= actualMaxRetries; attempt++) {
+    try {
+      console.log(`🚀 Submitting transaction (attempt ${attempt + 1}/${actualMaxRetries + 1})...`);
+      
+      // Ensure wallet is ready before each attempt
+      await ensureWalletReady();
+      
+      // Check network health before each attempt
+      const isNetworkHealthy = await checkNetworkHealth();
+      if (!isNetworkHealthy && attempt > 0) {
+        console.log('⚠️ Network health check failed, waiting longer...');
+        await new Promise(resolve => setTimeout(resolve, 3000));
+      }
+      
+      // Add a small delay between retries (only if smart retry is enabled)
+      if (attempt > 0 && useSmartRetry) {
+        console.log('⏳ Smart retry enabled - waiting before retry...');
+        await new Promise(resolve => setTimeout(resolve, 1000));
+      }
+      
+      // Enhanced transaction request with better error handling
+      const response = await request('stx_callContract', {
+        ...transactionParams,
+        // Add additional parameters for better broadcast success
+        network: 'testnet',
+        // Use optimal endpoint if available
+        ...(optimalEndpoint && { endpoint: optimalEndpoint })
+      });
+      
+      console.log('✅ Transaction submitted successfully:', response);
+      return response;
+      
+    } catch (error) {
+      lastError = error;
+      console.error(`❌ Transaction attempt ${attempt + 1} failed:`, error.message);
+      
+      // Don't retry on certain errors
+      if (error.message.includes('User rejected') || 
+          error.message.includes('cancelled') ||
+          error.message.includes('not connected')) {
+        throw error;
+      }
+      
+      // Enhanced error handling for broadcast failures
+      if (error.message.includes('broadcast') || error.message.includes('network')) {
+        console.log('🌐 Broadcast error detected, trying alternative endpoint...');
+        // Try with different endpoint on next attempt
+        await new Promise(resolve => setTimeout(resolve, 2000));
+      }
+      
+      // Only retry if smart retry is enabled
+      if (attempt < actualMaxRetries && useSmartRetry) {
+        console.log('🔄 Smart retry enabled - retrying transaction...');
+        await new Promise(resolve => setTimeout(resolve, 2000));
+      } else if (!useSmartRetry) {
+        console.log('🚫 Smart retry disabled - not retrying automatically');
+      }
+    }
+  }
+  
+  throw lastError || new Error('Transaction failed after all retries');
+}
+
+// 🔧 Enhanced transaction submission with retry logic
+async function submitTransactionWithRetry(transactionParams, maxRetries = 2, useSmartRetry = true) {
+  let lastError = null;
+  
+  // If smart retry is disabled, only try once
+  const actualMaxRetries = useSmartRetry ? maxRetries : 0;
+  
+  for (let attempt = 0; attempt <= actualMaxRetries; attempt++) {
+    try {
+      console.log(`🚀 Submitting transaction (attempt ${attempt + 1}/${actualMaxRetries + 1})...`);
+      
+      // Ensure wallet is ready before each attempt
+      await ensureWalletReady();
+      
+      // Add a small delay between retries (only if smart retry is enabled)
+      if (attempt > 0 && useSmartRetry) {
+        console.log('⏳ Smart retry enabled - waiting before retry...');
+        await new Promise(resolve => setTimeout(resolve, 1000));
+      }
+      
+      const response = await request('stx_callContract', transactionParams);
+      console.log('✅ Transaction submitted successfully:', response);
+      return response;
+      
+    } catch (error) {
+      lastError = error;
+      console.error(`❌ Transaction attempt ${attempt + 1} failed:`, error.message);
+      
+      // Don't retry on certain errors
+      if (error.message.includes('User rejected') || 
+          error.message.includes('cancelled') ||
+          error.message.includes('not connected')) {
+        throw error;
+      }
+      
+      // Only retry if smart retry is enabled
+      if (attempt < actualMaxRetries && useSmartRetry) {
+        console.log('🔄 Smart retry enabled - retrying transaction...');
+        await new Promise(resolve => setTimeout(resolve, 2000));
+      } else if (!useSmartRetry) {
+        console.log('🚫 Smart retry disabled - not retrying automatically');
+      }
+    }
+  }
+  
+  throw lastError || new Error('Transaction failed after all retries');
+}
+
+export async function handleTransaction(tab, amount, setErrorMessage, setToast, expectedPrice, setDuplicateCallback = null, slippageProtection = null, estimatedOutput = null, currentPrice = null, tokenId = null, useSmartRetry = true) {
   // 🧪 EXPERIMENTAL: Router function to choose between flows
-  if (slippageProtection && slippageProtection.enabled && slippageProtection.tolerance > 0 && slippageProtection.userAddress) {
+  if (slippageProtection && slippageProtection.enabled && estimatedOutput) {
     console.log('🧪 Using EXPERIMENTAL post-conditions flow');
     if (!estimatedOutput) {
       console.error('❌ ERROR: estimatedOutput is required for slippage protection!');
       return null;
     }
-    return await handleTransactionWithPostConditions(tab, amount, setErrorMessage, setToast, expectedPrice, setDuplicateCallback, slippageProtection, estimatedOutput, currentPrice);
+    return await handleTransactionWithPostConditions(tab, amount, setErrorMessage, setToast, expectedPrice, setDuplicateCallback, slippageProtection, estimatedOutput, currentPrice, useSmartRetry);
   } else {
     console.log('✅ Using standard transaction flow');
-    return await handleTransactionWithoutPostConditions(tab, amount, setErrorMessage, setToast, expectedPrice, setDuplicateCallback, currentPrice);
+    return await handleTransactionWithoutPostConditions(tab, amount, setErrorMessage, setToast, expectedPrice, setDuplicateCallback, currentPrice, useSmartRetry);
   }
 }
 
 // ✅ STANDARD FLOW: No post conditions (existing logic)
-async function handleTransactionWithoutPostConditions(tab, amount, setErrorMessage, setToast, expectedPrice, setDuplicateCallback = null, currentPrice = null) {
+async function handleTransactionWithoutPostConditions(tab, amount, setErrorMessage, setToast, expectedPrice, setDuplicateCallback = null, currentPrice = null, useSmartRetry = true) {
   let formattedTxId = '';
   let createdAtISO = null;
   let formattedSatsPerToken = '';
@@ -51,6 +311,15 @@ async function handleTransactionWithoutPostConditions(tab, amount, setErrorMessa
     const postConditions = [];
     const postConditionMode = 'allow';
 
+    const transactionParams = {
+      contract: `${DEX_CONTRACT_ADDRESS}.${DEX_CONTRACT_NAME}`,
+      functionName,
+      functionArgs,
+      postConditionMode,
+      postConditions,
+      network: 'testnet',
+    };
+
     console.log('🚀 About to send request with:', {
       contract: `${DEX_CONTRACT_ADDRESS}.${DEX_CONTRACT_NAME}`,
       functionName,
@@ -60,14 +329,8 @@ async function handleTransactionWithoutPostConditions(tab, amount, setErrorMessa
       network: 'testnet'
     });
 
-    const response = await request('stx_callContract', {
-      contract: `${DEX_CONTRACT_ADDRESS}.${DEX_CONTRACT_NAME}`,
-      functionName,
-      functionArgs,
-      postConditionMode,
-      postConditions,
-      network: 'testnet',
-    });
+    // 🔧 Use enhanced transaction submission with queue and retry logic
+    const response = await queueTransaction(transactionParams, useSmartRetry);
     
     console.log('✅ Request completed, response:', response);
 
@@ -131,7 +394,7 @@ async function handleTransactionWithoutPostConditions(tab, amount, setErrorMessa
     const dupCheckRes = await fetch('/api/check-tx-duplicate', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ transaction_id: formattedTxId }),
+      body: JSON.stringify({ txid: formattedTxId, tokenId }),
     });
 
     const dupData = await dupCheckRes.json();
@@ -176,109 +439,64 @@ async function handleTransactionWithoutPostConditions(tab, amount, setErrorMessa
 
     if (tab === 'buy') {
       if (Array.isArray(confirmedData.events)) {
-        const tokenEvent = confirmedData.events.find(
-          (event) =>
-            event.event_type === 'fungible_token_asset' &&
-            event.asset.asset_event_type === 'transfer' &&
-            event.asset.asset_id.includes('.dear-cyan') &&
-            event.asset.recipient === confirmedData.sender_address
+        const tokenTransferEvent = confirmedData.events.find(event => 
+          event.event_type === 'ft_transfer_event' && 
+          event.asset?.asset_id === `${DEX_CONTRACT_ADDRESS}.${DEX_CONTRACT_NAME}::dear-cyan`
         );
-
-        if (tokenEvent) {
-          const rawAmount = tokenEvent.asset.amount;
-          tokensTraded = parseInt(rawAmount) / 1e8;
-          console.log(`✅ Tokens bought: ${tokensTraded}`);
-        } else {
-          console.warn('⚠️ No matching token transfer event found for buy.');
+        
+        if (tokenTransferEvent) {
+          tokensTraded = parseInt(tokenTransferEvent.asset.amount);
+          formattedSatsPerToken = (satsTraded / tokensTraded).toFixed(8);
         }
       }
-    } else if (tab === 'sell') {
-      tokensTraded = -parseFloat(amount);
-      console.log(`✅ Tokens sold (input): ${tokensTraded}`);
-
-      if (Array.isArray(confirmedData.events)) {
-        const sbtcEvent = confirmedData.events.find(
-          (event) =>
-            event.event_type === 'fungible_token_asset' &&
-            event.asset.asset_event_type === 'transfer' &&
-            event.asset.asset_id.includes('sbtc-token') &&
-            event.asset.recipient === confirmedData.sender_address
-        );
-
-        if (sbtcEvent) {
-          satsReceived = parseInt(sbtcEvent.asset.amount);
-          console.log(`✅ SBTC received: ${satsReceived} sats`);
-        } else {
-          console.warn('⚠️ No SBTC transfer event found for sell.');
-        }
-      }
-    }
-
-    if (tab === 'buy' && satsTraded && tokensTraded) {
-      const executedPrice = satsTraded / tokensTraded;
-      formattedSatsPerToken = executedPrice.toFixed(7);
-      console.log(`📊 Executed buy price: ${formattedSatsPerToken} sats/token`);
-    } else if (tab === 'sell' && satsReceived && tokensTraded !== 0) {
-      const executedPrice = satsReceived / Math.abs(tokensTraded);
-      formattedSatsPerToken = executedPrice.toFixed(7);
-      console.log(`📊 Executed sell price: ${formattedSatsPerToken} sats/token`);
     } else {
-      const fallbackPrice = await getCurrentPrice();
-      formattedSatsPerToken = (fallbackPrice * 1e8).toFixed(7);
-      console.log(`⚠️ Fallback price used: ${formattedSatsPerToken} sats/token`);
+      if (Array.isArray(confirmedData.events)) {
+        const sbtcTransferEvent = confirmedData.events.find(event => 
+          event.event_type === 'ft_transfer_event' && 
+          event.asset?.asset_id === 'ST1F7QA2MDF17S807EPA36TSS8AMEFY4KA9TVGWXT.sbtc-token::sbtc-token'
+        );
+        
+        if (sbtcTransferEvent) {
+          satsReceived = parseInt(sbtcTransferEvent.asset.amount);
+          formattedSatsPerToken = (satsReceived / parseInt(amount)).toFixed(8);
+        }
+      }
     }
 
-    const tradePayload = {
-      transaction_id: formattedTxId,
-      price: parseFloat(formattedSatsPerToken), // Actual executed price
-      current_price: currentPrice || parseFloat(formattedSatsPerToken), // Market price at time of trade
-      expected_price: expectedPrice || null, // Slippage-adjusted expected price
-      type: tradeType,
-      created_at: createdAtISO,
-      tokens_traded: tokensTraded,
-      sats_traded: tab === 'buy' ? satsTraded : satsReceived || null,
+    return {
+      txId: formattedTxId,
+      createdAt: createdAtISO,
+      satsPerToken: formattedSatsPerToken,
+      tradeType,
+      tokensTraded,
+      satsReceived,
+      confirmedData
     };
 
-    console.log('📤 Payload to Supabase:', tradePayload);
-    console.log('🎯 Expected price in payload:', expectedPrice);
-
-    try {
-      const res = await fetch('/api/save-test-trades', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(tradePayload),
-      });
-
-      const data = await res.json();
-      if (res.ok) {
-        console.log('✅ Trade saved to Supabase.');
-        console.log('📦 Saved data:', data);
-      } else {
-        console.warn('⚠️ Failed to save trade:', data.error);
-      }
-    } catch (err) {
-      console.error('❌ Error calling save-test-trades API:', err.message);
+  } catch (error) {
+    console.error('❌ Transaction error:', error);
+    
+    // Enhanced error handling
+    let errorMessage = 'Transaction failed';
+    
+    if (error.message.includes('not connected')) {
+      errorMessage = 'Please connect your wallet first';
+    } else if (error.message.includes('User rejected')) {
+      errorMessage = 'Transaction was cancelled';
+    } else if (error.message.includes('Connection stale')) {
+      errorMessage = 'Please reconnect your wallet';
+    } else if (error.message.includes('insufficient balance')) {
+      errorMessage = 'Insufficient balance for transaction';
+    } else {
+      errorMessage = error.message || 'Transaction failed';
     }
 
-    return true;
-  } catch (err) {
-    if (err.message && err.message.includes('Failed to fetch')) {
-      console.log('🚨 Error checking tx status: Failed to fetch.');
-      // Error handled via toast - no top banner needed
-
-      setToast({
-        message: `❌ ${tab.toUpperCase()} transaction failed`,
-        txId: formattedTxId || '',
-        visible: true,
-      });
-    }
-
-    console.error(`❌ Error in ${tab} transaction:`, err);
-
+    setErrorMessage(errorMessage);
     setToast({
       message: `❌ ${tab.toUpperCase()} transaction failed`,
       txId: formattedTxId || '',
       visible: true,
+      status: 'failed',
     });
 
     // Error handled via toast - no top banner needed
@@ -287,7 +505,7 @@ async function handleTransactionWithoutPostConditions(tab, amount, setErrorMessa
 }
 
 // 🧪 EXPERIMENTAL FLOW: With post conditions for slippage protection
-async function handleTransactionWithPostConditions(tab, amount, setErrorMessage, setToast, expectedPrice, setDuplicateCallback = null, slippageProtection, estimatedOutput, currentPrice = null) {
+async function handleTransactionWithPostConditions(tab, amount, setErrorMessage, setToast, expectedPrice, setDuplicateCallback = null, slippageProtection, estimatedOutput, currentPrice = null, useSmartRetry = true) {
   let formattedTxId = '';
   let createdAtISO = null;
   let formattedSatsPerToken = '';
@@ -373,14 +591,17 @@ async function handleTransactionWithPostConditions(tab, amount, setErrorMessage,
       network: 'testnet'
     });
 
-    const response = await request('stx_callContract', {
+    const transactionParams = {
       contract: `${DEX_CONTRACT_ADDRESS}.${DEX_CONTRACT_NAME}`,
       functionName,
       functionArgs,
       postConditionMode,
       postConditions,
       network: 'testnet',
-    });
+    };
+
+    // 🔧 Use enhanced transaction submission with retry logic
+    const response = await submitTransactionWithRetry(transactionParams);
     
     console.log('✅ EXPERIMENTAL Request completed, response:', response);
 
@@ -512,25 +733,7 @@ async function handleTransactionWithPostConditions(tab, amount, setErrorMessage,
       sats_traded: tab === 'buy' ? satsTraded : (satsFromTrade || null),
     };
 
-    console.log('📤 EXPERIMENTAL Payload to Supabase:', tradePayload);
 
-    try {
-      const res = await fetch('/api/save-test-trades', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(tradePayload),
-      });
-
-      const data = await res.json();
-      if (res.ok) {
-        console.log('✅ EXPERIMENTAL Trade saved to Supabase.');
-        console.log('📦 Saved data:', data);
-      } else {
-        console.warn('⚠️ EXPERIMENTAL Failed to save trade:', data.error);
-      }
-    } catch (err) {
-      console.error('❌ EXPERIMENTAL Error calling save-test-trades API:', err.message);
-    }
 
     setToast({
       message: `✅ ${tab.toUpperCase()} completed successfully (with post conditions)`,

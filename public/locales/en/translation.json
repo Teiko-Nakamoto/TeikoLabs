@@ -95,7 +95,7 @@
   "confirm": "Confirm",
   "cancel": "Cancel",
   "no_trades_msg": "No trades to display.",
-  "market_history_title": "Market History",
+  "swap_history_title": "Swap History",
   "pending_trade_msg": "Pending...",
   "processing_tx_msg": "Processing...",
   "loading_icon": "⏳",
