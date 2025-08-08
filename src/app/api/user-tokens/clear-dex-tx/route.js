@@ -1,10 +1,5 @@
 import { NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
-
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL,
-  process.env.SUPABASE_SERVICE_ROLE_KEY
-);
+import { supabaseServer } from '../../../utils/supabaseServer';
 
 export async function POST(request) {
   try {
@@ -24,7 +19,7 @@ export async function POST(request) {
     console.log('🗑️ Clearing DEX transaction for token:', tokenContractAddress);
 
     // Clear the DEX transaction hash from the token record
-    const { data: updatedToken, error: updateError } = await supabase
+    const { data: updatedToken, error: updateError } = await supabaseServer
       .from('user_tokens')
       .update({
         dex_deployment_tx_hash: null,

@@ -1,10 +1,5 @@
 import { NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
-
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL,
-  process.env.SUPABASE_SERVICE_ROLE_KEY
-);
+import { supabaseServer } from '../../../utils/supabaseServer';
 
 export async function GET(request, { params }) {
   try {
@@ -18,7 +13,7 @@ export async function GET(request, { params }) {
     }
 
     // Fetch the specific token
-    const { data: token, error } = await supabase
+    const { data: token, error } = await supabaseServer
       .from('user_tokens')
       .select('*')
       .eq('id', tokenId)
@@ -118,7 +113,7 @@ export async function PUT(request, { params }) {
     }
 
     // Update the token
-    const { data: updatedToken, error } = await supabase
+    const { data: updatedToken, error } = await supabaseServer
       .from('user_tokens')
       .update(updates)
       .eq('id', tokenId)

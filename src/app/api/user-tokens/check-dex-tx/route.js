@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
+import { supabaseServer } from '../../../utils/supabaseServer';
 import { STACKS_TESTNET, STACKS_MAINNET } from '@stacks/network';
 
 // Function to verify if a transaction exists on the blockchain
@@ -38,11 +38,6 @@ async function verifyTransactionExists(txId, network = 'testnet') {
   }
 }
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL,
-  process.env.SUPABASE_SERVICE_ROLE_KEY
-);
-
 export async function POST(request) {
   try {
     console.log('🔍 API: check-dex-tx endpoint called');
@@ -62,7 +57,7 @@ export async function POST(request) {
     console.log('🔍 Checking for existing DEX deployment for transaction:', transactionId);
 
     // First, let's see ALL tokens with this deployment transaction hash
-    const { data: allTokensWithTx, error: allTokensError } = await supabase
+    const { data: allTokensWithTx, error: allTokensError } = await supabaseServer
       .from('user_tokens')
       .select('id, token_name, token_symbol, token_contract_address, dex_contract_address, dex_deployment_tx_hash, deployment_tx_hash, created_at')
       .eq('deployment_tx_hash', transactionId)
@@ -76,7 +71,7 @@ export async function POST(request) {
 
     // Check if there's already a DEX transaction hash for a token with this deployment transaction
     // Note: Check for both NULL and empty string values
-    const { data: existingToken, error: searchError } = await supabase
+    const { data: existingToken, error: searchError } = await supabaseServer
       .from('user_tokens')
       .select('id, token_name, token_symbol, token_contract_address, dex_contract_address, dex_deployment_tx_hash, deployment_tx_hash, created_at')
       .eq('deployment_tx_hash', transactionId)

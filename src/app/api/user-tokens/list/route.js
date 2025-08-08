@@ -1,10 +1,5 @@
 import { NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
-
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL,
-  process.env.SUPABASE_SERVICE_ROLE_KEY
-);
+import { supabaseServer } from '../../../utils/supabaseServer';
 
 export async function GET(request) {
   try {
@@ -20,7 +15,7 @@ export async function GET(request) {
     const offset = (page - 1) * limit;
 
     // Build query
-    let query = supabase
+    let query = supabaseServer
       .from('user_tokens')
       .select('*', { count: 'exact' });
 
