@@ -1,0 +1,5 @@
+[33m7a9af9c[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmain[m[33m)[m Fix remaining API routes: Update all routes to use supabaseServer utility
+[33m2ce69cc[m[33m ([m[1;31morigin/main[m[33m, [m[1;31morigin/HEAD[m[33m)[m Fix user-tokens API routes: Update all routes to use supabaseServer utility
+[33m386d54e[m Fix API routes: Update debug-token-cards, remove-cors-url, and get-cors-whitelist to use supabaseServer
+[33mb06937d[m Production setup: Remove mock client, use real Supabase configuration with proper error handling
+[33m9c2b86c[m Fix import error - export supabaseServer for direct imports
