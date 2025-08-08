@@ -1677,7 +1677,7 @@ export default function CreateTokenPage() {
                   <img src="/icons/Vector.svg" alt="Community" className="benefit-icon" />
                   <h3>Build Your Community</h3>
                 </div>
-                <p>Attract traders and investors to your token, growing your project's audience.</p>
+                <p>Attract traders and investors to your token, growing your project&apos;s audience.</p>
               </div>
             </div>
 
@@ -1694,7 +1694,7 @@ export default function CreateTokenPage() {
                   <li>Boosts platform liquidity and stability</li>
                   <li>Promotes the overall ecosystem</li>
                   <li>Helps bring your project a larger audience</li>
-                  <li>Ensures commitment to the platform's success</li>
+                  <li>Ensures commitment to the platform&apos;s success</li>
                 </ul>
               </div>
 

@@ -111,7 +111,7 @@ export default function Footer() {
             <h3 style={{ color: '#fca311', marginBottom: '1rem' }}>🔍 Security Audit</h3>
             <p style={{ marginBottom: '1rem' }}>
               Our comprehensive security audit report is coming soon! 
-              We're working with leading blockchain security firms to ensure 
+              We&apos;re working with leading blockchain security firms to ensure 
               the highest level of security for our smart contracts.
             </p>
             <p style={{ fontSize: '0.9rem', color: '#9ca3af' }}>

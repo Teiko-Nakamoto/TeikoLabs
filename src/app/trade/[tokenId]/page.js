@@ -76,7 +76,7 @@ export default function TradeRedirectPage() {
       alignItems: 'center'
     }}>
       <h2>Token Not Found</h2>
-      <p>The token you're looking for could not be found or doesn't have a symbol configured.</p>
+      <p>The token you&apos;re looking for could not be found or doesn&apos;t have a symbol configured.</p>
       <button 
         onClick={() => router.push('/')}
         style={{

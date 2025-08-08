@@ -193,7 +193,7 @@ export default function ApiEndpointsPage() {
 
             <section id="public-endpoints" className="docs-section">
               <h2>Public Endpoints</h2>
-              <p>These endpoints are publicly accessible and don't require authentication:</p>
+              <p>These endpoints are publicly accessible and don&apos;t require authentication:</p>
 
               <h3>Get Current Price</h3>
               <p>Retrieve the current token price and market data.</p>
