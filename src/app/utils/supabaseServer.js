@@ -32,6 +32,9 @@ if (!supabaseUrl || !supabaseServiceKey) {
   });
 }
 
+// Export the supabaseServer for direct imports
+export { supabaseServer };
+
 // Helper functions for server-side operations (admin only)
 
 export async function getRateLimitsServer() {
