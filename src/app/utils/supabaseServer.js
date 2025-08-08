@@ -5,35 +5,20 @@ import { createClient } from '@supabase/supabase-js';
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
-// Create a mock client for build time when environment variables are not available
-let supabaseServer;
-
+// Production-ready: Throw clear error if environment variables are missing
 if (!supabaseUrl || !supabaseServiceKey) {
-  // During build time or when env vars are missing, create a mock client
-  console.warn('⚠️ Supabase environment variables not found. Using mock client for build.');
-  supabaseServer = {
-    from: () => ({
-      select: () => Promise.resolve({ data: [], error: null }),
-      insert: () => Promise.resolve({ data: [], error: null }),
-      delete: () => ({
-        neq: () => Promise.resolve({ data: [], error: null }),
-        eq: () => Promise.resolve({ data: [], error: null })
-      }),
-      upsert: () => Promise.resolve({ data: [], error: null })
-    })
-  };
-} else {
-  // Create real server-side client with service role key
-  supabaseServer = createClient(supabaseUrl, supabaseServiceKey, {
-    auth: {
-      autoRefreshToken: false,
-      persistSession: false
-    }
-  });
+  throw new Error(
+    'Missing Supabase environment variables. Please set NEXT_PUBLIC_SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY in your environment.'
+  );
 }
 
-// Export the supabaseServer for direct imports
-export { supabaseServer };
+// Create server-side client with service role key
+export const supabaseServer = createClient(supabaseUrl, supabaseServiceKey, {
+  auth: {
+    autoRefreshToken: false,
+    persistSession: false
+  }
+});
 
 // Helper functions for server-side operations (admin only)
 

@@ -1,16 +1,6 @@
 import { requireAdminAuth } from '../../utils/adminAuth';
-import { createClient } from '@supabase/supabase-js';
+import { supabaseServer } from '../../utils/supabaseServer';
 import { verifyMessageSignatureRsv } from '@stacks/encryption';
-
-// Initialize Supabase client
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-
-if (!supabaseUrl || !supabaseServiceKey) {
-  throw new Error('Missing Supabase configuration');
-}
-
-const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
 async function handler(request) {
   try {
@@ -87,7 +77,7 @@ async function handler(request) {
     }
 
     // Check if URL already exists
-    const { data: existingUrl, error: checkError } = await supabase
+    const { data: existingUrl, error: checkError } = await supabaseServer
       .from('cors_whitelist')
       .select('id')
       .eq('url', url)
@@ -121,7 +111,7 @@ async function handler(request) {
     }
 
     // Add URL to whitelist
-    const { data: newEntry, error: insertError } = await supabase
+    const { data: newEntry, error: insertError } = await supabaseServer
       .from('cors_whitelist')
       .insert({
         url,
