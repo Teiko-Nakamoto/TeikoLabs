@@ -11,8 +11,8 @@
   },
   "dependencies": {
     "@stacks/connect": "^8.1.9",
-    "@stacks/transactions": "^8.1.9",
-    "@stacks/network": "^8.1.9",
+    "@stacks/transactions": "^7.1.0",
+    "@stacks/network": "^7.0.2",
     "next": "15.3.5",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
