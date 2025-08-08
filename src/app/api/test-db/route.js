@@ -1,58 +1,38 @@
 import { NextResponse } from 'next/server';
-import { supabase } from '../../utils/supabaseClient';
+import { supabaseServer } from '../../utils/supabaseServer';
 
 export async function GET() {
   try {
-    console.log('🔍 Testing database connection and tables...');
-    
-    // Test token_cards table
-    console.log('🔍 Testing token_cards table...');
-    const { data: tokenCardsData, error: tokenCardsError } = await supabase
+    console.log('🔍 Testing database connection...');
+
+    // Test basic connection by fetching a simple query
+    const { data, error } = await supabaseServer
       .from('token_cards')
-      .select('*')
+      .select('count')
       .limit(1);
-    
-    if (tokenCardsError) {
-      console.error('❌ token_cards table error:', tokenCardsError);
+
+    if (error) {
+      console.error('❌ Database connection test failed:', error);
       return NextResponse.json({ 
-        error: 'token_cards table not accessible',
-        details: tokenCardsError.message,
-        hint: 'Please run the SQL setup in your Supabase dashboard'
+        success: false, 
+        error: error.message,
+        message: 'Database connection failed'
       }, { status: 500 });
     }
-    
-    console.log('✅ token_cards table accessible');
-    
-    // Test page_settings table
-    console.log('🔍 Testing page_settings table...');
-    const { data: pageSettingsData, error: pageSettingsError } = await supabase
-      .from('page_settings')
-      .select('*')
-      .limit(1);
-    
-    if (pageSettingsError) {
-      console.error('❌ page_settings table error:', pageSettingsError);
-      return NextResponse.json({ 
-        error: 'page_settings table not accessible',
-        details: pageSettingsError.message,
-        hint: 'Please run the SQL setup in your Supabase dashboard'
-      }, { status: 500 });
-    }
-    
-    console.log('✅ page_settings table accessible');
-    
+
+    console.log('✅ Database connection test successful');
+
     return NextResponse.json({ 
       success: true, 
-      message: 'Database tables are accessible',
-      tokenCardsCount: tokenCardsData?.length || 0,
-      pageSettingsCount: pageSettingsData?.length || 0
+      message: 'Database connection successful',
+      data: data
     });
-    
+
   } catch (error) {
-    console.error('❌ Database test error:', error);
+    console.error('❌ Unexpected error in test-db:', error);
     return NextResponse.json({ 
-      error: 'Database connection failed',
-      message: error.message 
+      success: false, 
+      error: 'Internal server error' 
     }, { status: 500 });
   }
 } 

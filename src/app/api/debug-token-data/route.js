@@ -1,27 +1,68 @@
 // API Route: Debug Token Data (to see actual contract details)
 import { NextResponse } from 'next/server';
-import { supabase } from '../../utils/supabaseClient';
+import { supabaseServer } from '../../utils/supabaseServer';
 
-export async function GET() {
+export async function GET(request) {
   try {
-    // Fetch token cards from Supabase
-    const { data, error } = await supabase
-      .from('token_cards')
-      .select('*')
-      .order('id', { ascending: true });
+    const { searchParams } = new URL(request.url);
+    const tokenId = searchParams.get('tokenId');
 
-    if (error) {
-      console.error('Error fetching token cards:', error);
-      return NextResponse.json({ error: error.message }, { status: 500 });
+    if (!tokenId) {
+      return NextResponse.json({ error: 'Token ID is required' }, { status: 400 });
     }
 
+    console.log('🔍 Debug: Fetching token data for ID:', tokenId);
+
+    // Get token card data
+    const { data: tokenCard, error: tokenError } = await supabaseServer
+      .from('token_cards')
+      .select('*')
+      .eq('id', tokenId)
+      .single();
+
+    if (tokenError) {
+      console.error('❌ Error fetching token card:', tokenError);
+      return NextResponse.json({ error: 'Token not found' }, { status: 404 });
+    }
+
+    // Get user tokens data
+    const { data: userTokens, error: userTokensError } = await supabaseServer
+      .from('user_tokens')
+      .select('*')
+      .eq('token_symbol', tokenCard.token_symbol);
+
+    if (userTokensError) {
+      console.error('❌ Error fetching user tokens:', userTokensError);
+    }
+
+    // Get trades data
+    const { data: trades, error: tradesError } = await supabaseServer
+      .from('trades')
+      .select('*')
+      .eq('token_symbol', tokenCard.token_symbol)
+      .order('created_at', { ascending: false })
+      .limit(10);
+
+    if (tradesError) {
+      console.error('❌ Error fetching trades:', tradesError);
+    }
+
+    console.log('✅ Debug: Token data fetched successfully');
+
     return NextResponse.json({
-      message: 'Token data from database',
-      tokenCards: data
+      success: true,
+      tokenCard: tokenCard,
+      userTokens: userTokens || [],
+      trades: trades || [],
+      debug: {
+        tokenCardCount: tokenCard ? 1 : 0,
+        userTokensCount: userTokens ? userTokens.length : 0,
+        tradesCount: trades ? trades.length : 0
+      }
     });
 
   } catch (error) {
-    console.error('Error in debug-token-data API:', error);
+    console.error('❌ Debug: Unexpected error:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 } 
