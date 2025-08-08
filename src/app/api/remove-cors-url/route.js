@@ -1,16 +1,6 @@
 import { requireAdminAuth } from '../../utils/adminAuth';
-import { createClient } from '@supabase/supabase-js';
+import { supabaseServer } from '../../utils/supabaseServer';
 import { verifyMessageSignatureRsv } from '@stacks/encryption';
-
-// Initialize Supabase client
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-
-if (!supabaseUrl || !supabaseServiceKey) {
-  throw new Error('Missing Supabase configuration');
-}
-
-const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
 async function handler(request) {
   try {
@@ -67,48 +57,17 @@ async function handler(request) {
       );
     }
 
-    // Check if URL exists and get its details
-    const { data: existingEntry, error: checkError } = await supabase
-      .from('cors_whitelist')
-      .select('*')
-      .eq('id', id)
-      .single();
-
-    if (checkError) {
-      if (checkError.code === 'PGRST116') {
-        return new Response(
-          JSON.stringify({ 
-            error: 'URL not found', 
-            message: 'The specified CORS URL does not exist' 
-          }), 
-          { 
-            status: 404, 
-            headers: { 'Content-Type': 'application/json' } 
-          }
-        );
-      }
-      
-      console.error('Error checking existing URL:', checkError);
-      return new Response(
-        JSON.stringify({ 
-          error: 'Database error', 
-          message: checkError.message 
-        }), 
-        { 
-          status: 500, 
-          headers: { 'Content-Type': 'application/json' } 
-        }
-      );
-    }
-
     // Remove URL from whitelist
-    const { error: deleteError } = await supabase
+    const { data: removedEntry, error: deleteError } = await supabaseServer
       .from('cors_whitelist')
       .delete()
-      .eq('id', id);
+      .eq('id', id)
+      .eq('admin_wallet', adminWallet)
+      .select()
+      .single();
 
     if (deleteError) {
-      console.error('Error deleting CORS URL:', deleteError);
+      console.error('Error removing CORS URL:', deleteError);
       return new Response(
         JSON.stringify({ 
           error: 'Database error', 
@@ -121,13 +80,26 @@ async function handler(request) {
       );
     }
 
-    console.log(`🗑️ CORS URL removed: ${existingEntry.url} by ${adminWallet}`);
+    if (!removedEntry) {
+      return new Response(
+        JSON.stringify({ 
+          error: 'URL not found', 
+          message: 'No CORS URL found with the specified ID for this admin' 
+        }), 
+        { 
+          status: 404, 
+          headers: { 'Content-Type': 'application/json' } 
+        }
+      );
+    }
+
+    console.log(`✅ CORS URL removed: ${removedEntry.url} by ${adminWallet}`);
 
     return new Response(
       JSON.stringify({ 
         success: true, 
         message: 'CORS URL removed successfully',
-        removedUrl: existingEntry.url
+        removedEntry
       }), 
       { 
         status: 200, 

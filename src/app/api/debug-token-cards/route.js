@@ -1,12 +1,12 @@
 import { NextResponse } from 'next/server';
-import { supabase } from '../../utils/supabaseClient';
+import { supabaseServer } from '../../utils/supabaseServer';
 
 export async function GET() {
   try {
     console.log('🔍 Debug: Checking token cards in database...');
     
     // Fetch all token cards from Supabase
-    const { data, error } = await supabase
+    const { data, error } = await supabaseServer
       .from('token_cards')
       .select('*')
       .order('id', { ascending: true });
@@ -19,7 +19,7 @@ export async function GET() {
     console.log('✅ Debug: Found token cards:', data);
     
     // Also check page settings
-    const { data: tabData, error: tabError } = await supabase
+    const { data: tabData, error: tabError } = await supabaseServer
       .from('page_settings')
       .select('*');
 
