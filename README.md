@@ -1,105 +1,171 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Create Token JS - Stacks Blockchain Token Creation Platform
 
-## Getting Started
+A comprehensive Next.js application for creating and managing tokens on the Stacks blockchain with integrated DEX functionality, admin dashboard, and API management.
 
-First, run the development server:
+## 🚀 Features
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+### Core Functionality
+- **Token Creation**: Deploy custom tokens on Stacks blockchain (testnet/mainnet)
+- **DEX Integration**: Built-in decentralized exchange for token trading
+- **Treasury Management**: Project treasury with fee collection and governance
+- **Wallet Integration**: Seamless Stacks wallet connectivity
+
+### Admin Features
+- **Admin Dashboard**: Comprehensive management interface
+- **API Management**: CORS configuration and rate limiting
+- **Content Management**: Edit homepage and manage platform content
+- **User Token Management**: Monitor and manage user-created tokens
+
+### Technical Features
+- **Multi-language Support**: Internationalization (i18n) with 13 languages
+- **Responsive Design**: Mobile-first responsive UI
+- **Real-time Data**: Live price feeds and trading data
+- **Security**: CORS protection, rate limiting, and authentication
+- **Database Integration**: Supabase backend with comprehensive schema
+
+## 🛠️ Tech Stack
+
+- **Frontend**: Next.js 14, React, CSS3
+- **Blockchain**: Stacks (Clarity smart contracts)
+- **Database**: Supabase (PostgreSQL)
+- **Authentication**: Custom admin auth system
+- **Deployment**: Vercel-ready configuration
+
+## 📦 Installation
+
+1. **Clone the repository**
+   ```bash
+   git clone https://github.com/Teiko-Nakamoto/create-token-js.git
+   cd create-token-js
+   ```
+
+2. **Install dependencies**
+   ```bash
+   npm install
+   ```
+
+3. **Environment Setup**
+   Create a `.env.local` file with your configuration:
+   ```env
+   NEXT_PUBLIC_SUPABASE_URL=your_supabase_url
+   NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
+   SUPABASE_SERVICE_ROLE_KEY=your_service_role_key
+   ```
+
+4. **Database Setup**
+   Run the SQL scripts in the root directory:
+   ```bash
+   # Setup user tokens table
+   node setup-user-tokens.js
+   
+   # Setup CORS table
+   node setup-cors-table.js
+   
+   # Setup app settings
+   node setup-app-settings.js
+   ```
+
+5. **Start Development Server**
+   ```bash
+   npm run dev
+   ```
+
+## 🎯 Usage
+
+### Creating a Token
+1. Navigate to `/create-project`
+2. Connect your Stacks wallet
+3. Enter project details (name and initials)
+4. Deploy token to blockchain
+5. Create project treasury
+6. Mint treasury ownership tokens
+
+### Admin Access
+1. Navigate to `/admin`
+2. Use admin wallet authentication
+3. Access dashboard for platform management
+
+### API Management
+- **CORS Configuration**: `/admin/api-management`
+- **Rate Limiting**: Configure request limits
+- **Token Management**: Monitor user tokens
+
+## 📁 Project Structure
+
+```
+create-token-js/
+├── src/
+│   ├── app/
+│   │   ├── admin/           # Admin dashboard
+│   │   ├── api/            # API routes
+│   │   ├── create-project/ # Token creation
+│   │   ├── docs/           # Documentation
+│   │   ├── trade/          # Trading interface
+│   │   └── utils/          # Utility functions
+│   └── contracts/          # Smart contract templates
+├── public/
+│   ├── icons/             # UI icons
+│   └── locales/           # Translation files
+└── gaia-hub-local/        # Local Gaia hub
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## 🔧 Configuration
 
-You can start editing the page by modifying `app/page.js`. The page auto-updates as you edit the file.
+### Smart Contracts
+- **Token Template**: `src/app/contracts/token-template.clarity`
+- **DEX Template**: `src/app/contracts/dex-template.clarity`
+- **Contract Generator**: `src/app/contracts/token-generator.js`
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+### Database Schema
+- **User Tokens**: `user-tokens-schema.sql`
+- **CORS Management**: `cors-table-schema.sql`
+- **App Settings**: `app-settings-schema.sql`
 
-## Learn More
+## 🌐 Deployment
 
-To learn more about Next.js, take a look at the following resources:
+### Vercel Deployment
+1. Connect your GitHub repository to Vercel
+2. Configure environment variables
+3. Deploy automatically on push to main branch
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+### Environment Variables
+```env
+NEXT_PUBLIC_SUPABASE_URL=
+NEXT_PUBLIC_SUPABASE_ANON_KEY=
+SUPABASE_SERVICE_ROLE_KEY=
+NEXT_PUBLIC_GAIA_HUB_URL=
+```
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## 📚 Documentation
 
-## Deploy on Vercel
+- **API Documentation**: `/docs`
+- **CORS Management**: `CORS-MANAGEMENT.md`
+- **User Tokens System**: `USER-TOKENS-SYSTEM.md`
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## 🤝 Contributing
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+1. Fork the repository
+2. Create a feature branch
+3. Make your changes
+4. Submit a pull request
 
+## 📄 License
 
-📁 Project Structure & Summary
-| Path                    | What It Does                                                                                                                      |
-| ----------------------- | --------------------------------------------------------------------------------------------------------------------------------- |
-| `.next/`                | Auto-generated build output by Next.js (ignored by Git)                                                                           |
-| `node_modules/`         | Installed libraries via `npm install` (ignored by Git)                                                                            |
-| **`public/`**           | Static assets served directly by the browser                                                                                      |
-| ├── `backgrounds/`      | Contains one PNG used as the app’s universal background                                                                           |
-| ├── `icons/`            | Social & platform icons (e.g., Discord, GitHub, X, Support)                                                                       |
-| ├── *misc SVGs & logos* | Includes `file.svg`, `globe.svg`, `logo.png`, `next.svg`, `vercel.svg`, `window.svg` — used for general UI decoration or branding |
-| **`src/app/`**          | Core application logic (Next.js App Router structure)                                                                             |
-| ├── `components/`       | Shared UI components (e.g., header, nav)                                                                                          |
-| ├── `create-token/`     | Core token creation page with form + logic                                                                                        |
+This project is licensed under the MIT License.
 
-| ├── `globals.css`       | Global styles that apply across all pages                                                                                         |
-| ├── `layout.js`         | Root layout wrapper for theming, nav, etc.                                                                                        |
-| ├── `page.js`           | Home/landing page                                                                                                                 |
-| ├── `page.module.css`   | Scoped CSS module for `page.js` styling                                                                                           |
-| **`wallet-connect/`**   | Handles wallet logic (Xverse, Leather, etc.)                                                                                      |
-| `.gitignore`            | Specifies which files/folders Git should ignore                                                                                   |
-| `eslint.config.mjs`     | Configures code style and linting rules                                                                                           |
-| `jsconfig.json`         | Helps with import path resolution and project settings                                                                            |
-| `next.config.mjs`       | Project-level config for Next.js behavior                                                                                         |
-| `package.json`          | Declares dependencies and defines scripts                                                                                         |
-| `package-lock.json`     | Locks exact versions of installed packages                                                                                        |
-| `README.md`             | Documentation for this project (what you’re reading now)                                                                          |
+## 🔗 Links
 
+- **GitHub Repository**: https://github.com/Teiko-Nakamoto/create-token-js
+- **Stacks Documentation**: https://docs.stacks.co/
+- **Supabase Documentation**: https://supabase.com/docs
 
+## 🆘 Support
 
+For support and questions:
+- Create an issue on GitHub
+- Check the documentation at `/docs`
+- Review the troubleshooting guides
 
+---
 
-
-🛠️ 1. Getting Started (for devs running your code locally)
-## 🚀 Getting Started
-
-1. Clone the repository:
-
-```bash
-git clone https://github.com/Teiko-Nakamoto/create-token-js.git
-cd create-token-js
-
-2.Install dependencies:
-
-npm install
-
-
-3.Start the development server:
-
-npm run dev
-Open in browser:
-Visit http://localhost:3000 to view the app.
-
-
-🛠️ Quick Script (1-liner) to List Your Dependencies
-Run this in your terminal from the project root:
-
-
-npm ls --depth=0
-
-current output:
-├── @emnapi/runtime@1.4.3 extraneous
-├── @eslint/eslintrc@3.3.1
-├── @stacks/connect@8.1.9
-├── eslint-config-next@15.3.5
-├── eslint@9.30.1
-├── next@15.3.5
-├── react-dom@19.1.0
-└── react@19.1.0
+**Note**: This is a production-ready platform for creating and managing tokens on the Stacks blockchain. Ensure you have proper testing and security measures in place before deploying to mainnet.
