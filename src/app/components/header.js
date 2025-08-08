@@ -9,9 +9,7 @@ import { useTranslation } from 'react-i18next';
 
 export default function Header() {
   const { t, i18n } = useTranslation();
-  const [showPopup, setShowPopup] = useState(false);
   const [showHowItWorks, setShowHowItWorks] = useState(false); // ✅ Control modal
-  const [copied, setCopied] = useState(false);
   const walletRef = useRef(null);
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState('');
@@ -51,22 +49,23 @@ export default function Header() {
       }
     };
 
+    // Listen for custom connect wallet event from home page
+    const handleConnectWallet = () => {
+      if (walletRef.current) {
+        walletRef.current.openConnectModal();
+      }
+    };
+
     window.addEventListener('storage', handleStorageChange);
+    window.addEventListener('connectWallet', handleConnectWallet);
 
     return () => {
       window.removeEventListener('storage', handleStorageChange);
+      window.removeEventListener('connectWallet', handleConnectWallet);
     };
   }, []);
 
-  const handleCopy = async () => {
-    try {
-      await navigator.clipboard.writeText('teikonakamoto@tutamail.com');
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000); // Reset after 2 seconds
-    } catch (err) {
-      console.error('Failed to copy: ', err);
-    }
-  };
+
 
 
 
@@ -96,28 +95,11 @@ export default function Header() {
           <Link href="/" className="nav-link">
             <img src="/logo.png" alt="Teiko Labs Logo" className="logo" />
           </Link>
-          <div className="social-links">
-            <a href="https://x.com/TeikoLabs" target="_blank" className="nav-link">
-              <img src="/icons/x.svg" alt="X" className="invert-icon" />
-            </a>
-            <a href="https://discord.gg/peqX4FnW" target="_blank" className="nav-link">
-              <img src="/icons/discord.svg" alt="Discord" />
-              <span>{t('discord')}</span>
-            </a>
-            <a href="https://github.com/masbtc21/dexapp" target="_blank" className="nav-link">
-              <img src="/icons/github.svg" alt="GitHub" className="invert-icon" />
-              <span>{t('github')}</span>
-            </a>
-            <button onClick={() => setShowPopup(true)} className="nav-link support-button">
-              <img src="/icons/support.svg" alt="Support" />
-              <span>{t('support')}</span>
-            </button>
-          </div>
         </div>
 
         <nav className="nav-links">
-          <div className="center-link">
-            {/* How It Works button */}
+          <div className="center-link desktop-only">
+            {/* How It Works button - Desktop only */}
             <button 
               onClick={() => setShowHowItWorks(true)}
               className="nav-link"
@@ -131,6 +113,17 @@ export default function Header() {
               }}
             >
               {t('how_it_works')}
+            </button>
+          </div>
+          
+          {/* Mobile menu button */}
+          <div className="mobile-menu-button">
+            <button 
+              onClick={() => setShowHowItWorks(true)}
+              className="mobile-menu-btn"
+              title={t('how_it_works')}
+            >
+              <span>ℹ️</span>
             </button>
           </div>
           <div className="language-profile">
@@ -246,30 +239,7 @@ export default function Header() {
         </nav>
       </header>
 
-      {showPopup && (
-        <div className="popup-overlay" onClick={() => setShowPopup(false)}>
-          <div className="popup" onClick={(e) => e.stopPropagation()}>
-            <p>{t('support_email_msg')} <b>teikonakamoto@tutamail.com</b> {t('support_issues_msg')}</p>
-            <button 
-              style={{ 
-                background: 'none', 
-                border: 'none', 
-                color: '#ffffff', 
-                cursor: 'pointer', 
-                fontSize: '0.75rem',
-                marginLeft: '4px',
-                padding: '2px 4px',
-                borderRadius: '3px',
-                backgroundColor: '#4a5568'
-              }}
-              onClick={handleCopy}
-            >
-              {copied ? t('copied') : t('copy_clipboard')}
-            </button>
-            <button onClick={() => setShowPopup(false)}>{t('close')}</button>
-          </div>
-        </div>
-      )}
+
 
       {/* ✅ Render How It Works popup */}
       {showHowItWorks && <HowItWorks onClose={() => setShowHowItWorks(false)} />}

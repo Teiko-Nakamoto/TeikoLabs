@@ -23,13 +23,22 @@ const TradeHistory = React.memo(function TradeHistory({ trades, pendingTransacti
   const [lastFetchTime, setLastFetchTime] = useState(0);
   const [isUserActive, setIsUserActive] = useState(true);
   const [fetchInterval, setFetchInterval] = useState(null);
-  const cacheTimeout = 30000; // 30 seconds cache (increased from 15 seconds)
+  const cacheTimeout = 15000; // 15 seconds cache (increased from 6 seconds)
 
   // Fetch real DEX transactions with caching
   const fetchDexTransactions = async (forceRefresh = false) => {
     if (!tokenData || !tokenData.dexInfo) {
       console.error('❌ Token data or dexInfo not available for transaction fetch');
       return;
+    }
+
+    // Check if wallet is connected (optional check for better UX)
+    if (typeof window !== 'undefined') {
+      const connectedAddress = localStorage.getItem('connectedAddress');
+      if (!connectedAddress) {
+        console.log('⚠️ No wallet connected, skipping transaction fetch');
+        return;
+      }
     }
 
     // Check cache and user activity
@@ -45,12 +54,6 @@ const TradeHistory = React.memo(function TradeHistory({ trades, pendingTransacti
       console.log('😴 User inactive, skipping fetch');
       return;
     }
-    
-    // Additional check: if we have recent data and no new transactions, skip fetch
-    if (!forceRefresh && dexTransactions.length > 0 && timeSinceLastFetch < 60000) { // 1 minute
-      console.log('📦 Recent data available, skipping fetch to prevent unnecessary API calls');
-      return;
-    }
 
     // Only set loading if we're actually going to fetch
     if (forceRefresh || timeSinceLastFetch >= cacheTimeout) {
@@ -62,9 +65,16 @@ const TradeHistory = React.memo(function TradeHistory({ trades, pendingTransacti
       
       console.log('🔍 Fetching DEX transactions for trade history:', dexContractId);
       
+      // Add timeout to prevent hanging
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
+      
       const response = await fetch(
-        `${apiUrl}/extended/v1/tx/?contract_id=${dexContractId}&limit=50&sort_by=block_height&order=desc`
+        `${apiUrl}/extended/v1/tx/?contract_id=${dexContractId}&limit=50&sort_by=block_height&order=desc`,
+        { signal: controller.signal }
       );
+      
+      clearTimeout(timeoutId);
       
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
@@ -205,9 +215,6 @@ const TradeHistory = React.memo(function TradeHistory({ trades, pendingTransacti
                setDexTransactions(transformedTrades);
              } else {
                console.log('✅ DEX transactions unchanged, skipping state update');
-               // Still update cache timestamp to prevent unnecessary API calls
-               setLastFetchTime(now);
-               return;
              }
        
        // Update cache timestamp
@@ -219,7 +226,11 @@ const TradeHistory = React.memo(function TradeHistory({ trades, pendingTransacti
        }
       
     } catch (error) {
-      console.error('❌ Error fetching DEX transactions for trade history:', error);
+      if (error.name === 'AbortError') {
+        console.log('⏰ Transaction fetch timed out, using cached data');
+      } else {
+        console.error('❌ Error fetching DEX transactions for trade history:', error);
+      }
     } finally {
       setLoadingTransactions(false);
     }
@@ -276,12 +287,12 @@ const TradeHistory = React.memo(function TradeHistory({ trades, pendingTransacti
     // Initial fetch
     fetchDexTransactions(true);
 
-    // Set up 30-second interval for active users (matching cache timeout)
+    // Set up 15-second interval for active users (matching cache timeout)
     const interval = setInterval(() => {
       if (isUserActive) {
         fetchDexTransactions();
       }
-    }, 30000);
+    }, 15000);
 
     setFetchInterval(interval);
 

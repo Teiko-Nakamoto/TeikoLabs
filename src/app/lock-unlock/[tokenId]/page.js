@@ -64,6 +64,14 @@ export default function LockUnlockPage() {
     return null;
   };
 
+  // Check wallet connection and redirect if not connected
+  useEffect(() => {
+    const connectedAddress = getConnectedWalletAddress();
+    if (!connectedAddress) {
+      window.location.href = '/';
+    }
+  }, []);
+
   // Fetch threshold data from smart contract
   const fetchThreshold = async (tokenData) => {
     try {

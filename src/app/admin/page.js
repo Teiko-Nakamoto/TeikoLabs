@@ -18,13 +18,13 @@ export default function AdminLoginPage() {
   const [errorMessage, setErrorMessage] = useState('');
   const [walletRef, setWalletRef] = useState(null);
   
-  // Admin wallet address
-  const ADMIN_ADDRESS = 'ST37918Q7NBZ52AMV133VTY5C864KVK0S2HZ3CGA4';
+  // Admin wallet addresses (comma-separated)
+  const ADMIN_ADDRESSES = process.env.NEXT_PUBLIC_ADMIN_ADDRESSES?.split(',') || ['ST37918Q7NBZ52AMV133VTY5C864KVK0S2HZ3CGA4'];
   
   useEffect(() => {
     // Check if already authenticated
     const savedAddress = localStorage.getItem('connectedAddress');
-    if (savedAddress && savedAddress === ADMIN_ADDRESS) {
+    if (savedAddress && ADMIN_ADDRESSES.includes(savedAddress)) {
       setConnectedAddress(savedAddress);
       setIsAuthenticated(true);
     }
@@ -32,7 +32,7 @@ export default function AdminLoginPage() {
 
   const handleWalletConnect = (address) => {
     setConnectedAddress(address);
-    if (address === ADMIN_ADDRESS) {
+    if (ADMIN_ADDRESSES.includes(address)) {
       setIsAuthenticated(true);
       setErrorMessage('');
     } else {
@@ -41,7 +41,7 @@ export default function AdminLoginPage() {
   };
 
   const handleSignMessage = async () => {
-    if (!connectedAddress || connectedAddress !== ADMIN_ADDRESS) {
+    if (!connectedAddress || !ADMIN_ADDRESSES.includes(connectedAddress)) {
       setErrorMessage('Please connect with the admin wallet first.');
       return;
     }
@@ -134,7 +134,7 @@ export default function AdminLoginPage() {
                   onConnect={handleWalletConnect}
                 />
               </div>
-            ) : connectedAddress === ADMIN_ADDRESS ? (
+                         ) : ADMIN_ADDRESSES.includes(connectedAddress) ? (
               <div className="authenticate-section">
                 <div className="wallet-status">
                   <span className="status-indicator connected"></span>

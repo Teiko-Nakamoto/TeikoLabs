@@ -2,13 +2,31 @@
 import { NextResponse } from 'next/server';
 import { fetchCallReadOnlyFunction } from '@stacks/transactions';
 import { STACKS_TESTNET } from '@stacks/network';
+import { rateLimitMiddleware, addRateLimitHeaders } from '../../utils/rateLimiter';
+import { withCors } from '../../utils/corsMiddleware';
 
 // Contract configuration
 const DEX_CONTRACT_ADDRESS = 'ST37918Q7NBZ52AMV133VTY5C864KVK0S2HZ3CGA4';
 const DEX_CONTRACT_NAME = 'dear-cyan-dex';
 
-export async function GET() {
+async function handler(request) {
   try {
+
+    // Apply rate limiting
+    const rateLimitInfo = await rateLimitMiddleware(request, 'blockchain');
+    
+    if (!rateLimitInfo.allowed) {
+      const response = NextResponse.json(
+        { 
+          error: 'Rate limit exceeded',
+          message: 'Too many requests. Please try again later.',
+          retryAfter: 60
+        },
+        { status: 429 }
+      );
+      return addRateLimitHeaders(response, rateLimitInfo);
+    }
+
     console.log('🔍 API: Calculating current price with cached data...');
 
     // Get blockchain data
@@ -67,7 +85,7 @@ export async function GET() {
       pricePerTokenInSats
     });
 
-    return NextResponse.json({
+    const response = NextResponse.json({
       price: pricePerTokenInSats,
       balances: {
         sbtc: sbtcValue,
@@ -77,6 +95,9 @@ export async function GET() {
       },
       cached: true
     });
+    
+    // Add rate limit headers
+    return addRateLimitHeaders(response, rateLimitInfo);
 
   } catch (error) {
     console.error('❌ API: Failed to calculate current price:', error);
@@ -89,3 +110,5 @@ export async function GET() {
     );
   }
 }
+
+export const GET = withCors(handler);

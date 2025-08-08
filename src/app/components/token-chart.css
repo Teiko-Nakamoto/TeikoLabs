@@ -103,6 +103,16 @@
   cursor: not-allowed;
 }
 
+.pagination-controls button:hover {
+  background-color: #3d3d3d;
+}
+
+.pagination-controls button:disabled {
+  background-color: #1d1d1d;
+  color: #666;
+  cursor: not-allowed;
+}
+
 /* Pulse animation for bouncing price effect */
 @keyframes pulse {
   0% {
@@ -113,5 +123,220 @@
   }
   100% {
     box-shadow: 0 0 0 0 rgba(255, 255, 255, 0.1);
+  }
+}
+
+/* Mobile responsive design */
+@media (max-width: 1024px) {
+  .chart-wrapper {
+    margin-top: 1rem;
+    padding: 0.75rem;
+  }
+  
+  .chart-box-inner {
+    padding: 12px;
+  }
+  
+  .chart-heading {
+    font-size: 18px;
+  }
+  
+  .chart-container {
+    height: 250px;
+  }
+}
+
+/* Tablet and large phone - side-by-side layout */
+@media (max-width: 1024px) and (min-width: 768px) {
+  .chart-wrapper {
+    margin-top: 0.75rem;
+    padding: 0.5rem;
+  }
+  
+  .chart-box-outer {
+    padding: 6px;
+  }
+  
+  .chart-box-inner {
+    padding: 10px;
+  }
+  
+  .chart-header {
+    margin-bottom: 8px;
+  }
+  
+  .chart-heading {
+    font-size: 16px;
+  }
+  
+  .chart-container {
+    height: 220px;
+  }
+  
+  .trade-history-table {
+    margin-top: 12px;
+  }
+  
+  .trade-history-table th,
+  .trade-history-table td {
+    padding: 6px 4px;
+    font-size: 11px;
+  }
+}
+
+/* Medium phones - side-by-side layout */
+@media (max-width: 767px) and (min-width: 480px) {
+  .chart-wrapper {
+    margin-top: 0.5rem;
+    padding: 0.25rem;
+  }
+  
+  .chart-box-outer {
+    padding: 4px;
+  }
+  
+  .chart-box-inner {
+    padding: 8px;
+  }
+  
+  .chart-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 6px;
+    margin-bottom: 6px;
+  }
+  
+  .chart-heading {
+    font-size: 14px;
+  }
+  
+  .chart-container {
+    height: 180px;
+  }
+  
+  .trade-history-table {
+    margin-top: 8px;
+  }
+  
+  .trade-history-table th,
+  .trade-history-table td {
+    padding: 4px 2px;
+    font-size: 10px;
+  }
+  
+  .pagination-controls {
+    margin-top: 8px;
+    flex-direction: row;
+    gap: 4px;
+  }
+  
+  .pagination-controls button {
+    padding: 4px 8px;
+    font-size: 11px;
+  }
+}
+
+@media (max-width: 768px) {
+  .chart-wrapper {
+    margin-top: 0.5rem;
+    padding: 0.5rem;
+  }
+  
+  .chart-box-outer {
+    padding: 6px;
+  }
+  
+  .chart-box-inner {
+    padding: 10px;
+  }
+  
+  .chart-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+    margin-bottom: 10px;
+  }
+  
+  .chart-heading {
+    font-size: 16px;
+  }
+  
+  .chart-container {
+    height: 200px;
+  }
+  
+  .trade-history-table {
+    margin-top: 16px;
+  }
+  
+  .trade-history-table th,
+  .trade-history-table td {
+    padding: 8px 6px;
+    font-size: 12px;
+  }
+  
+  .pagination-controls {
+    margin-top: 12px;
+    flex-direction: column;
+    gap: 8px;
+  }
+  
+  .pagination-controls button {
+    padding: 8px 12px;
+    font-size: 14px;
+  }
+}
+
+/* Small phones - stack everything */
+@media (max-width: 479px) {
+  .chart-wrapper {
+    margin-top: 0.25rem;
+    padding: 0.25rem;
+  }
+  
+  .chart-box-outer {
+    padding: 4px;
+  }
+  
+  .chart-box-inner {
+    padding: 8px;
+  }
+  
+  .chart-header {
+    gap: 8px;
+    margin-bottom: 8px;
+  }
+  
+  .chart-heading {
+    font-size: 14px;
+  }
+  
+  .chart-container {
+    height: 180px;
+  }
+  
+  .trade-history-table {
+    margin-top: 12px;
+  }
+  
+  .trade-history-table th,
+  .trade-history-table td {
+    padding: 6px 4px;
+    font-size: 11px;
+  }
+  
+  .pagination-controls {
+    margin-top: 8px;
+    gap: 6px;
+  }
+  
+  .pagination-controls button {
+    padding: 6px 10px;
+    font-size: 12px;
+  }
+  
+  .dropdown-wrapper select {
+    padding: 3px 6px;
+    font-size: 12px;
   }
 }

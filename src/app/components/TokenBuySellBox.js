@@ -561,7 +561,8 @@ const TokenBuySellBox = React.memo(function TokenBuySellBox({
       
       // Check if Stacks Connect is available
       if (typeof window === 'undefined' || !window.StacksProvider) {
-        throw new Error('Stacks Connect not available. Please refresh the page and try again.');
+        setError('Please refresh the page and try again.');
+        return;
       }
 
       // Check if user is connected
@@ -569,7 +570,8 @@ const TokenBuySellBox = React.memo(function TokenBuySellBox({
       const connected = await isConnected();
       
       if (!connected) {
-        throw new Error('Wallet not connected. Please connect your wallet first.');
+        setError('Please connect your wallet to continue trading.');
+        return;
       }
 
       // Verify we have a valid address
@@ -577,7 +579,8 @@ const TokenBuySellBox = React.memo(function TokenBuySellBox({
       const stxAddr = data?.addresses?.stx?.[0]?.address;
       
       if (!stxAddr) {
-        throw new Error('No wallet address found. Please reconnect your wallet.');
+        setError('Please reconnect your wallet to continue trading.');
+        return;
       }
 
       // Check if connection is recent (within last 5 minutes)
@@ -586,7 +589,8 @@ const TokenBuySellBox = React.memo(function TokenBuySellBox({
         const timeSinceConnection = Date.now() - parseInt(lastConnectionTime);
         if (timeSinceConnection > 5 * 60 * 1000) { // 5 minutes
           console.log('⚠️ Connection may be stale, requesting reconnection...');
-          throw new Error('Connection stale. Please reconnect your wallet.');
+          setError('Please reconnect your wallet to continue trading.');
+          return;
         }
       }
 

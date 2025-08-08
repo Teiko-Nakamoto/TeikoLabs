@@ -34,8 +34,8 @@ export default function EditHomePage() {
   // Preview tab state
   const [previewActiveTab, setPreviewActiveTab] = useState('featured');
   
-  // Admin wallet address
-  const ADMIN_ADDRESS = 'ST37918Q7NBZ52AMV133VTY5C864KVK0S2HZ3CGA4';
+  // Admin wallet addresses (comma-separated)
+  const ADMIN_ADDRESSES = process.env.NEXT_PUBLIC_ADMIN_ADDRESSES?.split(',') || ['ST37918Q7NBZ52AMV133VTY5C864KVK0S2HZ3CGA4'];
   
   useEffect(() => {
     // Check authentication status
@@ -44,7 +44,7 @@ export default function EditHomePage() {
       const signature = localStorage.getItem('adminSignature');
       const connectedAddress = localStorage.getItem('connectedAddress');
       
-      if (!isAuthenticated || !signature || connectedAddress !== ADMIN_ADDRESS) {
+      if (!isAuthenticated || !signature || !ADMIN_ADDRESSES.includes(connectedAddress)) {
         // Not authenticated or wrong wallet, redirect to login
         router.push('/admin');
         return;
@@ -126,11 +126,32 @@ export default function EditHomePage() {
     try {
       console.log('💾 Saving token cards and default tab to database:', { tokenCards, defaultTab });
       
+      // Get admin authentication data from localStorage
+      const adminSignature = localStorage.getItem('adminSignature');
+      const adminPublicKey = localStorage.getItem('adminPublicKey');
+      const adminChallenge = localStorage.getItem('adminChallenge');
+      const adminAuthTime = localStorage.getItem('adminAuthTime');
+      const connectedAddress = localStorage.getItem('connectedAddress');
+      
+      if (!adminSignature || !adminPublicKey || !adminChallenge || !connectedAddress) {
+        throw new Error('Admin authentication required. Please log in again.');
+      }
+      
+      // Create authentication token
+      const authToken = JSON.stringify({
+        signature: adminSignature,
+        publicKey: adminPublicKey,
+        message: adminChallenge,
+        timestamp: adminAuthTime,
+        walletAddress: connectedAddress
+      });
+      
       // Save token cards and default tab to database
       const response = await fetch('/api/save-token-cards', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'Authorization': `Bearer ${authToken}`
         },
         body: JSON.stringify({ tokenCards, defaultTab }),
       });

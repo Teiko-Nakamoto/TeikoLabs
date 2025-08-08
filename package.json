@@ -2,11 +2,18 @@
   "name": "create-token-js",
   "version": "0.1.0",
   "private": true,
+  "type": "module",
   "scripts": {
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "setup-cors": "node setup-cors-table.js",
+    "setup-user-tokens": "node setup-user-tokens.js",
+    "test-cors": "node test-cors-system.js",
+    "test-api": "node test-api-simple.js",
+    "test-api-full": "node test-api-with-whitelist.js",
+    "test-user-tokens": "node test-user-tokens-api.js"
   },
   "dependencies": {
     "@stacks/auth": "^7.1.0",
@@ -15,15 +22,19 @@
     "@stacks/connect": "^8.1.9",
     "@stacks/encryption": "^7.1.0",
     "@stacks/network": "^7.0.2",
+    "@stacks/storage": "^7.1.0",
     "@stacks/transactions": "^7.1.0",
     "@supabase/supabase-js": "^2.50.5",
+    "dotenv": "^17.2.1",
+    "form-data": "^4.0.4",
     "i18next": "^25.3.2",
     "lightweight-charts": "^5.0.8",
     "next": "15.3.5",
+    "node-fetch": "^2.7.0",
+    "qrcode.react": "^4.2.0",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
-    "react-i18next": "^15.6.1",
-    "sats-connect": "^3.5.0"
+    "react-i18next": "^15.6.1"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3",

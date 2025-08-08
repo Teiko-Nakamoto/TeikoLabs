@@ -100,22 +100,19 @@
 }
 
 .buy-sell-content.sell-mode .quick-button {
-  background-color: #4a5568;
-  color: #fbbf24;
+  background-color: #be185d;
 }
 
 .buy-sell-content.sell-mode .quick-button:hover {
   background-color: #ec4899;
-  color: white;
 }
 
 .buy-sell-content.sell-mode .info-text {
   color: #fdf2f8;
-  background: rgba(236, 72, 153, 0.1);
 }
 
 .buy-sell-content.sell-mode .info-text a {
-  color: #fdf2f8;
+  color: #fbbf24;
 }
 
 .buy-sell-content.sell-mode .buy-button.sell {
@@ -123,188 +120,423 @@
 }
 
 .buy-sell-content.sell-mode .buy-button.sell:hover {
-  background-color: #be185d;
+  background-color: #ec4899;
 }
 
-/* Main button styling */
 .buy-sell-content.sell-mode .main-button {
-  background-color: #be185d; /* darker pink to match tab */
-  color: white;
+  background: linear-gradient(135deg, #be185d 0%, #ec4899 100%);
   border: none;
+  color: white;
   padding: 12px 24px;
   border-radius: 8px;
-  font-size: 16px;
   font-weight: bold;
   cursor: pointer;
-  width: 100%;
-  transition: all 0.2s ease;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 6px rgba(190, 24, 93, 0.3);
 }
 
 .buy-sell-content.sell-mode .main-button:hover {
-  background-color: #be185d; /* keep same darker pink on hover */
-  transform: translateY(-1px);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 12px rgba(190, 24, 93, 0.4);
 }
 
 .buy-sell-content.sell-mode .main-button:active {
-  background-color: #be185d;
   transform: translateY(0);
+  box-shadow: 0 2px 4px rgba(190, 24, 93, 0.3);
 }
 
 .current-balance {
-  margin-bottom: 15px;
   font-size: 14px;
-  color: #ffffff;
-  font-weight: 600;
+  color: #9ca3af;
+  margin-bottom: 8px;
+  text-align: center;
 }
 
 .input-label {
-  display: block;
   font-size: 14px;
+  color: #9ca3af;
   margin-bottom: 8px;
-  color: #ffffff;
-  font-weight: 600;
+  text-align: center;
 }
 
 .sats-input {
   width: 100%;
   padding: 12px;
-  border-radius: 8px;
   border: 1px solid #4a5568;
-  background-color: #4a5568;
+  border-radius: 8px;
+  background-color: #2d3748;
   color: #fbbf24;
   font-size: 16px;
-  margin-bottom: 15px;
+  text-align: center;
+  margin-bottom: 16px;
   box-sizing: border-box;
-  transition: border-color 0.3s ease;
 }
 
 .sats-input:focus {
   outline: none;
   border-color: #fbbf24;
+  box-shadow: 0 0 0 3px rgba(251, 191, 36, 0.1);
 }
 
 .sats-input::placeholder {
-  color: #9ca3af;
+  color: #6b7280;
 }
 
 .quick-buttons {
   display: flex;
   gap: 8px;
-  margin-bottom: 15px;
+  margin-bottom: 16px;
 }
 
 .quick-button {
   flex: 1;
-  border: none;
+  padding: 8px 12px;
+  border: 1px solid #4a5568;
+  background-color: #2d3748;
+  color: #9ca3af;
   border-radius: 6px;
-  padding: 10px 0;
   cursor: pointer;
-  font-weight: 600;
-  background-color: rgba(255, 255, 255, 0.1);
-  color: #ffffff;
-  transition: all 0.3s ease;
+  font-size: 12px;
+  transition: all 0.2s ease;
 }
 
 .quick-button.sell {
-  color: #ffffff;
+  background-color: #be185d;
+  color: white;
 }
 
 .quick-button:hover {
-  transform: translateY(-1px);
-  background-color: rgba(255, 255, 255, 0.2);
+  background-color: #4a5568;
+  color: white;
 }
 
 .quick-button:hover.buy {
   background-color: #2563eb;
-  color: white;
 }
 
 .quick-button:hover.sell {
   background-color: #ec4899;
-  color: white;
 }
 
 .info-text {
   font-size: 12px;
-  color: rgba(255, 255, 255, 0.8);
-  margin-bottom: 15px;
-  padding: 8px 12px;
-  background: rgba(255, 255, 255, 0.1);
-  border-radius: 6px;
+  color: #9ca3af;
+  text-align: center;
+  margin-bottom: 16px;
+  line-height: 1.4;
 }
 
 .info-text a {
-  color: #ffffff;
+  color: #fbbf24;
   text-decoration: none;
 }
 
 .buy-button {
   width: 100%;
-  padding: 14px;
+  padding: 12px;
   border: none;
-  color: #fff;
-  font-weight: bold;
   border-radius: 8px;
+  font-weight: bold;
   cursor: pointer;
-  font-size: 16px;
   transition: all 0.3s ease;
+  font-size: 16px;
 }
 
 .buy-button:hover {
   transform: translateY(-1px);
 }
 
-/* Updated blue and pink for buy/sell buttons */
 .buy-button.buy {
   background-color: #2563eb;
+  color: white;
 }
 
 .buy-button.sell {
-  background-color: #ec4899;
+  background-color: #be185d;
+  color: white;
 }
 
 .buy-button:disabled {
-  opacity: 0.6;
+  background-color: #6b7280;
   cursor: not-allowed;
   transform: none;
-  box-shadow: none;
 }
 
 .error-message {
-  margin-top: 15px;
-  color: #ffffff;
-  font-weight: bold;
+  background-color: #dc2626;
+  color: white;
+  padding: 12px;
+  border-radius: 8px;
+  margin-bottom: 16px;
   font-size: 14px;
-  padding: 10px;
-  background: rgba(239, 68, 68, 0.3);
-  border-radius: 6px;
-  border-left: 4px solid #ffffff;
+  text-align: center;
+  animation: pulse 2s infinite;
 }
 
-/* Slippage Protection Suggestion Animations */
 @keyframes pulse {
   0% {
-    opacity: 1;
-    transform: scale(1);
+    box-shadow: 0 0 0 0 rgba(220, 38, 38, 0.7);
   }
-  50% {
-    opacity: 0.8;
-    transform: scale(1.02);
+  70% {
+    box-shadow: 0 0 0 10px rgba(220, 38, 38, 0);
   }
   100% {
-    opacity: 1;
-    transform: scale(1);
+    box-shadow: 0 0 0 0 rgba(220, 38, 38, 0);
   }
 }
 
 @keyframes bounce {
-  0%, 20%, 50%, 80%, 100% {
-    transform: translateY(0);
+  0%, 20%, 53%, 80%, 100% {
+    transform: translate3d(0, 0, 0);
   }
-  40% {
-    transform: translateY(4px);
+  40%, 43% {
+    transform: translate3d(0, -30px, 0);
   }
-  60% {
-    transform: translateY(2px);
+  70% {
+    transform: translate3d(0, -15px, 0);
+  }
+  90% {
+    transform: translate3d(0, -4px, 0);
+  }
+}
+
+/* Mobile responsive design */
+@media (max-width: 1024px) {
+  .buy-sell-box {
+    max-width: 100%;
+    width: 100%;
+  }
+  
+  .buy-sell-content {
+    padding: 20px;
+  }
+  
+  .tab-button {
+    padding: 14px 0;
+    font-size: 16px;
+  }
+  
+  .sats-input {
+    padding: 14px;
+    font-size: 18px;
+  }
+  
+  .quick-button {
+    padding: 10px 14px;
+    font-size: 14px;
+  }
+  
+  .buy-button {
+    padding: 14px;
+    font-size: 18px;
+  }
+}
+
+/* Tablet and large phone - side-by-side layout */
+@media (max-width: 1024px) and (min-width: 768px) {
+  .buy-sell-box {
+    max-width: 100%;
+    width: 100%;
+  }
+  
+  .buy-sell-content {
+    padding: 16px;
+  }
+  
+  .tab-button {
+    padding: 12px 0;
+    font-size: 15px;
+  }
+  
+  .sats-input {
+    padding: 12px;
+    font-size: 16px;
+  }
+  
+  .quick-button {
+    padding: 8px 12px;
+    font-size: 13px;
+  }
+  
+  .buy-button {
+    padding: 12px;
+    font-size: 16px;
+  }
+  
+  .info-text {
+    font-size: 12px;
+  }
+}
+
+/* Medium phones - side-by-side layout */
+@media (max-width: 767px) and (min-width: 480px) {
+  .buy-sell-box {
+    max-width: 100%;
+    width: 100%;
+    padding: 4px;
+  }
+  
+  .buy-sell-content {
+    padding: 12px;
+  }
+  
+  .tab-row {
+    gap: 4px;
+    margin-bottom: 12px;
+  }
+  
+  .tab-button {
+    padding: 10px 0;
+    font-size: 13px;
+  }
+  
+  .sats-input {
+    padding: 10px;
+    font-size: 14px;
+    margin-bottom: 10px;
+  }
+  
+  .quick-buttons {
+    gap: 4px;
+    margin-bottom: 10px;
+  }
+  
+  .quick-button {
+    padding: 6px 8px;
+    font-size: 11px;
+  }
+  
+  .info-text {
+    font-size: 10px;
+    margin-bottom: 10px;
+  }
+  
+  .buy-button {
+    padding: 10px;
+    font-size: 14px;
+  }
+  
+  .current-balance,
+  .input-label {
+    font-size: 11px;
+    margin-bottom: 4px;
+  }
+}
+
+@media (max-width: 768px) {
+  .buy-sell-box {
+    max-width: 100%;
+    width: 100%;
+    padding: 6px;
+  }
+  
+  .buy-sell-content {
+    padding: 16px;
+  }
+  
+  .tab-row {
+    gap: 6px;
+    margin-bottom: 16px;
+  }
+  
+  .tab-button {
+    padding: 12px 0;
+    font-size: 14px;
+  }
+  
+  .sats-input {
+    padding: 12px;
+    font-size: 16px;
+    margin-bottom: 12px;
+  }
+  
+  .quick-buttons {
+    gap: 6px;
+    margin-bottom: 12px;
+  }
+  
+  .quick-button {
+    padding: 8px 10px;
+    font-size: 12px;
+  }
+  
+  .info-text {
+    font-size: 11px;
+    margin-bottom: 12px;
+  }
+  
+  .buy-button {
+    padding: 12px;
+    font-size: 16px;
+  }
+  
+  .current-balance,
+  .input-label {
+    font-size: 13px;
+    margin-bottom: 6px;
+  }
+  
+  /* Ensure buy/sell box is fully visible */
+  .trading-section > * {
+    min-width: 0;
+    width: 100%;
+  }
+}
+
+/* Small phones - stack everything */
+@media (max-width: 479px) {
+  .buy-sell-box {
+    padding: 4px;
+  }
+  
+  .buy-sell-content {
+    padding: 12px;
+  }
+  
+  .tab-row {
+    gap: 4px;
+    margin-bottom: 12px;
+  }
+  
+  .tab-button {
+    padding: 10px 0;
+    font-size: 13px;
+  }
+  
+  .sats-input {
+    padding: 10px;
+    font-size: 15px;
+    margin-bottom: 10px;
+  }
+  
+  .quick-buttons {
+    gap: 4px;
+    margin-bottom: 10px;
+  }
+  
+  .quick-button {
+    padding: 6px 8px;
+    font-size: 11px;
+  }
+  
+  .info-text {
+    font-size: 10px;
+    margin-bottom: 10px;
+  }
+  
+  .buy-button {
+    padding: 10px;
+    font-size: 15px;
+  }
+  
+  .current-balance,
+  .input-label {
+    font-size: 12px;
+    margin-bottom: 4px;
+  }
+  
+  .error-message {
+    padding: 10px;
+    font-size: 13px;
   }
 }

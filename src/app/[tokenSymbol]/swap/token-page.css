@@ -1,0 +1,459 @@
+.token-page {
+  min-height: 100vh;
+  background-image: url('/backgrounds/cards-float.png');
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  background-attachment: fixed;
+  color: white;
+  padding: 20px;
+}
+
+.token-header {
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 12px;
+  padding: 20px;
+  margin-bottom: 30px;
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  display: flex;
+  align-items: center;
+  gap: 30px;
+  max-width: 1200px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.token-symbol-container {
+  flex-shrink: 0;
+}
+
+.token-symbol-box {
+  width: 80px;
+  height: 80px;
+  background: #1e3a8a;
+  border: 2px solid #fbbf24;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.token-symbol {
+  font-size: 1.2rem;
+  font-weight: bold;
+  color: white;
+}
+
+.progress-section {
+  flex: 1;
+  min-width: 0;
+}
+
+.progress-label {
+  font-size: 0.9rem;
+  color: white;
+  margin-bottom: 8px;
+  font-weight: 500;
+}
+
+.progress-bar {
+  width: 100%;
+  height: 12px;
+  background: #3b82f6;
+  border-radius: 6px;
+  overflow: hidden;
+  margin-bottom: 8px;
+}
+
+.progress-fill {
+  height: 100%;
+  background: #fbbf24;
+  border-radius: 6px;
+  transition: width 0.3s ease;
+}
+
+.progress-status {
+  font-size: 0.8rem;
+  color: white;
+  font-weight: 500;
+}
+
+.contract-button-section {
+  flex-shrink: 0;
+}
+
+.contract-button {
+  background: #3b82f6;
+  color: white;
+  border: none;
+  padding: 12px 20px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  transition: all 0.2s ease;
+}
+
+.contract-button:hover {
+  background: #2563eb;
+  transform: translateY(-1px);
+}
+
+.contract-button:active {
+  transform: translateY(0);
+}
+
+.contract-icon {
+  font-size: 1rem;
+}
+
+/* Contract popup styles */
+.contract-popup {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.contract-popup-content {
+  background: #1e3a8a;
+  border-radius: 12px;
+  padding: 30px;
+  max-width: 600px;
+  width: 90%;
+  max-height: 80vh;
+  overflow-y: auto;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.contract-popup-content h3 {
+  color: #fbbf24;
+  margin-bottom: 20px;
+  text-align: center;
+  font-size: 1.3rem;
+}
+
+.contract-item {
+  margin-bottom: 20px;
+}
+
+.contract-label {
+  display: block;
+  font-weight: 600;
+  color: #9ca3af;
+  margin-bottom: 10px;
+  font-size: 0.9rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.contract-address {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  flex-wrap: wrap;
+}
+
+.contract-address code {
+  background: rgba(0, 0, 0, 0.5);
+  padding: 12px 16px;
+  border-radius: 6px;
+  font-family: 'Courier New', monospace;
+  font-size: 0.9rem;
+  color: #10b981;
+  border: 1px solid rgba(16, 185, 129, 0.3);
+  flex: 1;
+  min-width: 200px;
+  word-break: break-all;
+}
+
+.copy-button {
+  background: #3b82f6;
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.8rem;
+  font-weight: 500;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.copy-button:hover {
+  background: #2563eb;
+}
+
+.close-button {
+  background: #6b7280;
+  color: white;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  font-weight: 500;
+  margin-top: 20px;
+  width: 100%;
+  transition: background 0.2s ease;
+}
+
+.close-button:hover {
+  background: #4b5563;
+}
+
+.trading-section {
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+/* Main layout responsive design */
+.main-layout {
+  display: flex;
+  gap: 20px;
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+.chart-section {
+  flex: 7;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.trading-section {
+  flex: 3;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+/* Mobile responsive design */
+@media (max-width: 1024px) {
+  .main-layout {
+    flex-direction: column;
+    gap: 15px;
+  }
+  
+  .chart-section,
+  .trading-section {
+    flex: none;
+    width: 100%;
+  }
+  
+  .trading-section {
+    order: -1; /* Move buy/sell box to top on mobile */
+  }
+}
+
+/* Tablet and large phone - keep side-by-side layout */
+@media (max-width: 1024px) and (min-width: 768px) {
+  .main-layout {
+    flex-direction: row;
+    gap: 15px;
+  }
+  
+  .chart-section {
+    flex: 6;
+  }
+  
+  .trading-section {
+    flex: 4;
+    order: 0; /* Keep original order */
+  }
+}
+
+/* Medium phones - side-by-side with adjusted ratios */
+@media (max-width: 767px) and (min-width: 480px) {
+  .main-layout {
+    flex-direction: row;
+    gap: 10px;
+  }
+  
+  .chart-section {
+    flex: 5;
+  }
+  
+  .trading-section {
+    flex: 5;
+    order: 0; /* Keep original order */
+  }
+  
+  .chart-section,
+  .trading-section {
+    gap: 10px;
+  }
+}
+
+@media (max-width: 768px) {
+  .token-page {
+    padding: 10px;
+  }
+  
+  .main-layout {
+    gap: 10px;
+  }
+  
+  .chart-section,
+  .trading-section {
+    gap: 10px;
+  }
+  
+  .token-header {
+    flex-direction: column;
+    gap: 20px;
+    padding: 15px;
+  }
+  
+  .token-symbol-box {
+    width: 60px;
+    height: 60px;
+  }
+  
+  .token-symbol {
+    font-size: 1rem;
+  }
+  
+  .progress-section {
+    width: 100%;
+  }
+  
+  .contract-button {
+    width: 100%;
+    justify-content: center;
+  }
+  
+  .contract-address {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  
+  .contract-address code {
+    min-width: auto;
+  }
+  
+  .copy-button {
+    align-self: flex-start;
+  }
+  
+  /* Ensure buy/sell box is fully visible */
+  .trading-section > * {
+    min-width: 0;
+    width: 100%;
+  }
+}
+
+/* Small phones - stack everything */
+@media (max-width: 479px) {
+  .main-layout {
+    flex-direction: column;
+    gap: 8px;
+  }
+  
+  .chart-section,
+  .trading-section {
+    flex: none;
+    width: 100%;
+  }
+  
+  .trading-section {
+    order: -1; /* Move buy/sell box to top on small phones */
+  }
+  
+  .token-page {
+    padding: 5px;
+  }
+  
+  .chart-section,
+  .trading-section {
+    gap: 8px;
+  }
+  
+  .token-header {
+    padding: 12px;
+    gap: 15px;
+  }
+  
+  .token-symbol-box {
+    width: 50px;
+    height: 50px;
+  }
+  
+  .token-symbol {
+    font-size: 0.9rem;
+  }
+  
+  .progress-label {
+    font-size: 0.8rem;
+  }
+  
+  .progress-status {
+    font-size: 0.7rem;
+  }
+  
+  .contract-button {
+    padding: 10px 16px;
+    font-size: 0.8rem;
+  }
+}
+
+/* Loading animation */
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* Popup styles to match test page */
+.popup-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.popup {
+  background: #1e3a8a;
+  border-radius: 12px;
+  padding: 30px;
+  max-width: 600px;
+  width: 90%;
+  max-height: 80vh;
+  overflow-y: auto;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.contracts-popup {
+  background: #1e3a8a;
+}
+
+/* Mobile popup adjustments */
+@media (max-width: 768px) {
+  .popup {
+    padding: 20px;
+    margin: 10px;
+    max-height: 90vh;
+  }
+  
+  .contracts-popup h3 {
+    font-size: 16px;
+    margin-bottom: 15px;
+  }
+}

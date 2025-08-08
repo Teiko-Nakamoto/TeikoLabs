@@ -667,8 +667,13 @@ export async function getTokenDexBalances(tokenData) {
     // This ensures we get the actual DEX balances from the contract
     console.log('🔍 Fetching DEX balances from contract:', DEX_CONTRACT_ADDRESS, DEX_CONTRACT_NAME);
     
+    // Add timeout to prevent hanging
+    const timeoutPromise = new Promise((_, reject) => 
+      setTimeout(() => reject(new Error('Blockchain request timeout')), 8000)
+    );
+    
     // Get token balance from the DEX contract
-    const tokenBalanceResult = await fetchCallReadOnlyFunction({
+    const tokenBalancePromise = fetchCallReadOnlyFunction({
       contractAddress: DEX_CONTRACT_ADDRESS,
       contractName: DEX_CONTRACT_NAME,
       functionName: 'get-token-balance',
@@ -678,7 +683,7 @@ export async function getTokenDexBalances(tokenData) {
     });
     
     // Get SBTC balance from the DEX contract
-    const sbtcBalanceResult = await fetchCallReadOnlyFunction({
+    const sbtcBalancePromise = fetchCallReadOnlyFunction({
       contractAddress: DEX_CONTRACT_ADDRESS,
       contractName: DEX_CONTRACT_NAME,
       functionName: 'get-sbtc-balance',
@@ -686,6 +691,12 @@ export async function getTokenDexBalances(tokenData) {
       network: STACKS_TESTNET,
       senderAddress: DEX_CONTRACT_ADDRESS,
     });
+    
+    // Execute both calls with timeout
+    const [tokenBalanceResult, sbtcBalanceResult] = await Promise.race([
+      Promise.all([tokenBalancePromise, sbtcBalancePromise]),
+      timeoutPromise
+    ]);
 
     console.log('🔍 Raw token balance result:', tokenBalanceResult);
     console.log('🔍 Raw SBTC balance result:', sbtcBalanceResult);
@@ -734,8 +745,13 @@ export async function getTokenLockedBalance(tokenData) {
     // This ensures we get the actual locked tokens from the DEX contract
     console.log('🔍 Fetching locked tokens from DEX contract:', DEX_CONTRACT_ADDRESS, DEX_CONTRACT_NAME);
     
+    // Add timeout to prevent hanging
+    const timeoutPromise = new Promise((_, reject) => 
+      setTimeout(() => reject(new Error('Blockchain request timeout')), 8000)
+    );
+    
     // Get locked tokens from the DEX contract (same structure as original)
-    const result = await fetchCallReadOnlyFunction({
+    const blockchainPromise = fetchCallReadOnlyFunction({
       contractAddress: DEX_CONTRACT_ADDRESS,
       contractName: DEX_CONTRACT_NAME,
       functionName: 'get-total-locked',
@@ -743,6 +759,8 @@ export async function getTokenLockedBalance(tokenData) {
       network: STACKS_TESTNET,
       senderAddress: DEX_CONTRACT_ADDRESS,
     });
+    
+    const result = await Promise.race([blockchainPromise, timeoutPromise]);
     
     const rawValue = result?.value?.value || result?.value || null;
     console.log('🔍 Raw token locked value:', rawValue, typeof rawValue);
@@ -836,7 +854,12 @@ export async function getTokenUserBalance(tokenData) {
 
     const [contractAddress, contractName] = tokenData.tokenInfo.split('.');
     
-    const result = await fetchCallReadOnlyFunction({
+    // Add timeout to prevent hanging
+    const timeoutPromise = new Promise((_, reject) => 
+      setTimeout(() => reject(new Error('Blockchain request timeout')), 8000)
+    );
+    
+    const blockchainPromise = fetchCallReadOnlyFunction({
       contractAddress: contractAddress,
       contractName: contractName,
       functionName: 'get-balance',
@@ -844,6 +867,8 @@ export async function getTokenUserBalance(tokenData) {
       network: STACKS_TESTNET,
       senderAddress: connectedAddress,
     });
+    
+    const result = await Promise.race([blockchainPromise, timeoutPromise]);
     
     const rawValue = result?.value?.value || result?.value || null;
     console.log('🔍 Raw token user balance value:', rawValue, typeof rawValue);
@@ -941,6 +966,21 @@ export async function getTokenStatsData(tokenData) {
   console.log('🔍 getTokenStatsData called with tokenData:', tokenData);
   
   try {
+    // Check if we're in a browser environment and if wallet is connected
+    if (typeof window !== 'undefined') {
+      const connectedAddress = localStorage.getItem('connectedAddress');
+      if (!connectedAddress) {
+        console.log('⚠️ No wallet connected, returning default values');
+        return {
+          revenue: 0,
+          liquidity: 0,
+          remainingSupply: 0,
+          currentPrice: 0,
+          userBalance: 0
+        };
+      }
+    }
+
     if (!tokenData) {
       console.error('❌ Token data not available');
       return {
@@ -986,8 +1026,8 @@ export async function getTokenStatsData(tokenData) {
     // Determine network based on token type (you might need to adjust this logic)
     const network = STACKS_TESTNET; // Default to testnet, adjust as needed
 
-    // Fetch real data from blockchain
-    const [revenueResult, liquidityResult, totalSupplyResult, lockedTokensResult] = await Promise.all([
+    // Fetch real data from blockchain with timeout
+    const blockchainPromise = Promise.all([
       // Try different revenue functions
       fetchCallReadOnlyFunction({
         contractAddress: dexAddress,
@@ -1045,6 +1085,16 @@ export async function getTokenStatsData(tokenData) {
         network: network,
         senderAddress: dexAddress,
       }).catch(() => ({ value: 0 }))
+    ]);
+
+    // Add timeout to prevent hanging
+    const timeoutPromise = new Promise((_, reject) => 
+      setTimeout(() => reject(new Error('Blockchain request timeout')), 8000)
+    );
+
+    const [revenueResult, liquidityResult, totalSupplyResult, lockedTokensResult] = await Promise.race([
+      blockchainPromise,
+      timeoutPromise
     ]);
 
     // Extract values

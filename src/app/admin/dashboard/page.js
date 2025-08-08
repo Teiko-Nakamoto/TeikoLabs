@@ -12,8 +12,8 @@ export default function AdminDashboard() {
   const [adminData, setAdminData] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   
-  // Admin wallet address
-  const ADMIN_ADDRESS = 'ST37918Q7NBZ52AMV133VTY5C864KVK0S2HZ3CGA4';
+  // Admin wallet addresses (comma-separated)
+  const ADMIN_ADDRESSES = process.env.NEXT_PUBLIC_ADMIN_ADDRESSES?.split(',') || ['ST37918Q7NBZ52AMV133VTY5C864KVK0S2HZ3CGA4'];
   
   useEffect(() => {
     // Check authentication status
@@ -25,7 +25,7 @@ export default function AdminDashboard() {
       const challenge = localStorage.getItem('adminChallenge');
       const connectedAddress = localStorage.getItem('connectedAddress');
       
-      if (!isAuthenticated || !signature || connectedAddress !== ADMIN_ADDRESS) {
+      if (!isAuthenticated || !signature || !ADMIN_ADDRESSES.includes(connectedAddress)) {
         // Not authenticated or wrong wallet, redirect to login
         router.push('/admin');
         return;
@@ -141,8 +141,11 @@ export default function AdminDashboard() {
                  <button className="admin-action-button">
                    🔧 Manage Tokens
                  </button>
-                 <button className="admin-action-button">
-                   👥 User Management
+                 <button 
+                   className="admin-action-button"
+                   onClick={() => router.push('/admin/api-management')}
+                 >
+                   🔌 API Management
                  </button>
                  <button className="admin-action-button">
                    ⚙️ System Settings

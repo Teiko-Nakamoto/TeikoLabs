@@ -1,0 +1,181 @@
+;; DEX/Treasury Contract Template for Token Trading
+;; This contract enables trading between project tokens and SBTC
+
+;; ---- Constants ----
+(define-constant CONTRACT_OWNER 'OWNER_ADDRESS)
+(define-constant TOKEN_CONTRACT 'TOKEN_CONTRACT_ADDRESS)
+(define-constant SBTC_CONTRACT 'ST37918Q7NBZ52AMV133VTY5C864KVK0S2HZ3CGA4.sbtc-token)
+(define-constant TOKEN_SYMBOL "TOKEN_SYMBOL")
+(define-constant TRADING_FEE_PERCENTAGE u200) ;; 2.00% = 200 basis points
+
+;; ---- Errors ----
+(define-constant ERR_UNAUTHORIZED (err u100))
+(define-constant ERR_INVALID_AMOUNT (err u101))
+(define-constant ERR_INSUFFICIENT_BALANCE (err u102))
+(define-constant ERR_INSUFFICIENT_LIQUIDITY (err u103))
+(define-constant ERR_PRICE_IMPACT_TOO_HIGH (err u104))
+(define-constant ERR_TOKEN_TRANSFER_FAILED (err u105))
+(define-constant ERR_SBTC_TRANSFER_FAILED (err u106))
+
+;; ---- Data Variables ----
+(define-data-var total-fees-collected uint u0)
+(define-data-var total-volume uint u0)
+
+;; ---- Read-Only Functions ----
+
+;; Get current SBTC balance in the DEX
+(define-read-only (get-sbtc-balance)
+  (contract-call? SBTC_CONTRACT get-balance (as-contract tx-sender))
+)
+
+;; Get current token balance in the DEX
+(define-read-only (get-token-balance)
+  (contract-call? TOKEN_CONTRACT get-balance (as-contract tx-sender))
+)
+
+;; Calculate current price (SBTC per token)
+(define-read-only (get-current-price)
+  (let (
+    (sbtc-balance-response (unwrap-panic (get-sbtc-balance)))
+    (token-balance-response (unwrap-panic (get-token-balance)))
+    (sbtc-balance (if (> sbtc-balance-response u0) sbtc-balance-response u1))
+    (token-balance (if (> token-balance-response u0) token-balance-response u1))
+  )
+    (ok (/ (* sbtc-balance u100000000) token-balance))
+  )
+)
+
+;; Calculate buy price (how much SBTC needed for X tokens)
+(define-read-only (calculate-buy-price (token-amount uint))
+  (let (
+    (sbtc-balance-response (unwrap-panic (get-sbtc-balance)))
+    (token-balance-response (unwrap-panic (get-token-balance)))
+    (sbtc-balance (if (> sbtc-balance-response u0) sbtc-balance-response u1))
+    (token-balance (if (> token-balance-response u0) token-balance-response u1))
+    (k (* sbtc-balance token-balance))
+    (new-token-balance (- token-balance token-amount))
+    (new-sbtc-balance (/ k new-token-balance))
+    (sbtc-needed (- new-sbtc-balance sbtc-balance))
+    (fee (/ (* sbtc-needed TRADING_FEE_PERCENTAGE) u10000))
+    (total-cost (+ sbtc-needed fee))
+  )
+    (if (> new-token-balance u0)
+      (ok total-cost)
+      ERR_INSUFFICIENT_LIQUIDITY
+    )
+  )
+)
+
+;; Calculate sell price (how much SBTC received for X tokens)
+(define-read-only (calculate-sell-price (token-amount uint))
+  (let (
+    (sbtc-balance-response (unwrap-panic (get-sbtc-balance)))
+    (token-balance-response (unwrap-panic (get-token-balance)))
+    (sbtc-balance (if (> sbtc-balance-response u0) sbtc-balance-response u1))
+    (token-balance (if (> token-balance-response u0) token-balance-response u1))
+    (k (* sbtc-balance token-balance))
+    (new-token-balance (+ token-balance token-amount))
+    (new-sbtc-balance (/ k new-token-balance))
+    (sbtc-out (- sbtc-balance new-sbtc-balance))
+    (fee (/ (* sbtc-out TRADING_FEE_PERCENTAGE) u10000))
+    (sbtc-received (- sbtc-out fee))
+  )
+    (if (> sbtc-received u0)
+      (ok sbtc-received)
+      ERR_INSUFFICIENT_LIQUIDITY
+    )
+  )
+)
+
+;; Get total fees collected
+(define-read-only (get-total-fees)
+  (ok (var-get total-fees-collected))
+)
+
+;; Get total trading volume
+(define-read-only (get-total-volume)
+  (ok (var-get total-volume))
+)
+
+;; ---- Public Functions ----
+
+;; Buy tokens with SBTC
+(define-public (buy-tokens (token-amount uint) (max-sbtc-amount uint))
+  (let (
+    (cost-response (calculate-buy-price token-amount))
+    (cost (unwrap! cost-response (err (unwrap-err cost-response))))
+    (fee (/ (* cost TRADING_FEE_PERCENTAGE) u10000))
+  )
+    (begin
+      (asserts! (> token-amount u0) ERR_INVALID_AMOUNT)
+      (asserts! (<= cost max-sbtc-amount) ERR_PRICE_IMPACT_TOO_HIGH)
+      
+      ;; Transfer SBTC from buyer to DEX
+      (try! (contract-call? SBTC_CONTRACT transfer cost tx-sender (as-contract tx-sender) none))
+      
+      ;; Transfer tokens from DEX to buyer
+      (try! (as-contract (contract-call? TOKEN_CONTRACT transfer token-amount tx-sender tx-sender none)))
+      
+      ;; Update statistics
+      (var-set total-fees-collected (+ (var-get total-fees-collected) fee))
+      (var-set total-volume (+ (var-get total-volume) cost))
+      
+      (ok { tokens-bought: token-amount, sbtc-paid: cost, fee-paid: fee })
+    )
+  )
+)
+
+;; Sell tokens for SBTC
+(define-public (sell-tokens (token-amount uint) (min-sbtc-amount uint))
+  (let (
+    (payout-response (calculate-sell-price token-amount))
+    (payout (unwrap! payout-response (err (unwrap-err payout-response))))
+    (gross-sbtc (/ (* payout u10000) (- u10000 TRADING_FEE_PERCENTAGE)))
+    (fee (- gross-sbtc payout))
+  )
+    (begin
+      (asserts! (> token-amount u0) ERR_INVALID_AMOUNT)
+      (asserts! (>= payout min-sbtc-amount) ERR_PRICE_IMPACT_TOO_HIGH)
+      
+      ;; Transfer tokens from seller to DEX
+      (try! (contract-call? TOKEN_CONTRACT transfer token-amount tx-sender (as-contract tx-sender) none))
+      
+      ;; Transfer SBTC from DEX to seller
+      (try! (as-contract (contract-call? SBTC_CONTRACT transfer payout tx-sender tx-sender none)))
+      
+      ;; Update statistics
+      (var-set total-fees-collected (+ (var-get total-fees-collected) fee))
+      (var-set total-volume (+ (var-get total-volume) gross-sbtc))
+      
+      (ok { tokens-sold: token-amount, sbtc-received: payout, fee-paid: fee })
+    )
+  )
+)
+
+;; Initialize DEX with initial liquidity (Owner only)
+(define-public (initialize-dex (initial-sbtc uint))
+  (begin
+    (asserts! (is-eq tx-sender CONTRACT_OWNER) ERR_UNAUTHORIZED)
+    
+    ;; Transfer initial SBTC to DEX
+    (try! (contract-call? SBTC_CONTRACT transfer initial-sbtc tx-sender (as-contract tx-sender) none))
+    
+    ;; Mint all tokens to DEX
+    (try! (contract-call? TOKEN_CONTRACT mint-entire-supply-to-dex))
+    
+    (ok true)
+  )
+)
+
+;; Withdraw accumulated fees (Owner only)
+(define-public (withdraw-fees (amount uint))
+  (begin
+    (asserts! (is-eq tx-sender CONTRACT_OWNER) ERR_UNAUTHORIZED)
+    (asserts! (<= amount (var-get total-fees-collected)) ERR_INSUFFICIENT_BALANCE)
+    
+    ;; Transfer SBTC fees to owner
+    (try! (as-contract (contract-call? SBTC_CONTRACT transfer amount tx-sender CONTRACT_OWNER none)))
+    
+    (ok amount)
+  )
+)

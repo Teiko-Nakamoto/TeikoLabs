@@ -71,6 +71,14 @@ export default function RevenuePage() {
     return 'Not Connected';
   };
 
+  // Check wallet connection and redirect if not connected
+  useEffect(() => {
+    const connectedAddress = getConnectedWalletAddress();
+    if (connectedAddress === 'Not Connected') {
+      window.location.href = '/';
+    }
+  }, []);
+
   // Function to fetch user's locked balance
   const fetchUserLockedBalance = async (userAddress) => {
     if (!userAddress || userAddress === 'Not Connected') {

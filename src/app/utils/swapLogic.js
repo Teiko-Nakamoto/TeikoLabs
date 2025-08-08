@@ -230,53 +230,7 @@ async function submitTransactionWithRetry(transactionParams, maxRetries = 2, use
   throw lastError || new Error('Transaction failed after all retries');
 }
 
-// 🔧 Enhanced transaction submission with retry logic
-async function submitTransactionWithRetry(transactionParams, maxRetries = 2, useSmartRetry = true) {
-  let lastError = null;
-  
-  // If smart retry is disabled, only try once
-  const actualMaxRetries = useSmartRetry ? maxRetries : 0;
-  
-  for (let attempt = 0; attempt <= actualMaxRetries; attempt++) {
-    try {
-      console.log(`🚀 Submitting transaction (attempt ${attempt + 1}/${actualMaxRetries + 1})...`);
-      
-      // Ensure wallet is ready before each attempt
-      await ensureWalletReady();
-      
-      // Add a small delay between retries (only if smart retry is enabled)
-      if (attempt > 0 && useSmartRetry) {
-        console.log('⏳ Smart retry enabled - waiting before retry...');
-        await new Promise(resolve => setTimeout(resolve, 1000));
-      }
-      
-      const response = await request('stx_callContract', transactionParams);
-      console.log('✅ Transaction submitted successfully:', response);
-      return response;
-      
-    } catch (error) {
-      lastError = error;
-      console.error(`❌ Transaction attempt ${attempt + 1} failed:`, error.message);
-      
-      // Don't retry on certain errors
-      if (error.message.includes('User rejected') || 
-          error.message.includes('cancelled') ||
-          error.message.includes('not connected')) {
-        throw error;
-      }
-      
-      // Only retry if smart retry is enabled
-      if (attempt < actualMaxRetries && useSmartRetry) {
-        console.log('🔄 Smart retry enabled - retrying transaction...');
-        await new Promise(resolve => setTimeout(resolve, 2000));
-      } else if (!useSmartRetry) {
-        console.log('🚫 Smart retry disabled - not retrying automatically');
-      }
-    }
-  }
-  
-  throw lastError || new Error('Transaction failed after all retries');
-}
+
 
 export async function handleTransaction(tab, amount, setErrorMessage, setToast, expectedPrice, setDuplicateCallback = null, slippageProtection = null, estimatedOutput = null, currentPrice = null, tokenId = null, useSmartRetry = true) {
   // 🧪 EXPERIMENTAL: Router function to choose between flows
@@ -390,19 +344,7 @@ async function handleTransactionWithoutPostConditions(tab, amount, setErrorMessa
       return null;
     }
 
-    // ✅ Check Supabase for duplicate txId before saving
-    const dupCheckRes = await fetch('/api/check-tx-duplicate', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ txid: formattedTxId, tokenId }),
-    });
-
-    const dupData = await dupCheckRes.json();
-    if (dupData.exists) {
-      console.warn('⚠️ This transaction already exists in Supabase.');
-      // Error handled via toast - no top banner needed
-      return null;
-    }
+    // ✅ No duplicate check needed - using blockchain APIs only
 
     console.log('✅ Transaction confirmed:', txId);
     console.log('📄 Full transaction data:', confirmedData);
@@ -487,7 +429,7 @@ async function handleTransactionWithoutPostConditions(tab, amount, setErrorMessa
       errorMessage = 'Please reconnect your wallet';
     } else if (error.message.includes('insufficient balance')) {
       errorMessage = 'Insufficient balance for transaction';
-    } else {
+      } else {
       errorMessage = error.message || 'Transaction failed';
     }
 
@@ -721,17 +663,7 @@ async function handleTransactionWithPostConditions(tab, amount, setErrorMessage,
     console.log('  satsFromTrade:', satsFromTrade);
     console.log('  satsTraded:', satsTraded);
 
-    // 💾 SAVE TO SUPABASE DATABASE (same as standard flow)
-    const tradePayload = {
-      transaction_id: formattedTxId,
-      price: parseFloat(formattedSatsPerToken), // Actual executed price
-      current_price: currentPrice || parseFloat(formattedSatsPerToken), // Market price at time of trade
-      expected_price: expectedPrice || null, // Slippage-adjusted expected price
-      type: tradeType,
-      created_at: createdAtISO,
-      tokens_traded: tokensTraded,
-      sats_traded: tab === 'buy' ? satsTraded : (satsFromTrade || null),
-    };
+    // ✅ Transaction completed - no database save needed (using blockchain APIs)
 
 
 

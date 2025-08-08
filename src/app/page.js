@@ -3,7 +3,10 @@
 import Link from 'next/link';
 import { useTranslation } from 'react-i18next';
 import Header from './components/header';
+import Footer from './components/footer';
+import BackgroundImage from './components/BackgroundImage';
 import './globals.css';
+import './components/footer.css';
 import { useState, useEffect } from 'react';
 import { getRevenueBalance, getLiquidityBalance, getTokenSymbol } from './utils/fetchTokenData';
 
@@ -13,9 +16,59 @@ export default function HomePage() {
   const [defaultTab, setDefaultTab] = useState('featured');
   const [tokenCards, setTokenCards] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [showProjects, setShowProjects] = useState(false);
   
   // State for real-time token data
   const [tokenData, setTokenData] = useState({});
+  
+  // State for wallet connection
+  const [connectedAddress, setConnectedAddress] = useState('');
+  const [isConnectingWallet, setIsConnectingWallet] = useState(false);
+
+  // Check wallet connection on component mount and when storage changes
+  useEffect(() => {
+    const checkWalletConnection = () => {
+      const savedAddress = localStorage.getItem('connectedAddress');
+      setConnectedAddress(savedAddress || '');
+      
+      // Hide loading state when wallet connects
+      if (savedAddress && isConnectingWallet) {
+        setIsConnectingWallet(false);
+      }
+    };
+
+    checkWalletConnection();
+
+    // Listen for storage changes (when wallet connects/disconnects)
+    const handleStorageChange = (e) => {
+      if (e.key === 'connectedAddress') {
+        checkWalletConnection();
+      }
+    };
+
+    window.addEventListener('storage', handleStorageChange);
+    return () => window.removeEventListener('storage', handleStorageChange);
+  }, [isConnectingWallet]);
+
+  // Function to handle token card click
+  const handleTokenCardClick = (tokenCard) => {
+    if (!connectedAddress) {
+      // Show loading state
+      setIsConnectingWallet(true);
+      // Trigger wallet connection directly (same as header button)
+      const connectEvent = new CustomEvent('connectWallet');
+      window.dispatchEvent(connectEvent);
+      return;
+    }
+    
+    // Navigate to swap page using token symbol if available, otherwise fall back to ID
+    if (tokenCard.symbol && tokenCard.symbol.trim() !== '') {
+      window.location.href = `/${tokenCard.symbol.toLowerCase()}/swap`;
+    } else {
+      // Fallback to old trade route with ID if no symbol
+      window.location.href = `/trade/${tokenCard.id}`;
+    }
+  };
 
   // Function to fetch real-time data for a specific token
   const fetchTokenRealTimeData = async (tokenCard) => {
@@ -119,91 +172,84 @@ export default function HomePage() {
       // Update token data
       setTokenData(prev => ({
         ...prev,
-        [tokenCard.id]: { symbol, revenue, liquidity }
+        [tokenCard.id]: {
+          symbol,
+          revenue,
+          liquidity
+        }
       }));
       
     } catch (error) {
-      console.error('Error fetching real-time data for token:', tokenCard.id, error);
+      console.error('Error fetching token real-time data:', error);
+    }
+  };
+
+  const fetchData = async () => {
+    try {
+      const response = await fetch('/api/get-token-cards');
+      if (!response.ok) {
+        throw new Error('Failed to fetch token cards');
+      }
+      const result = await response.json();
+      
+      // Handle the API response structure
+      if (result.tokenCards && Array.isArray(result.tokenCards)) {
+        setTokenCards(result.tokenCards);
+        
+        // Set default tab if provided
+        if (result.defaultTab) {
+          setDefaultTab(result.defaultTab);
+          setActiveTab(result.defaultTab);
+        }
+        
+        // Fetch real-time data for each token
+        result.tokenCards.forEach(tokenCard => {
+          if (!tokenCard.isComingSoon) {
+            fetchTokenRealTimeData(tokenCard);
+          }
+        });
+      } else {
+        console.error('Invalid token cards data:', result);
+        setTokenCards([]);
+      }
+      
+    } catch (error) {
+      console.error('Error fetching data:', error);
+      setTokenCards([]);
+    } finally {
+      setLoading(false);
     }
   };
 
   useEffect(() => {
-    const fetchData = async () => {
-      console.log('🔄 Loading admin-configured token data...');
-      
-      // Load token cards and default tab from database (admin-configured)
-      try {
-        const response = await fetch('/api/get-token-cards');
-        const result = await response.json();
-        
-        if (result.tokenCards && result.tokenCards.length > 0) {
-          console.log('📋 Loaded admin-configured token cards:', result.tokenCards);
-          setTokenCards(result.tokenCards);
-          
-          // Fetch real-time data for each token
-          result.tokenCards.forEach(tokenCard => {
-            if (!tokenCard.isComingSoon) {
-              fetchTokenRealTimeData(tokenCard);
-            }
-          });
-        } else {
-          console.log('📋 No admin-configured token cards found, using empty array');
-          setTokenCards([]);
-        }
-
-        // Load default tab setting
-        if (result.defaultTab) {
-          console.log('📋 Loaded default tab from admin settings:', result.defaultTab);
-          setDefaultTab(result.defaultTab);
-          setActiveTab(result.defaultTab);
-        }
-      } catch (error) {
-        console.error('❌ Error loading admin-configured token cards:', error);
-        setTokenCards([]);
-      }
-      
-      setLoading(false);
-    };
-
     fetchData();
+    
+    // Set up interval to refresh data every 30 seconds
+    const interval = setInterval(() => {
+      fetchData();
+    }, 30000);
+    
+    return () => clearInterval(interval);
   }, []);
-
-  if (loading) {
-    return (
-      <>
-        <Header />
-        <main className="home-page">
-          <div style={{ textAlign: 'center', padding: '3rem', color: 'white' }}>
-            <div style={{ 
-              width: '40px', 
-              height: '40px', 
-              border: '4px solid #374151', 
-              borderTop: '4px solid #fbbf24', 
-              borderRadius: '50%', 
-              animation: 'spin 1s linear infinite', 
-              margin: '0 auto 1rem' 
-            }}></div>
-            <p>Loading...</p>
-          </div>
-        </main>
-      </>
-    );
-  }
 
   // Filter token cards based on active tab (exclude hidden tokens)
   let displayedCards = [];
+  
+  // Ensure tokenCards is always an array
+  const safeTokenCards = Array.isArray(tokenCards) ? tokenCards : [];
+  
   if (activeTab === 'featured') {
     // Featured tab: Show cards assigned to featured tab (not hidden)
-    displayedCards = tokenCards.filter(card => card.tabType === 'featured' && !card.isHidden);
+    displayedCards = safeTokenCards.filter(card => card.tabType === 'featured' && !card.isHidden);
     console.log('📋 Featured tab - Admin-configured cards:', displayedCards.length);
   } else if (activeTab === 'practice') {
     // Practice trading tab: Show cards assigned to practice tab (not hidden)
-    displayedCards = tokenCards.filter(card => card.tabType === 'practice' && !card.isHidden);
+    displayedCards = safeTokenCards.filter(card => card.tabType === 'practice' && !card.isHidden);
     console.log('📋 Practice tab - Admin-configured cards:', displayedCards.length);
   }
   
   console.log('📋 Current active tab:', activeTab);
-  console.log('📋 All admin-configured token cards:', tokenCards.map(card => ({ 
+  console.log('📋 All admin-configured token cards:', safeTokenCards.map(card => ({ 
     id: card.id, 
     tabType: card.tabType,
     symbol: card.symbol,
@@ -216,56 +262,198 @@ export default function HomePage() {
     revenue: card.revenue,
     isComingSoon: card.isComingSoon 
   })));
+  
+  // Debug info for user (temporary)
+  console.log('🔍 DEBUG INFO:');
+  console.log(`   Active Tab: ${activeTab}`);
+  console.log(`   Total Cards: ${safeTokenCards.length}`);
+  console.log(`   Featured Cards: ${safeTokenCards.filter(card => card.tabType === 'featured' && !card.isHidden).length}`);
+  console.log(`   Practice Cards: ${safeTokenCards.filter(card => card.tabType === 'practice' && !card.isHidden).length}`);
+  console.log(`   Displayed Cards: ${displayedCards.length}`);
+  console.log(`   Coming Soon Cards: ${displayedCards.filter(card => card.isComingSoon).length}`);
+
+  if (loading) {
+    return (
+      <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
+        <BackgroundImage />
+        <Header />
+        <main className="home-page" style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <div style={{ textAlign: 'center', color: 'white' }}>
+            <div style={{ 
+              width: '40px', 
+              height: '40px', 
+              border: '4px solid #374151', 
+              borderTop: '4px solid #fbbf24', 
+              borderRadius: '50%', 
+              animation: 'spin 1s linear infinite', 
+              margin: '0 auto 1rem' 
+            }}></div>
+            <p>Loading...</p>
+          </div>
+        </main>
+        <Footer />
+      </div>
+    );
+  }
 
   return (
-    <>
+    <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
+      <BackgroundImage />
       <Header />
-      <main className="home-page">
-                <div className="page-header-centered">
-          <h1 style={{ 
-            textAlign: 'center',
-            color: '#fbbf24',
-            fontWeight: 'bold',
-            fontSize: '2rem',
-            fontFamily: 'Arial, sans-serif',
-            marginBottom: '16px'
-          }}>
-            The Future of Bitcoin DeFi
-          </h1>
-           
-            <div style={{ 
-              display: 'flex', 
-              alignItems: 'center', 
-              justifyContent: 'center',
-              gap: '8px',
-              fontSize: '1.5rem',
+      <main className="home-page" style={{ flex: 1 }}>
+                {!showProjects && (
+          <div className="page-header-centered">
+            <h1 style={{ 
+              textAlign: 'center',
               color: '#fbbf24',
-              fontWeight: 'bold'
+              fontWeight: 'bold',
+              fontSize: '2rem',
+              fontFamily: 'Arial, sans-serif',
+              marginBottom: '8px'
             }}>
-              <span>Powered by</span>
+              The Future of Bitcoin DeFi
+            </h1>
+            
+            <p style={{
+              textAlign: 'center',
+              color: '#fbbf24',
+              fontSize: '1.1rem',
+              marginBottom: '8px',
+              fontFamily: 'Arial, sans-serif'
+            }}>
+              Earn Trading Fees From Supporting Projects
+            </p>
+            
+            <div style={{
+              textAlign: 'center',
+              marginBottom: '20px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '8px'
+            }}>
+              <span style={{
+                color: '#fbbf24',
+                fontSize: '0.9rem',
+                fontFamily: 'Arial, sans-serif'
+              }}>
+                Powered By
+              </span>
               <img 
-                src="/icons/The Mas Network.svg" 
-                alt="MAS Sats" 
+                src="/icons/mas-network-logo.png" 
+                alt="MAS Network" 
                 style={{ 
-                  width: '30px', 
-                  height: '30px'
+                  height: '40px',
+                  width: 'auto'
                 }} 
               />
             </div>
           </div>
-
-        <div className="top-controls">
-          <div className="tab-toggle">
-            <button className={activeTab === 'featured' ? 'active' : ''} onClick={() => setActiveTab('featured')}>
-              {t('featured')}
-            </button>
-            <button className={activeTab === 'practice' ? 'active' : ''} onClick={() => setActiveTab('practice')}>
-              {t('practice_trading')}
-            </button>
-          </div>
+        )}
+        
+        <div style={{
+          display: 'flex',
+          gap: '16px',
+          justifyContent: 'center',
+          flexWrap: 'wrap',
+          marginBottom: '20px'
+        }}>
+          <button
+            onClick={() => {
+              window.location.href = '/create-project';
+            }}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '12px',
+              backgroundColor: '#3b82f6',
+              color: '#fbbf24',
+              border: 'none',
+              borderRadius: '12px',
+              padding: '16px 28px',
+              fontSize: '1rem',
+              fontWeight: 'bold',
+              cursor: 'pointer',
+              transition: 'all 0.2s ease',
+              boxShadow: '0 4px 6px rgba(59, 130, 246, 0.3)'
+            }}
+            onMouseEnter={(e) => {
+              e.target.style.backgroundColor = '#2563eb';
+              e.target.style.transform = 'translateY(-2px)';
+              e.target.style.boxShadow = '0 6px 12px rgba(59, 130, 246, 0.4)';
+            }}
+            onMouseLeave={(e) => {
+              e.target.style.backgroundColor = '#3b82f6';
+              e.target.style.transform = 'translateY(0)';
+              e.target.style.boxShadow = '0 4px 6px rgba(59, 130, 246, 0.3)';
+            }}
+          >
+            Create Project
+          </button>
+          
+          <button
+            onClick={() => {
+              setShowProjects(!showProjects);
+            }}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '12px',
+              backgroundColor: 'transparent',
+              color: '#fbbf24',
+              border: '2px solid #fbbf24',
+              borderRadius: '12px',
+              padding: '16px 28px',
+              fontSize: '1rem',
+              fontWeight: 'bold',
+              cursor: 'pointer',
+              transition: 'all 0.2s ease'
+            }}
+            onMouseEnter={(e) => {
+              e.target.style.backgroundColor = '#fbbf24';
+              e.target.style.color = '#1e3a8a';
+              e.target.style.transform = 'translateY(-2px)';
+            }}
+            onMouseLeave={(e) => {
+              e.target.style.backgroundColor = 'transparent';
+              e.target.style.color = '#fbbf24';
+              e.target.style.transform = 'translateY(0)';
+            }}
+          >
+            {showProjects ? 'Hide Projects' : 'View Projects'}
+          </button>
         </div>
 
-        <div className="token-grid">
+        {showProjects && (
+          <>
+            <div className="top-controls">
+              <div className="tab-toggle">
+                <button className={activeTab === 'featured' ? 'active' : ''} onClick={() => setActiveTab('featured')}>
+                  🚀 {t('featured')} (Mainnet)
+                </button>
+                <button className={activeTab === 'practice' ? 'active' : ''} onClick={() => setActiveTab('practice')}>
+                  🧪 {t('practice_trading')} (Testnet)
+                </button>
+              </div>
+              
+              {/* Tab description */}
+              <div style={{ 
+                textAlign: 'center', 
+                marginTop: '10px', 
+                color: '#9CA3AF',
+                fontSize: '0.9rem'
+              }}>
+                {activeTab === 'featured' ? (
+                  <span>🚀 <strong>Mainnet:</strong> Real Projects With Real Profit</span>
+                ) : (
+                  <span>🧪 <strong>Testnet:</strong> Practice With Fake Money</span>
+                )}
+              </div>
+            </div>
+
+            <div className="token-grid">
           {displayedCards.map((card) => {
             if (card.isComingSoon) {
               return (
@@ -279,10 +467,59 @@ export default function HomePage() {
 
             return (
               <div key={`token-${card.id}`} className="token-card-wrapper">
-                <Link
-                  href={`/trade/${card.id}`}
-                  style={{ textDecoration: 'none', color: 'inherit' }}
+                <div
+                  onClick={() => handleTokenCardClick(card)}
+                  style={{ 
+                    textDecoration: 'none', 
+                    color: 'inherit',
+                    cursor: isConnectingWallet ? 'wait' : 'pointer',
+                    transition: 'transform 0.2s ease',
+                    opacity: isConnectingWallet ? 0.7 : 1,
+                    position: 'relative'
+                  }}
+                  onMouseEnter={(e) => {
+                    if (!isConnectingWallet) {
+                      e.currentTarget.style.transform = 'translateY(-2px)';
+                    }
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.transform = 'translateY(0)';
+                  }}
                 >
+                  {/* Loading overlay */}
+                  {isConnectingWallet && (
+                    <div style={{
+                      position: 'absolute',
+                      top: 0,
+                      left: 0,
+                      right: 0,
+                      bottom: 0,
+                      background: 'rgba(0, 0, 0, 0.8)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      borderRadius: '12px',
+                      zIndex: 10
+                    }}>
+                      <div style={{
+                        textAlign: 'center',
+                        color: '#fbbf24'
+                      }}>
+                        <div style={{
+                          width: '24px',
+                          height: '24px',
+                          border: '2px solid #fbbf24',
+                          borderTop: '2px solid transparent',
+                          borderRadius: '50%',
+                          animation: 'spin 1s linear infinite',
+                          margin: '0 auto 8px'
+                        }}></div>
+                        <div style={{ fontSize: '0.9rem', fontWeight: '500' }}>
+                          Connecting Wallet...
+                        </div>
+                      </div>
+                    </div>
+                  )}
                   <div className="token-card">
                     <div className="token-card-box">
                       <span className="token-symbol">
@@ -309,7 +546,7 @@ export default function HomePage() {
                       </p>
                     </div>
                   </div>
-                </Link>
+                </div>
 
                 {/* Button to Get Fake Bitcoin - Only for practice trading cards */}
                 {activeTab === 'practice' && (
@@ -345,14 +582,25 @@ export default function HomePage() {
               color: '#9CA3AF',
               gridColumn: '1 / -1'
             }}>
-              <p>No tokens configured for {activeTab === 'featured' ? 'Featured' : 'Practice Trading'} tab</p>
+              <p>
+                {activeTab === 'featured' ? (
+                  <>🚀 <strong>Mainnet tokens coming soon!</strong><br />
+                  Real tokens with real value will be available here.</>
+                ) : (
+                  <>🧪 <strong>Testnet tokens coming soon!</strong><br />
+                  Practice tokens will be available here.</>
+                )}
+              </p>
               <p style={{ fontSize: '0.9rem', marginTop: '0.5rem' }}>
-                Admin can add tokens in the admin panel
+                Admin can configure tokens in the admin panel
               </p>
             </div>
           )}
-        </div>
+            </div>
+          </>
+        )}
       </main>
-    </>
+      <Footer />
+    </div>
   );
 }

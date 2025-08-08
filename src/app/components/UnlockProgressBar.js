@@ -56,6 +56,18 @@ const UnlockProgressBar = React.memo(function UnlockProgressBar({
   // Fetch threshold from smart contract via API
   useEffect(() => {
     const fetchThreshold = async () => {
+      // Check if wallet is connected (optional check for better UX)
+      if (typeof window !== 'undefined') {
+        const connectedAddress = localStorage.getItem('connectedAddress');
+        if (!connectedAddress) {
+          console.log('⚠️ No wallet connected, using fallback threshold');
+          const currentLiquidity = parseFloat(liquidity.replace(/,/g, '')) || 0;
+          setContractThreshold(Math.floor(currentLiquidity / 2) + 1);
+          setLoadingThreshold(false);
+          return;
+        }
+      }
+
       if (!dexInfo) {
         console.log('No dexInfo provided, using fallback threshold');
         const currentLiquidity = parseFloat(liquidity.replace(/,/g, '')) || 0;
@@ -71,7 +83,16 @@ const UnlockProgressBar = React.memo(function UnlockProgressBar({
         console.log('🔍 Full dexInfo:', dexInfo);
         console.log('🔍 Full tokenInfo:', tokenInfo);
         
-        const response = await fetch(`/api/get-threshold?dexInfo=${encodeURIComponent(dexInfo)}&tokenInfo=${encodeURIComponent(tokenInfo || '')}`);
+        // Add timeout to prevent hanging
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 8000); // 8 second timeout
+        
+        const response = await fetch(
+          `/api/get-threshold?dexInfo=${encodeURIComponent(dexInfo)}&tokenInfo=${encodeURIComponent(tokenInfo || '')}`,
+          { signal: controller.signal }
+        );
+        
+        clearTimeout(timeoutId);
         const data = await response.json();
         
         console.log('🔍 API response:', data);
@@ -86,7 +107,11 @@ const UnlockProgressBar = React.memo(function UnlockProgressBar({
           setContractThreshold(Math.floor(currentLiquidity / 2) + 1);
         }
       } catch (error) {
-        console.error('Failed to fetch threshold:', error);
+        if (error.name === 'AbortError') {
+          console.log('⏰ Threshold fetch timed out, using fallback');
+        } else {
+          console.error('Failed to fetch threshold:', error);
+        }
         // Fallback to calculated threshold
         const currentLiquidity = parseFloat(liquidity.replace(/,/g, '')) || 0;
         setContractThreshold(Math.floor(currentLiquidity / 2) + 1);

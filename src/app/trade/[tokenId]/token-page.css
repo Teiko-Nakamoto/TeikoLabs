@@ -218,10 +218,97 @@
   margin: 0 auto;
 }
 
-/* Responsive design */
+/* Main layout responsive design */
+.main-layout {
+  display: flex;
+  gap: 20px;
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+.chart-section {
+  flex: 7;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.trading-section {
+  flex: 3;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+/* Mobile responsive design */
+@media (max-width: 1024px) {
+  .main-layout {
+    flex-direction: column;
+    gap: 15px;
+  }
+  
+  .chart-section,
+  .trading-section {
+    flex: none;
+    width: 100%;
+  }
+  
+  .trading-section {
+    order: -1; /* Move buy/sell box to top on mobile */
+  }
+}
+
+/* Tablet and large phone - keep side-by-side layout */
+@media (max-width: 1024px) and (min-width: 768px) {
+  .main-layout {
+    flex-direction: row;
+    gap: 15px;
+  }
+  
+  .chart-section {
+    flex: 6;
+  }
+  
+  .trading-section {
+    flex: 4;
+    order: 0; /* Keep original order */
+  }
+}
+
+/* Medium phones - side-by-side with adjusted ratios */
+@media (max-width: 767px) and (min-width: 480px) {
+  .main-layout {
+    flex-direction: row;
+    gap: 10px;
+  }
+  
+  .chart-section {
+    flex: 5;
+  }
+  
+  .trading-section {
+    flex: 5;
+    order: 0; /* Keep original order */
+  }
+  
+  .chart-section,
+  .trading-section {
+    gap: 10px;
+  }
+}
+
 @media (max-width: 768px) {
   .token-page {
-    padding: 15px;
+    padding: 10px;
+  }
+  
+  .main-layout {
+    gap: 10px;
+  }
+  
+  .chart-section,
+  .trading-section {
+    gap: 10px;
   }
   
   .token-header {
@@ -260,6 +347,66 @@
   .copy-button {
     align-self: flex-start;
   }
+  
+  /* Ensure buy/sell box is fully visible */
+  .trading-section > * {
+    min-width: 0;
+    width: 100%;
+  }
+}
+
+/* Small phones - stack everything */
+@media (max-width: 479px) {
+  .main-layout {
+    flex-direction: column;
+    gap: 8px;
+  }
+  
+  .chart-section,
+  .trading-section {
+    flex: none;
+    width: 100%;
+  }
+  
+  .trading-section {
+    order: -1; /* Move buy/sell box to top on small phones */
+  }
+  
+  .token-page {
+    padding: 5px;
+  }
+  
+  .chart-section,
+  .trading-section {
+    gap: 8px;
+  }
+  
+  .token-header {
+    padding: 12px;
+    gap: 15px;
+  }
+  
+  .token-symbol-box {
+    width: 50px;
+    height: 50px;
+  }
+  
+  .token-symbol {
+    font-size: 0.9rem;
+  }
+  
+  .progress-label {
+    font-size: 0.8rem;
+  }
+  
+  .progress-status {
+    font-size: 0.7rem;
+  }
+  
+  .contract-button {
+    padding: 10px 16px;
+    font-size: 0.8rem;
+  }
 }
 
 /* Loading animation */
@@ -295,4 +442,18 @@
 
 .contracts-popup {
   background: #1e3a8a;
+}
+
+/* Mobile popup adjustments */
+@media (max-width: 768px) {
+  .popup {
+    padding: 20px;
+    margin: 10px;
+    max-height: 90vh;
+  }
+  
+  .contracts-popup h3 {
+    font-size: 16px;
+    margin-bottom: 15px;
+  }
 } 

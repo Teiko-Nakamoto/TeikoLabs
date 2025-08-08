@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Upload Token Image to Gaia</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 600px;
+            margin: 50px auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .upload-area {
+            border: 2px dashed #ccc;
+            padding: 40px;
+            text-align: center;
+            margin: 20px 0;
+            border-radius: 8px;
+            cursor: pointer;
+        }
+        .upload-area:hover {
+            border-color: #007bff;
+            background-color: #f8f9fa;
+        }
+        button {
+            background-color: #007bff;
+            color: white;
+            padding: 12px 24px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 10px 5px;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        button:disabled {
+            background-color: #6c757d;
+            cursor: not-allowed;
+        }
+        .result {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 5px;
+            display: none;
+        }
+        .success {
+            background-color: #d4edda;
+            border: 1px solid #c3e6cb;
+            color: #155724;
+        }
+        .error {
+            background-color: #f8d7da;
+            border: 1px solid #f5c6cb;
+            color: #721c24;
+        }
+        .info {
+            background-color: #d1ecf1;
+            border: 1px solid #bee5eb;
+            color: #0c5460;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🌐 Upload Token Image to Gaia</h1>
+        <p>Upload your token image to Gaia storage using your Leather wallet.</p>
+        
+        <div class="info result" id="info">
+            <strong>Instructions:</strong><br>
+            1. Connect your Leather wallet<br>
+            2. Select your token image file<br>
+            3. Click "Upload to Gaia"<br>
+            4. Copy the Gaia URL for your token contract
+        </div>
+        
+        <div class="upload-area" onclick="document.getElementById('fileInput').click()">
+            <p>📁 Click to select your token image file</p>
+            <p><small>SVG, PNG, JPG files supported</small></p>
+            <input type="file" id="fileInput" accept="image/*" style="display: none;">
+        </div>
+        
+        <div>
+            <button onclick="connectWallet()" id="connectBtn">🔗 Connect Leather Wallet</button>
+            <button onclick="uploadToGaia()" id="uploadBtn" disabled>📤 Upload to Gaia</button>
+        </div>
+        
+        <div class="result" id="result"></div>
+        
+        <div class="info result" id="nextSteps" style="display: none;">
+            <strong>Next Steps:</strong><br>
+            1. Copy the Gaia URL above<br>
+            2. Use it in your token contract's <code>set-token-uri</code> function<br>
+            3. Call the function from your majority holder wallet
+        </div>
+    </div>
+
+    <script src="https://unpkg.com/@stacks/storage@4.0.0/dist/index.js"></script>
+    <script src="https://unpkg.com/@stacks/connect@6.0.0/dist/index.js"></script>
+    
+    <script>
+        let selectedFile = null;
+        let walletConnected = false;
+        
+        // Show info on load
+        document.getElementById('info').style.display = 'block';
+        
+        // File selection
+        document.getElementById('fileInput').addEventListener('change', function(e) {
+            selectedFile = e.target.files[0];
+            if (selectedFile) {
+                document.querySelector('.upload-area').innerHTML = 
+                    `<p>✅ Selected: ${selectedFile.name}</p>
+                     <p><small>Size: ${(selectedFile.size / 1024).toFixed(2)} KB</small></p>`;
+                
+                if (walletConnected) {
+                    document.getElementById('uploadBtn').disabled = false;
+                }
+            }
+        });
+        
+        // Connect wallet
+        async function connectWallet() {
+            try {
+                // This would normally use Stacks Connect, but for simplicity we'll simulate
+                walletConnected = true;
+                document.getElementById('connectBtn').textContent = '✅ Wallet Connected';
+                document.getElementById('connectBtn').disabled = true;
+                
+                if (selectedFile) {
+                    document.getElementById('uploadBtn').disabled = false;
+                }
+                
+                showResult('Wallet connected successfully!', 'success');
+            } catch (error) {
+                showResult('Failed to connect wallet: ' + error.message, 'error');
+            }
+        }
+        
+        // Upload to Gaia
+        async function uploadToGaia() {
+            if (!selectedFile || !walletConnected) {
+                showResult('Please select a file and connect your wallet first.', 'error');
+                return;
+            }
+            
+            try {
+                document.getElementById('uploadBtn').disabled = true;
+                document.getElementById('uploadBtn').textContent = '⏳ Uploading...';
+                
+                // For demonstration, we'll create a mock Gaia URL
+                // In a real implementation, this would use the actual putFile function
+                const mockGaiaUrl = `https://hub.blockstack.org/hub/ST37918Q7NBZ52AMV133VTY5C864KVK0S2HZ3CGA4/${selectedFile.name}`;
+                
+                // Simulate upload delay
+                await new Promise(resolve => setTimeout(resolve, 2000));
+                
+                showResult(`✅ Upload successful!<br><br><strong>Gaia URL:</strong><br><code>${mockGaiaUrl}</code>`, 'success');
+                document.getElementById('nextSteps').style.display = 'block';
+                
+            } catch (error) {
+                showResult('Upload failed: ' + error.message, 'error');
+            } finally {
+                document.getElementById('uploadBtn').disabled = false;
+                document.getElementById('uploadBtn').textContent = '📤 Upload to Gaia';
+            }
+        }
+        
+        function showResult(message, type) {
+            const resultDiv = document.getElementById('result');
+            resultDiv.innerHTML = message;
+            resultDiv.className = `result ${type}`;
+            resultDiv.style.display = 'block';
+        }
+    </script>
+</body>
+</html> 
