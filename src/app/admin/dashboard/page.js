@@ -529,11 +529,11 @@ export default function AdminDashboard() {
                   }}>
                     <input
                       type="checkbox"
-                      checked={accessSettings.tokenTrading.featured}
+                      checked={accessSettings.tokenTrading?.featured || false}
                       onChange={(e) => saveAccessSettings({
                         ...accessSettings,
                         tokenTrading: {
-                          ...accessSettings.tokenTrading,
+                          ...(accessSettings.tokenTrading || {}),
                           featured: e.target.checked
                         }
                       })}
@@ -546,7 +546,7 @@ export default function AdminDashboard() {
                       left: 0,
                       right: 0,
                       bottom: 0,
-                      backgroundColor: accessSettings.tokenTrading.featured ? '#fbbf24' : '#ccc',
+                      backgroundColor: accessSettings.tokenTrading?.featured ? '#fbbf24' : '#ccc',
                       transition: '.4s',
                       borderRadius: '34px'
                     }}>
@@ -555,7 +555,7 @@ export default function AdminDashboard() {
                         content: '""',
                         height: '26px',
                         width: '26px',
-                        left: accessSettings.tokenTrading.featured ? '30px' : '4px',
+                        left: accessSettings.tokenTrading?.featured ? '30px' : '4px',
                         bottom: '4px',
                         backgroundColor: 'white',
                         transition: '.4s',
@@ -592,11 +592,11 @@ export default function AdminDashboard() {
                   }}>
                     <input
                       type="checkbox"
-                      checked={accessSettings.tokenTrading.practice}
+                      checked={accessSettings.tokenTrading?.practice || false}
                       onChange={(e) => saveAccessSettings({
                         ...accessSettings,
                         tokenTrading: {
-                          ...accessSettings.tokenTrading,
+                          ...(accessSettings.tokenTrading || {}),
                           practice: e.target.checked
                         }
                       })}
@@ -609,7 +609,7 @@ export default function AdminDashboard() {
                       left: 0,
                       right: 0,
                       bottom: 0,
-                      backgroundColor: accessSettings.tokenTrading.practice ? '#fbbf24' : '#ccc',
+                      backgroundColor: accessSettings.tokenTrading?.practice ? '#fbbf24' : '#ccc',
                       transition: '.4s',
                       borderRadius: '34px'
                     }}>
@@ -618,7 +618,7 @@ export default function AdminDashboard() {
                         content: '""',
                         height: '26px',
                         width: '26px',
-                        left: accessSettings.tokenTrading.practice ? '30px' : '4px',
+                        left: accessSettings.tokenTrading?.practice ? '30px' : '4px',
                         bottom: '4px',
                         backgroundColor: 'white',
                         transition: '.4s',
@@ -655,11 +655,11 @@ export default function AdminDashboard() {
                   }}>
                     <input
                       type="checkbox"
-                      checked={accessSettings.tokenTrading.allProjects}
+                      checked={accessSettings.tokenTrading?.allProjects || false}
                       onChange={(e) => saveAccessSettings({
                         ...accessSettings,
                         tokenTrading: {
-                          ...accessSettings.tokenTrading,
+                          ...(accessSettings.tokenTrading || {}),
                           allProjects: e.target.checked
                         }
                       })}
@@ -672,7 +672,7 @@ export default function AdminDashboard() {
                       left: 0,
                       right: 0,
                       bottom: 0,
-                      backgroundColor: accessSettings.tokenTrading.allProjects ? '#fbbf24' : '#ccc',
+                      backgroundColor: accessSettings.tokenTrading?.allProjects ? '#fbbf24' : '#ccc',
                       transition: '.4s',
                       borderRadius: '34px'
                     }}>
@@ -681,7 +681,7 @@ export default function AdminDashboard() {
                         content: '""',
                         height: '26px',
                         width: '26px',
-                        left: accessSettings.tokenTrading.allProjects ? '30px' : '4px',
+                        left: accessSettings.tokenTrading?.allProjects ? '30px' : '4px',
                         bottom: '4px',
                         backgroundColor: 'white',
                         transition: '.4s',
