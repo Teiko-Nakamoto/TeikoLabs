@@ -1,80 +1,42 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import './docs.css';
 
 export default function DocsPage() {
-  const [searchQuery, setSearchQuery] = useState('');
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
-  const [activeSection, setActiveSection] = useState('overview');
   const pathname = usePathname();
 
-  // GitBook-style navigation structure
+  // Simplified navigation structure
   const navigation = [
     {
-      title: 'Getting Started',
+      title: 'Documentation',
       items: [
-        { title: 'Overview', id: 'overview', href: '/docs' },
-        { title: 'Quick Start', id: 'quick-start', href: '/docs/quick-start' },
-        { title: 'Installation', id: 'installation', href: '/docs/installation' },
-      ]
-    },
-    {
-      title: 'API Reference',
-      items: [
-        { title: 'Authentication', id: 'authentication', href: '/docs/api/authentication' },
-        { title: 'Endpoints', id: 'endpoints', href: '/docs/api/endpoints' },
-        { title: 'Rate Limiting', id: 'rate-limiting', href: '/docs/api/rate-limiting' },
-        { title: 'CORS Management', id: 'cors-management', href: '/docs/api/cors-management' },
-      ]
-    },
-    {
-      title: 'Security',
-      items: [
-        { title: 'Security Overview', id: 'security-overview', href: '/docs/security/overview' },
-        { title: 'Wallet Authentication', id: 'wallet-auth', href: '/docs/security/wallet-auth' },
-        { title: 'CORS Protection', id: 'cors-protection', href: '/docs/security/cors-protection' },
-        { title: 'Rate Limiting', id: 'rate-limit-security', href: '/docs/security/rate-limiting' },
-      ]
-    },
-    {
-      title: 'User Guide',
-      items: [
-        { title: 'Trading Tokens', id: 'trading', href: '/docs/user-guide/trading' },
-        { title: 'Managing Positions', id: 'positions', href: '/docs/user-guide/positions' },
-        { title: 'Profit & Loss', id: 'pnl', href: '/docs/user-guide/pnl' },
-        { title: 'Locking/Unlocking', id: 'locking', href: '/docs/user-guide/locking' },
-      ]
-    },
-    {
-      title: 'Admin Panel',
-      items: [
-        { title: 'API Management', id: 'api-management', href: '/docs/admin/api-management' },
-        { title: 'CORS Management', id: 'admin-cors', href: '/docs/admin/cors-management' },
-        { title: 'Rate Limit Settings', id: 'rate-settings', href: '/docs/admin/rate-settings' },
+        { 
+          title: 'Overview', 
+          id: 'overview', 
+          href: '/docs',
+          isActive: pathname === '/docs',
+          subItems: pathname === '/docs' ? [
+            { title: 'What Problem Are We Solving', id: 'problem-solving', href: '#problem-solving' },
+            { title: 'Immediate Benefits', id: 'immediate-benefits', href: '#immediate-benefits' },
+            { title: 'Trading Mechanics', id: 'trading-mechanics', href: '#trading-mechanics' },
+            { title: 'Our Approach vs Competitors', id: 'comparison', href: '#comparison' }
+          ] : []
+        },
+        { title: 'How It Works', id: 'how-it-works', href: '/docs/how-it-works' },
+        { title: 'Create Project', id: 'create-project', href: '/docs/create-project' },
+        { title: 'Trading', id: 'trading', href: '/docs/trading' },
+        { title: 'Claim Profit', id: 'claim-profit', href: '/docs/claim-profit' },
+        { title: 'Fees', id: 'fees', href: '/docs/fees' },
       ]
     }
   ];
 
-  // Filter navigation based on search
-  const filteredNavigation = navigation.map(section => ({
-    ...section,
-    items: section.items.filter(item => 
-      item.title.toLowerCase().includes(searchQuery.toLowerCase())
-    )
-  })).filter(section => section.items.length > 0);
-
-  // Table of contents for current page
-  const tableOfContents = [
-    { title: 'Introduction', id: 'introduction' },
-    { title: 'Key Features', id: 'key-features' },
-    { title: 'Architecture', id: 'architecture' },
-    { title: 'Security Features', id: 'security-features' },
-    { title: 'Getting Started', id: 'getting-started' },
-    { title: 'Next Steps', id: 'next-steps' }
-  ];
+  // Use navigation as-is without filtering
+  const filteredNavigation = navigation;
 
   return (
     <div className="docs-layout">
@@ -94,24 +56,12 @@ export default function DocsPage() {
       <aside className={`docs-sidebar ${isSidebarOpen ? 'open' : ''}`}>
         <div className="docs-sidebar-header">
           <div className="docs-logo-section">
+            <Link href="/" className="docs-logo-link">
             <img src="/logo.png" alt="Teiko Labs Logo" className="docs-logo" />
-            <h2 className="docs-sidebar-title">Documentation</h2>
-          </div>
-          
-          {/* Search */}
-          <div className="docs-search">
-            <div className="docs-search-input-wrapper">
-              <svg className="docs-search-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <circle cx="11" cy="11" r="8"></circle>
-                <path d="m21 21-4.35-4.35"></path>
-              </svg>
-              <input
-                type="text"
-                placeholder="Search docs..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="docs-search-input"
-              />
+            </Link>
+            <div className="docs-title-section">
+              <div className="docs-site-name">Teikolabs.com</div>
+              <h2 className="docs-sidebar-title">Documentation</h2>
             </div>
           </div>
         </div>
@@ -129,6 +79,24 @@ export default function DocsPage() {
                     >
                       {item.title}
                     </Link>
+                    {item.subItems && item.subItems.length > 0 && (
+                      <ul className="docs-nav-sublist">
+                        {item.subItems.map((subItem, subIndex) => (
+                          <li key={subIndex} className="docs-nav-subitem">
+                            <a 
+                              href={subItem.href}
+                              className="docs-nav-sublink"
+                              onClick={(e) => {
+                                e.preventDefault();
+                                document.getElementById(subItem.id).scrollIntoView({ behavior: 'smooth' });
+                              }}
+                            >
+                              {subItem.title}
+                            </a>
+                          </li>
+                        ))}
+                      </ul>
+                    )}
                   </li>
                 ))}
               </ul>
@@ -141,148 +109,215 @@ export default function DocsPage() {
       <main className="docs-main">
         <div className="docs-content">
           <div className="docs-header">
-            <h1 className="docs-title">Overview</h1>
+            <h1 className="docs-title">Welcome to Teiko Labs</h1>
             <p className="docs-description">
-              Welcome to the MAS Sats Token Trading Platform documentation. This comprehensive guide covers everything you need to know about our secure, decentralized trading system.
+              The sustainable crypto project crowdfunding platform that revolutionizes how projects get funded and generate profit through blockchain technology.
             </p>
           </div>
 
           <div className="docs-body">
-            <section id="introduction" className="docs-section">
-              <h2>Introduction</h2>
-              <p>
-                The MAS Sats Token Trading Platform is a secure, decentralized exchange built on the Stacks blockchain. 
-                It provides users with a seamless way to trade MAS Sats tokens while maintaining the highest security standards.
-              </p>
-              <p>
-                Our platform features advanced security measures including wallet-based authentication, 
-                dynamic CORS management, rate limiting, and comprehensive audit trails.
-              </p>
+            <section className="docs-section">
+              <div className="platform-intro">
+                <h2>Overview</h2>
+                <p>
+                  Teiko Labs is a platform that allows you to create and trade sustainable crypto projects on the Stacks blockchain without any coding experience. 
+                  We provide a user-friendly interface and streamlined processes to make project funding profitable and sustainable for everyone involved.
+                </p>
+              </div>
             </section>
 
-            <section id="key-features" className="docs-section">
-              <h2>Key Features</h2>
-              <div className="docs-features-grid">
-                <div className="docs-feature-card">
-                  <div className="docs-feature-icon">🔒</div>
-                  <h3>Wallet Authentication</h3>
-                  <p>Secure authentication using Stacks wallet signatures for all admin operations.</p>
+            <section id="problem-solving" className="docs-section">
+              <h2>What Problem Are We Solving?</h2>
+              
+              <div className="problem-section">
+                <h3>Sustainable Crypto Project Crowdfunding</h3>
+                <p>
+                  Traditional crypto project funding faces critical sustainability issues. Most projects fail because they lack ongoing revenue streams 
+                  and rely solely on initial hype rather than real economic value.
+                </p>
+
+                <div className="problem-stats">
+                  <div className="stat-item">
+                    <div className="stat-icon">😔</div>
+                    <div>Most crypto projects fail within the first year</div>
+                  </div>
+                  <div className="stat-item">
+                    <div className="stat-icon">💸</div>
+                    <div>Investors lose money on unsustainable tokenomics</div>
+                  </div>
+                  <div className="stat-item">
+                    <div className="stat-icon">🎯</div>
+                    <div>No real incentive for long-term project success</div>
+                  </div>
                 </div>
-                <div className="docs-feature-card">
-                  <div className="docs-feature-icon">🌐</div>
-                  <h3>Dynamic CORS Management</h3>
-                  <p>Flexible CORS policy management with database-backed whitelist and signature verification.</p>
+
+                <h3>Our Solution: Profit-Driven Sustainability</h3>
+                <p>
+                  We make crowdfunding sustainable by allowing users to create and trade projects on the blockchain that generate real profit 
+                  for the majority project owner through trading fees. Everyone benefits from the price increase of project ownership 
+                  as people compete for the trading fees.
+                </p>
+              </div>
+            </section>
+
+            <section id="immediate-benefits" className="docs-section">
+              <h2>Immediate Benefits</h2>
+              
+              <div className="benefits-grid">
+                <div className="benefit-card">
+                  <div className="benefit-icon">🚀</div>
+                  <h3>No Coding Required</h3>
+                  <p>Launch your project without learning complex programming languages or smart contract development.</p>
                 </div>
-                <div className="docs-feature-card">
-                  <div className="docs-feature-icon">⚡</div>
-                  <h3>Rate Limiting</h3>
-                  <p>Advanced rate limiting with configurable rules and real-time monitoring.</p>
+
+                <div className="benefit-card">
+                  <div className="benefit-icon">💰</div>
+                  <h3>Trading Fee Profits</h3>
+                  <p>All projects are backed by trading fee profits saved on smart contracts, regardless of how well the actual project is doing.</p>
                 </div>
-                <div className="docs-feature-card">
-                  <div className="docs-feature-icon">📊</div>
-                  <h3>Real-time Trading</h3>
-                  <p>Live price updates and instant trade execution with slippage protection.</p>
+
+                <div className="benefit-card">
+                  <div className="benefit-icon">🔍</div>
+                  <h3>No Research Needed</h3>
+                  <p>Project profit is the only real source of truth - removing any need for research about the project's fundamentals.</p>
+                </div>
+
+                <div className="benefit-card">
+                  <div className="benefit-icon">📈</div>
+                  <h3>Growth Incentives</h3>
+                  <p>Majority holders are incentivized to grow the project's total value locked to gain more trading profit, which disincentivizes dumping.</p>
+                </div>
+
+                <div className="benefit-card">
+                  <div className="benefit-icon">🛡️</div>
+                  <h3>Built-in Risk Management</h3>
+                  <p>Smart contract mechanics help spot risk in projects through transparent profit metrics and locked token requirements.</p>
+                </div>
+
+                <div className="benefit-card">
+                  <div className="benefit-icon">🎯</div>
+                  <h3>Sustainable Economics</h3>
+                  <p>Every trade generates revenue that flows back to majority holders, creating a self-sustaining economic model.</p>
                 </div>
               </div>
             </section>
 
-            <section id="architecture" className="docs-section">
-              <h2>Architecture</h2>
-              <p>
-                Our platform is built with a modern, scalable architecture:
-              </p>
-              <ul>
-                <li><strong>Frontend:</strong> Next.js with React for a responsive, modern UI</li>
-                <li><strong>Backend:</strong> Next.js API routes with server-side rendering</li>
-                <li><strong>Database:</strong> Supabase for data persistence and real-time features</li>
-                <li><strong>Blockchain:</strong> Stacks blockchain integration for secure transactions</li>
-                <li><strong>Security:</strong> Multi-layered security with wallet signatures and CORS protection</li>
-              </ul>
-            </section>
+            <section id="trading-mechanics" className="docs-section">
+              <h2>Trading Mechanics</h2>
+              
+              <div className="trading-explanation">
+                <h3>How Trading Fees Work</h3>
+                <p>
+                  A trading fee is taken from each trade and saved for future claims by majority holders. 
+                  Here's how the locking mechanism ensures sustainability:
+                </p>
 
-            <section id="security-features" className="docs-section">
-              <h2>Security Features</h2>
-              <div className="docs-security-list">
-                <div className="docs-security-item">
-                  <h4>🔐 Wallet Signature Verification</h4>
-                  <p>All admin operations require valid wallet signatures with timestamp validation.</p>
+                <div className="mechanism-steps">
+                  <div className="mechanism-step">
+                    <div className="step-number">1</div>
+                    <div className="step-details">
+                      <h4>Lock Tokens to Claim</h4>
+                      <p>Users must lock their tokens away in order to gain access to trading fee profits.</p>
+                    </div>
+                  </div>
+
+                  <div className="mechanism-step">
+                    <div className="step-number">2</div>
+                    <div className="step-details">
+                      <h4>Withdrawal Restrictions</h4>
+                      <p>Once locked, users cannot unlock tokens until the last greatest trading fee withdrawal amount is paid back.</p>
+                    </div>
+                  </div>
+
+                  <div className="mechanism-step">
+                    <div className="step-number">3</div>
+                    <div className="step-details">
+                      <h4>Recovery Threshold</h4>
+                      <p>The maximum recovery requirement is capped at 1 million sats, ensuring fair and predictable unlock conditions.</p>
                 </div>
-                <div className="docs-security-item">
-                  <h4>🛡️ Dynamic CORS Management</h4>
-                  <p>Database-backed CORS whitelist with signature-verified URL additions.</p>
                 </div>
-                <div className="docs-security-item">
-                  <h4>⚡ Rate Limiting</h4>
-                  <p>Configurable rate limits with IP-based tracking and automatic blocking.</p>
                 </div>
-                <div className="docs-security-item">
-                  <h4>📝 Audit Trails</h4>
-                  <p>Comprehensive logging of all admin actions and security events.</p>
+
+                <div className="info-box">
+                  <strong>Key Point:</strong> This mechanism creates powerful incentives for long-term project growth and prevents 
+                  majority holders from extracting value without ensuring project sustainability.
                 </div>
               </div>
             </section>
 
-            <section id="getting-started" className="docs-section">
-              <h2>Getting Started</h2>
-              <p>
-                To get started with the platform:
-              </p>
-              <ol>
-                <li>Connect your Stacks wallet to the platform</li>
-                <li>Ensure you have sufficient SBTC for trading</li>
-                <li>Review the current token price and market conditions</li>
-                <li>Place your first trade using the buy/sell interface</li>
-                <li>Monitor your positions and profit/loss in real-time</li>
-              </ol>
-            </section>
+            <section id="comparison" className="docs-section">
+              <h2>Our Approach vs Competitors</h2>
+              
+              <div className="comparison-table">
+                <div className="comparison-header">
+                  <h3>Why Choose Teiko Labs?</h3>
+                  <p>See how we stack up against other platforms in the crypto funding space:</p>
+                </div>
 
-            <section id="next-steps" className="docs-section">
-              <h2>Next Steps</h2>
-              <p>
-                Now that you understand the basics, explore these areas:
-              </p>
-              <div className="docs-next-steps">
-                <Link href="/docs/user-guide/trading" className="docs-next-step-card">
-                  <h3>📈 Trading Guide</h3>
-                  <p>Learn how to buy and sell tokens effectively</p>
-                </Link>
-                <Link href="/docs/api/endpoints" className="docs-next-step-card">
-                  <h3>🔌 API Reference</h3>
-                  <p>Explore our comprehensive API documentation</p>
-                </Link>
-                <Link href="/docs/security/overview" className="docs-next-step-card">
-                  <h3>🛡️ Security Guide</h3>
-                  <p>Understand our security measures and best practices</p>
-                </Link>
+                <div className="table-container">
+                  <table className="feature-comparison-table">
+                    <thead>
+                      <tr>
+                        <th className="feature-header">Feature</th>
+                        <th className="platform-header teiko-header">🏆 Teiko Labs</th>
+                        <th className="platform-header">Geyser</th>
+                        <th className="platform-header">STX.CITY</th>
+                        <th className="platform-header">Pump.fun</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr>
+                        <td className="feature-name">Blockchain Foundation</td>
+                        <td className="teiko-cell">✅ Stacks anchored to Bitcoin</td>
+                        <td className="competitor-cell">❌ Bitcoin Lightning (off-chain)</td>
+                        <td className="competitor-cell">✅ Stacks anchored to Bitcoin</td>
+                        <td className="competitor-cell">❌ Solana only</td>
+                      </tr>
+                      <tr>
+                        <td className="feature-name">1 to 1 Bitcoin Trading Pair</td>
+                        <td className="teiko-cell">✅ sBTC (Bitcoin Layer 2)</td>
+                        <td className="competitor-cell">❌ No trading pairs</td>
+                        <td className="competitor-cell">❌ STX token</td>
+                        <td className="competitor-cell">❌ SOL token</td>
+                      </tr>
+                      <tr>
+                        <td className="feature-name">Profit Sharing Model</td>
+                        <td className="teiko-cell">✅ Sustainable trading fees</td>
+                        <td className="competitor-cell">❌ No Profit Share</td>
+                        <td className="competitor-cell">❌ 50% of trading fees to DEV</td>
+                        <td className="competitor-cell">❌ 0% of trading fees to DEV</td>
+                      </tr>
+                      <tr>
+                        <td className="feature-name">Growth Incentives</td>
+                        <td className="teiko-cell">✅ Trading Fee claims</td>
+                        <td className="competitor-cell">❌ Project dependent</td>
+                        <td className="competitor-cell">❌ Pump & dump risk</td>
+                        <td className="competitor-cell">❌ Pump & dump risk</td>
+                      </tr>
+                      <tr>
+                        <td className="feature-name">Project Risk Assessment</td>
+                        <td className="teiko-cell">✅ Claimable onchain trading fee profit is the single source of truth</td>
+                        <td className="competitor-cell">❌ Manual research required</td>
+                        <td className="competitor-cell">❌ Manual research required</td>
+                        <td className="competitor-cell">❌ Manual research required</td>
+                      </tr>
+
+
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+
+              <div className="blockchain-advantage">
+                <h3>🔗 Built on Bitcoin's Security</h3>
+                <p>
+                  We leverage the Stacks blockchain, which is anchored to Bitcoin, providing unparalleled security and trust. 
+                  By using sBTC as our trading pair, we ensure that all value is ultimately backed by the world's most secure cryptocurrency.
+                </p>
               </div>
             </section>
           </div>
         </div>
-
-        {/* Table of Contents */}
-        <aside className="docs-toc">
-          <div className="docs-toc-header">
-            <h3>On this page</h3>
-          </div>
-          <nav className="docs-toc-nav">
-            <ul className="docs-toc-list">
-              {tableOfContents.map((item, index) => (
-                <li key={index} className="docs-toc-item">
-                  <a 
-                    href={`#${item.id}`}
-                    className="docs-toc-link"
-                    onClick={(e) => {
-                      e.preventDefault();
-                      document.getElementById(item.id).scrollIntoView({ behavior: 'smooth' });
-                    }}
-                  >
-                    {item.title}
-                  </a>
-                </li>
-              ))}
-            </ul>
-          </nav>
-        </aside>
       </main>
     </div>
   );
