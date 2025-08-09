@@ -55,6 +55,10 @@ export default function AdminDashboard() {
       if (data.success) {
         setAccessSettings(newSettings);
         console.log('Access settings saved successfully');
+        
+        // Notify other components about the change
+        localStorage.setItem('accessSettingsChanged', Date.now().toString());
+        window.dispatchEvent(new CustomEvent('accessSettingsUpdated'));
       } else {
         console.error('Failed to save access settings:', data.error);
       }

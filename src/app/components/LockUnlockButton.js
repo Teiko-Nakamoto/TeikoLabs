@@ -23,6 +23,17 @@ export default function LockUnlockButton({ tokenId, className = '', children }) 
       }
     };
     loadAccessSettings();
+
+    // Listen for settings updates
+    const handleAccessSettingsUpdate = () => {
+      loadAccessSettings();
+    };
+    
+    window.addEventListener('accessSettingsUpdated', handleAccessSettingsUpdate);
+
+    return () => {
+      window.removeEventListener('accessSettingsUpdated', handleAccessSettingsUpdate);
+    };
   }, []);
 
   const handleClick = () => {

@@ -53,6 +53,27 @@ export default function ClientHomePage() {
       }
     };
     loadAccessSettings();
+
+    // Listen for storage events (when admin changes settings)
+    const handleStorageChange = (e) => {
+      if (e.key === 'accessSettingsChanged') {
+        loadAccessSettings();
+      }
+    };
+
+    window.addEventListener('storage', handleStorageChange);
+    
+    // Also listen for custom events for same-window updates
+    const handleAccessSettingsUpdate = () => {
+      loadAccessSettings();
+    };
+    
+    window.addEventListener('accessSettingsUpdated', handleAccessSettingsUpdate);
+
+    return () => {
+      window.removeEventListener('storage', handleStorageChange);
+      window.removeEventListener('accessSettingsUpdated', handleAccessSettingsUpdate);
+    };
   }, []);
 
   // Handle tab parameter from URL

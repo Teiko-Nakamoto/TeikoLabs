@@ -70,6 +70,17 @@ const UnlockProgressBar = React.memo(function UnlockProgressBar({
       }
     };
     loadAccessSettings();
+
+    // Listen for settings updates
+    const handleAccessSettingsUpdate = () => {
+      loadAccessSettings();
+    };
+    
+    window.addEventListener('accessSettingsUpdated', handleAccessSettingsUpdate);
+
+    return () => {
+      window.removeEventListener('accessSettingsUpdated', handleAccessSettingsUpdate);
+    };
   }, []);
 
   // Fetch threshold from smart contract via API
