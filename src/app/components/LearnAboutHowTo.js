@@ -1,5 +1,5 @@
 'use client';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import Link from 'next/link';
 import './LearnAboutHowTo.css';
@@ -7,6 +7,44 @@ import './LearnAboutHowTo.css';
 const LearnAboutHowTo = ({ onClose }) => {
   const { t } = useTranslation();
   const [activeTab, setActiveTab] = useState('funding'); // 'funding' or 'profit'
+  const [showComingSoonPopup, setShowComingSoonPopup] = useState(false);
+  const [accessSettings, setAccessSettings] = useState({ createProject: true });
+
+  // Load access settings from server
+  useEffect(() => {
+    const loadAccessSettings = async () => {
+      try {
+        const response = await fetch('/api/access-settings');
+        const data = await response.json();
+        if (data.success) {
+          setAccessSettings(data.settings);
+        }
+      } catch (error) {
+        console.error('Failed to load access settings:', error);
+        // Keep default settings if API fails
+      }
+    };
+    loadAccessSettings();
+
+    // Listen for settings updates
+    const handleAccessSettingsUpdate = () => {
+      loadAccessSettings();
+    };
+    
+    window.addEventListener('accessSettingsUpdated', handleAccessSettingsUpdate);
+
+    return () => {
+      window.removeEventListener('accessSettingsUpdated', handleAccessSettingsUpdate);
+    };
+  }, []);
+
+  const handleCreateProjectClick = (e) => {
+    if (accessSettings.createProject) {
+      e.preventDefault();
+      setShowComingSoonPopup(true);
+    }
+    // If createProject is false, let the normal Link navigation happen
+  };
   
   return (
     <div className="learn-about-overlay" onClick={onClose}>
@@ -143,7 +181,7 @@ const LearnAboutHowTo = ({ onClose }) => {
           
           <div className="learn-more-section">
             {activeTab === 'funding' ? (
-              <Link href="/create-project" className="create-project-btn">
+              <Link href="/create-project" className="create-project-btn" onClick={handleCreateProjectClick}>
                 🚀 Create Project
               </Link>
             ) : (
@@ -160,6 +198,81 @@ const LearnAboutHowTo = ({ onClose }) => {
           </div>
         </div>
       </div>
+
+      {/* Coming Soon Popup */}
+      {showComingSoonPopup && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          backgroundColor: 'rgba(0, 0, 0, 0.8)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 1001
+        }}>
+          <div style={{
+            backgroundColor: '#1a1a2e',
+            border: '2px solid #fbbf24',
+            borderRadius: '16px',
+            padding: '40px',
+            maxWidth: '400px',
+            textAlign: 'center',
+            position: 'relative'
+          }}>
+            <div style={{
+              fontSize: '60px',
+              marginBottom: '20px'
+            }}>
+              🚧
+            </div>
+            <h2 style={{
+              color: '#fbbf24',
+              fontSize: '24px',
+              fontWeight: 'bold',
+              marginBottom: '16px',
+              fontFamily: 'Arial, sans-serif'
+            }}>
+              Coming Soon!
+            </h2>
+            <p style={{
+              color: '#ccc',
+              fontSize: '16px',
+              lineHeight: '1.5',
+              marginBottom: '24px',
+              fontFamily: 'Arial, sans-serif'
+            }}>
+              Project creation feature is currently under development. Stay tuned for updates!
+            </p>
+            <button
+              onClick={() => setShowComingSoonPopup(false)}
+              style={{
+                backgroundColor: '#fbbf24',
+                color: '#1a1a2e',
+                border: 'none',
+                borderRadius: '8px',
+                padding: '12px 24px',
+                fontSize: '16px',
+                fontWeight: 'bold',
+                cursor: 'pointer',
+                transition: 'all 0.2s ease'
+              }}
+              onMouseEnter={(e) => {
+                e.target.style.backgroundColor = '#f59e0b';
+                e.target.style.transform = 'translateY(-1px)';
+              }}
+              onMouseLeave={(e) => {
+                e.target.style.backgroundColor = '#fbbf24';
+                e.target.style.transform = 'translateY(0)';
+              }}
+            >
+              Got it!
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
