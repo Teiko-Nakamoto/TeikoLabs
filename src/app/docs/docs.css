@@ -1241,6 +1241,72 @@
   line-height: 1.5;
 }
 
+/* Create Project Page Styles */
+.fixed-price-display {
+  background: #f0f9ff;
+  border: 2px solid #3b82f6;
+  border-radius: 12px;
+  padding: 20px;
+  margin-bottom: 24px;
+  text-align: center;
+}
+
+.fixed-price-display h4 {
+  margin: 0 0 12px 0;
+  color: #1e40af;
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.price-formula {
+  font-family: 'SF Mono', Monaco, 'Cascadia Code', 'Roboto Mono', Consolas, 'Courier New', monospace;
+  font-size: 14px;
+  color: #1e40af;
+  margin-bottom: 8px;
+  padding: 8px;
+  background: rgba(59, 130, 246, 0.1);
+  border-radius: 6px;
+}
+
+.fixed-price-display small {
+  color: #6b7280;
+  font-size: 12px;
+  font-style: italic;
+}
+
+/* Testnet info section */
+.testnet-info {
+  background: #f0f9ff;
+  border: 2px solid #3b82f6;
+  border-radius: 12px;
+  padding: 24px;
+  margin-top: 16px;
+}
+
+.testnet-info h3 {
+  margin: 0 0 16px 0;
+  color: #1e40af;
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.testnet-info p {
+  margin-bottom: 16px;
+  color: #1e40af;
+  line-height: 1.6;
+}
+
+.testnet-info ul {
+  margin: 0;
+  padding-left: 20px;
+  color: #1e40af;
+}
+
+.testnet-info li {
+  margin-bottom: 8px;
+  line-height: 1.5;
+}
+
 /* Mobile responsiveness for Trading */
 @media (max-width: 768px) {
   .price-comparison {

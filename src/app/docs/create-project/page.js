@@ -9,62 +9,17 @@ export default function CreateProjectPage() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const pathname = usePathname();
 
-  // State for funding simulator
-  const [fundingInputs, setFundingInputs] = useState({
-    fundingGoal: 1000000,
-    startingPrice: 0.00010000,
-    virtualSbtc: 1500000
-  });
-
   // State for project details
   const [projectDetails, setProjectDetails] = useState({
     name: '',
     initials: ''
   });
 
-  // Calculate funding simulation results
-  const calculateFunding = () => {
-    const { fundingGoal, startingPrice, virtualSbtc } = fundingInputs;
-    
-    // Simplified AMM calculation for demonstration
-    const totalSupply = 21000000;
-    const unitsToSell = Math.min(fundingGoal / (startingPrice * 1000000), totalSupply * 0.8); // Max 80% of supply
-    const finalPrice = (fundingGoal + virtualSbtc) / (totalSupply - unitsToSell);
-    const remainingSupply = totalSupply - unitsToSell;
-    const ownerCost = unitsToSell * startingPrice;
-    
-    return {
-      unitsToSell: Math.round(unitsToSell),
-      finalPrice: finalPrice,
-      remainingSupply: Math.round(remainingSupply),
-      ownerCost: Math.round(ownerCost)
-    };
-  };
-
-  const results = calculateFunding();
-
-  // Handle input changes
-  const handleFundingInputChange = (field, value) => {
-    setFundingInputs(prev => ({
-      ...prev,
-      [field]: Number(value)
-    }));
-  };
-
   const handleProjectInputChange = (field, value) => {
     setProjectDetails(prev => ({
       ...prev,
       [field]: value
     }));
-  };
-
-  // Format numbers
-  const formatNumber = (num) => {
-    return new Intl.NumberFormat('en-US').format(num);
-  };
-
-  const formatPrice = (price) => {
-    return price.toFixed(8);
   };
 
   // Navigation structure with subsections
@@ -225,78 +180,24 @@ export default function CreateProjectPage() {
             <section id="funding-calculator" className="docs-section">
               <h2>Step 2: Funding Requirements Calculator</h2>
               <p>
-                Use our AMM formula simulator to determine how many ownership units you need to sell 
-                at what prices to reach your funding goal. All 21 million units are available for sale, 
-                but <strong>you as the project owner must buy them first before selling to raise funds</strong>.
+                To determine how many ownership units you need to sell at what prices to reach your 
+                funding goal, you can launch a project on <strong>Testnet first</strong>. This allows 
+                you to experiment with different funding amounts and see the exact pricing calculations 
+                using our AMM formula.
               </p>
               
-              <div className="funding-simulator">
-                <h3>AMM Funding Simulator</h3>
-                <div className="simulator-inputs-grid">
-                  <div className="input-group">
-                    <label>Funding Goal (sBTC sats)</label>
-                    <input
-                      type="number"
-                      value={fundingInputs.fundingGoal}
-                      onChange={(e) => handleFundingInputChange('fundingGoal', e.target.value)}
-                      className="simulator-input"
-                    />
-                    <small>Target amount to raise for your project</small>
-                  </div>
-                  
-                  <div className="input-group">
-                    <label>Starting Price (sats/token)</label>
-                    <input
-                      type="number"
-                      step="0.00000001"
-                      value={fundingInputs.startingPrice}
-                      onChange={(e) => handleFundingInputChange('startingPrice', e.target.value)}
-                      className="simulator-input"
-                    />
-                    <small>Initial price per ownership unit</small>
-                  </div>
-                  
-                  <div className="input-group">
-                    <label>Virtual sBTC (sats)</label>
-                    <input
-                      type="number"
-                      value={fundingInputs.virtualSbtc}
-                      onChange={(e) => handleFundingInputChange('virtualSbtc', e.target.value)}
-                      className="simulator-input"
-                    />
-                    <small>Virtual liquidity for price stability</small>
-                  </div>
-                </div>
-                
-                <div className="calculation-result">
-                  <div className="result-header">
-                    <h4>📊 Funding Simulation Results</h4>
-                  </div>
-                  <div className="result-grid">
-                    <div className="result-item">
-                      <div className="result-label">Units to Sell</div>
-                      <div className="result-value">{formatNumber(results.unitsToSell)} units</div>
-                    </div>
-                    <div className="result-item">
-                      <div className="result-label">Final Price</div>
-                      <div className="result-value">{formatPrice(results.finalPrice)} sats/token</div>
-                    </div>
-                    <div className="result-item">
-                      <div className="result-label">Remaining Supply</div>
-                      <div className="result-value">{formatNumber(results.remainingSupply)} units</div>
-                    </div>
-                    <div className="result-item">
-                      <div className="result-label">Project Owner Cost</div>
-                      <div className="result-value">{formatNumber(results.ownerCost)} sats</div>
-                    </div>
-                  </div>
-                  
-                  <div className="important-note">
-                    <strong>💡 Important:</strong> As the project owner, you must buy the ownership units 
-                    first before selling them to raise funds. This ensures you have skin in the game and 
-                    demonstrates commitment to your project.
-                  </div>
-                </div>
+              <div className="testnet-info">
+                <h3>💡 Use Testnet to Calculate Funding</h3>
+                <p>
+                  All 21 million units are available for sale, but you as the project owner must 
+                  buy them first before selling to raise funds. Launch on Testnet to:
+                </p>
+                <ul>
+                  <li>See exactly how much each token will cost</li>
+                  <li>Calculate total investment needed</li>
+                  <li>Test different funding goals</li>
+                  <li>Understand price impacts before going live</li>
+                </ul>
               </div>
             </section>
 
@@ -348,6 +249,24 @@ export default function CreateProjectPage() {
                       Contract: Will be generated after deployment
                     </div>
                   </div>
+                </div>
+
+                <div className="contract-preview">
+                  <h4>📄 Contract Address Preview</h4>
+                  <div className="contract-card">
+                    <div className="contract-item">
+                      <span className="contract-label">Principal for Contract:</span>
+                      <div className="contract-address-display">
+                        <code className="contract-address">ST2CY5V39NHDPWSXMW9QDT3HC3GD6Q6XX4CFRK9AG.my-awesome-project-token</code>
+                        <small className="contract-note">Will be generated after deployment</small>
+                      </div>
+                    </div>
+                  </div>
+                  <p className="contract-explanation">
+                    ℹ️ This is an example of what your contract address will look like. The actual address 
+                    will be generated when you deploy your project to the blockchain and can be verified 
+                    on the Stacks Explorer.
+                  </p>
                 </div>
               </div>
             </section>
