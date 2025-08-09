@@ -18,7 +18,19 @@ export default function ClaimProfitPage() {
         { title: 'How It Works', id: 'how-it-works', href: '/docs/how-it-works' },
         { title: 'Create Project', id: 'create-project', href: '/docs/create-project' },
         { title: 'Trading', id: 'trading', href: '/docs/trading' },
-        { title: 'Claim Profit', id: 'claim-profit', href: '/docs/claim-profit' },
+        { 
+          title: 'Claim Profit', 
+          id: 'claim-profit', 
+          href: '/docs/claim-profit',
+          subItems: pathname === '/docs/claim-profit' ? [
+            { title: 'Profit Overview', id: 'overview', href: '#overview' },
+            { title: 'Majority Holder System', id: 'majority-holder', href: '#majority-holder' },
+            { title: 'Locking Tokens', id: 'locking-tokens', href: '#locking-tokens' },
+            { title: 'Unlocking Tokens', id: 'unlocking-tokens', href: '#unlocking-tokens' },
+            { title: 'Profit Mechanics', id: 'profit-mechanics', href: '#profit-mechanics' },
+            { title: 'Strategies', id: 'strategies', href: '#strategies' }
+          ] : undefined
+        },
         { title: 'Fees', id: 'fees', href: '/docs/fees' },
       ]
     }
@@ -68,6 +80,20 @@ export default function ClaimProfitPage() {
                     >
                       {item.title}
                     </Link>
+                    {item.subItems && (
+                      <ul className="docs-nav-sublist">
+                        {item.subItems.map((subItem, subIndex) => (
+                          <li key={subIndex} className="docs-nav-subitem">
+                            <a 
+                              href={subItem.href}
+                              className="docs-nav-sublink"
+                            >
+                              {subItem.title}
+                            </a>
+                          </li>
+                        ))}
+                      </ul>
+                    )}
                   </li>
                 ))}
               </ul>

@@ -9,6 +9,64 @@ export default function CreateProjectPage() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const pathname = usePathname();
 
+  // State for funding simulator
+  const [fundingInputs, setFundingInputs] = useState({
+    fundingGoal: 1000000,
+    startingPrice: 0.00010000,
+    virtualSbtc: 1500000
+  });
+
+  // State for project details
+  const [projectDetails, setProjectDetails] = useState({
+    name: '',
+    initials: ''
+  });
+
+  // Calculate funding simulation results
+  const calculateFunding = () => {
+    const { fundingGoal, startingPrice, virtualSbtc } = fundingInputs;
+    
+    // Simplified AMM calculation for demonstration
+    const totalSupply = 21000000;
+    const unitsToSell = Math.min(fundingGoal / (startingPrice * 1000000), totalSupply * 0.8); // Max 80% of supply
+    const finalPrice = (fundingGoal + virtualSbtc) / (totalSupply - unitsToSell);
+    const remainingSupply = totalSupply - unitsToSell;
+    const ownerCost = unitsToSell * startingPrice;
+    
+    return {
+      unitsToSell: Math.round(unitsToSell),
+      finalPrice: finalPrice,
+      remainingSupply: Math.round(remainingSupply),
+      ownerCost: Math.round(ownerCost)
+    };
+  };
+
+  const results = calculateFunding();
+
+  // Handle input changes
+  const handleFundingInputChange = (field, value) => {
+    setFundingInputs(prev => ({
+      ...prev,
+      [field]: Number(value)
+    }));
+  };
+
+  const handleProjectInputChange = (field, value) => {
+    setProjectDetails(prev => ({
+      ...prev,
+      [field]: value
+    }));
+  };
+
+  // Format numbers
+  const formatNumber = (num) => {
+    return new Intl.NumberFormat('en-US').format(num);
+  };
+
+  const formatPrice = (price) => {
+    return price.toFixed(8);
+  };
+
   // Simplified navigation structure
   const navigation = [
     {
@@ -16,7 +74,18 @@ export default function CreateProjectPage() {
       items: [
         { title: 'Overview', id: 'overview', href: '/docs' },
         { title: 'How It Works', id: 'how-it-works', href: '/docs/how-it-works' },
-        { title: 'Create Project', id: 'create-project', href: '/docs/create-project' },
+        { 
+          title: 'Create Project', 
+          id: 'create-project', 
+          href: '/docs/create-project',
+          subItems: pathname === '/docs/create-project' ? [
+            { title: 'Project Overview', id: 'overview', href: '#overview' },
+            { title: 'Network Selection', id: 'network-selection', href: '#network-selection' },
+            { title: 'Funding Calculator', id: 'funding-calculator', href: '#funding-calculator' },
+            { title: 'Project Details', id: 'project-details', href: '#project-details' },
+            { title: 'Deployment Process', id: 'deployment-process', href: '#deployment-process' }
+          ] : undefined
+        },
         { title: 'Trading', id: 'trading', href: '/docs/trading' },
         { title: 'Claim Profit', id: 'claim-profit', href: '/docs/claim-profit' },
         { title: 'Fees', id: 'fees', href: '/docs/fees' },
@@ -68,6 +137,20 @@ export default function CreateProjectPage() {
                     >
                       {item.title}
                     </Link>
+                    {item.subItems && (
+                      <ul className="docs-nav-sublist">
+                        {item.subItems.map((subItem, subIndex) => (
+                          <li key={subIndex} className="docs-nav-subitem">
+                            <a 
+                              href={subItem.href}
+                              className="docs-nav-sublink"
+                            >
+                              {subItem.title}
+                            </a>
+                          </li>
+                        ))}
+                      </ul>
+                    )}
                   </li>
                 ))}
               </ul>
