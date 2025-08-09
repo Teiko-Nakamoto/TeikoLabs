@@ -177,55 +177,7 @@ export default function CreateProjectPage() {
                 sold for funding, with prices determined by our AMM (Automated Market Maker) formula.
               </p>
               
-              <div className="creation-process">
-                <div className="process-step">
-                  <div className="step-number">1</div>
-                  <div className="step-content">
-                    <h3>Choose Network</h3>
-                    <p>Select between Testnet (for testing) or Mainnet (for live deployment)</p>
-                  </div>
-                </div>
-                
-                <div className="process-step">
-                  <div className="step-number">2</div>
-                  <div className="step-content">
-                    <h3>Calculate Funding Requirements</h3>
-                    <p>Simulate how many ownership units to sell at what price to reach your funding goal</p>
-                  </div>
-                </div>
-                
-                <div className="process-step">
-                  <div className="step-number">3</div>
-                  <div className="step-content">
-                    <h3>Project Details</h3>
-                    <p>Input your project name and initials for blockchain deployment</p>
-                  </div>
-                </div>
-                
-                <div className="process-step">
-                  <div className="step-number">4</div>
-                  <div className="step-content">
-                    <h3>Launch Project Contract</h3>
-                    <p>Deploy your project permanently on the blockchain</p>
-                  </div>
-                </div>
-                
-                <div className="process-step">
-                  <div className="step-number">5</div>
-                  <div className="step-content">
-                    <h3>Deploy Treasury Contract</h3>
-                    <p>Enable users to buy and sell ownership units with formula-based pricing</p>
-                  </div>
-                </div>
-                
-                <div className="process-step">
-                  <div className="step-number">6</div>
-                  <div className="step-content">
-                    <h3>Mint to DEX</h3>
-                    <p>Mint the full supply of tokens to the decentralized exchange</p>
-                  </div>
-                </div>
-              </div>
+
             </section>
 
             <section id="network-selection" className="docs-section">
