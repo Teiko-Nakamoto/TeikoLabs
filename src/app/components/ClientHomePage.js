@@ -38,12 +38,21 @@ export default function ClientHomePage() {
     claimRevenue: true
   });
 
-  // Load access settings from localStorage
+  // Load access settings from server
   useEffect(() => {
-    const savedSettings = localStorage.getItem('accessSettings');
-    if (savedSettings) {
-      setAccessSettings(JSON.parse(savedSettings));
-    }
+    const loadAccessSettings = async () => {
+      try {
+        const response = await fetch('/api/access-settings');
+        const data = await response.json();
+        if (data.success) {
+          setAccessSettings(data.settings);
+        }
+      } catch (error) {
+        console.error('Failed to load access settings:', error);
+        // Keep default settings if API fails
+      }
+    };
+    loadAccessSettings();
   }, []);
 
   // Handle tab parameter from URL

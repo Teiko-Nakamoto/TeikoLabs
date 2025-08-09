@@ -24,18 +24,43 @@ export default function AdminDashboard() {
   // Admin wallet addresses (comma-separated)
   const ADMIN_ADDRESSES = process.env.NEXT_PUBLIC_ADMIN_ADDRESSES?.split(',') || ['ST37918Q7NBZ52AMV133VTY5C864KVK0S2HZ3CGA4'];
   
-  // Load access settings from localStorage
+  // Load access settings from server
   useEffect(() => {
-    const savedSettings = localStorage.getItem('accessSettings');
-    if (savedSettings) {
-      setAccessSettings(JSON.parse(savedSettings));
-    }
+    const loadAccessSettings = async () => {
+      try {
+        const response = await fetch('/api/access-settings');
+        const data = await response.json();
+        if (data.success) {
+          setAccessSettings(data.settings);
+        }
+      } catch (error) {
+        console.error('Failed to load access settings:', error);
+      }
+    };
+    loadAccessSettings();
   }, []);
 
-  // Save access settings to localStorage
-  const saveAccessSettings = (newSettings) => {
-    setAccessSettings(newSettings);
-    localStorage.setItem('accessSettings', JSON.stringify(newSettings));
+  // Save access settings to server
+  const saveAccessSettings = async (newSettings) => {
+    try {
+      const response = await fetch('/api/access-settings', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ settings: newSettings }),
+      });
+      
+      const data = await response.json();
+      if (data.success) {
+        setAccessSettings(newSettings);
+        console.log('Access settings saved successfully');
+      } else {
+        console.error('Failed to save access settings:', data.error);
+      }
+    } catch (error) {
+      console.error('Error saving access settings:', error);
+    }
   };
 
   useEffect(() => {
