@@ -1,5 +1,10 @@
 import { NextResponse } from 'next/server';
-import { supabaseServer } from '../../../utils/supabaseServer';
+import { createClient } from '@supabase/supabase-js';
+
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL,
+  process.env.SUPABASE_SERVICE_ROLE_KEY
+);
 
 export async function POST(request) {
   try {
@@ -25,7 +30,7 @@ export async function POST(request) {
     });
 
     // Update the token record with DEX transaction hash
-    const { data: updatedToken, error: updateError } = await supabaseServer
+    const { data: updatedToken, error: updateError } = await supabase
       .from('user_tokens')
       .update({
         dex_deployment_tx_hash: dexDeploymentTxHash,

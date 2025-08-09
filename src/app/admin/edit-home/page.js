@@ -24,15 +24,15 @@ export default function EditHomePage() {
 
   // Store original data for cancel functionality
   const [originalTokenCards, setOriginalTokenCards] = useState([]);
-  const [defaultTab, setDefaultTab] = useState('featured');
-  const [originalDefaultTab, setOriginalDefaultTab] = useState('featured');
+  const [defaultTab, setDefaultTab] = useState('all'); // Changed from 'featured' to 'all'
+  const [originalDefaultTab, setOriginalDefaultTab] = useState('all'); // Changed from 'featured' to 'all'
   const [filterView, setFilterView] = useState('all'); // For filtering: 'all', 'featured', 'practice'
   
   // Track which rows are being checked
   const [checkingRows, setCheckingRows] = useState(new Set());
   
   // Preview tab state
-  const [previewActiveTab, setPreviewActiveTab] = useState('featured');
+  const [previewActiveTab, setPreviewActiveTab] = useState('all'); // Changed from 'featured' to 'all'
   
   // Admin wallet addresses (comma-separated)
   const ADMIN_ADDRESSES = process.env.NEXT_PUBLIC_ADMIN_ADDRESSES?.split(',') || ['ST37918Q7NBZ52AMV133VTY5C864KVK0S2HZ3CGA4'];
@@ -362,9 +362,9 @@ export default function EditHomePage() {
           }
           return c;
         }));
-        alert(`✅ Contract validation successful!\nSymbol: ${symbol.toUpperCase()}\nRevenue: ${revenue} sats\nLiquidity: ${liquidity} sats\n\nData has been updated in the table. Click "Save Changes" to persist to database.`);
+        alert(`✅ Contract validation successful!\nSymbol: ${symbol.toUpperCase()}\nProfit Created: ${revenue} sats\nTotal Value Locked: ${liquidity} sats\n\nData has been updated in the table. Click "Save Changes" to persist to database.`);
       } else {
-        alert(`❌ Contract validation failed.\nSymbol: ${symbol || 'Not found'}\nRevenue: ${revenue} sats\nLiquidity: ${liquidity} sats\n\nPlease check your contract addresses and ensure they have valid data.\n\nCheck the browser console for detailed error information.`);
+        alert(`❌ Contract validation failed.\nSymbol: ${symbol || 'Not found'}\nProfit Created: ${revenue} sats\nTotal Value Locked: ${liquidity} sats\n\nPlease check your contract addresses and ensure they have valid data.\n\nCheck the browser console for detailed error information.`);
       }
     } catch (error) {
       console.error('❌ Error checking contracts:', error);
@@ -487,6 +487,18 @@ export default function EditHomePage() {
                   <input
                     type="radio"
                     name="defaultTab"
+                    value="all"
+                    checked={defaultTab === 'all'}
+                    onChange={(e) => setDefaultTab(e.target.value)}
+                  />
+                  <span className="radio-label">
+                    <strong>All Projects</strong> - Show all tokens with search and filter options
+                  </span>
+                </label>
+                <label className="default-tab-option">
+                  <input
+                    type="radio"
+                    name="defaultTab"
                     value="featured"
                     checked={defaultTab === 'featured'}
                     onChange={(e) => setDefaultTab(e.target.value)}
@@ -532,6 +544,18 @@ export default function EditHomePage() {
                 Practice (Testnet) ({tokenCards.filter(card => card.tabType === 'practice').length})
               </button>
               <button 
+                onClick={() => setFilterView('user_created_mainnet')} 
+                className={`filter-button ${filterView === 'user_created_mainnet' ? 'active' : ''}`}
+              >
+                Mainnet All Projects ({tokenCards.filter(card => card.tabType === 'user_created_mainnet').length})
+              </button>
+              <button 
+                onClick={() => setFilterView('user_created_testnet')} 
+                className={`filter-button ${filterView === 'user_created_testnet' ? 'active' : ''}`}
+              >
+                Testnet All Projects ({tokenCards.filter(card => card.tabType === 'user_created_testnet').length})
+              </button>
+              <button 
                 onClick={() => setFilterView('hidden')} 
                 className={`filter-button ${filterView === 'hidden' ? 'active' : ''}`}
               >
@@ -558,8 +582,8 @@ export default function EditHomePage() {
                     <th>DEX Contract</th>
                     <th>Token Contract</th>
                     <th>Token Symbol</th>
-                    <th>Revenue Locked</th>
-                    <th>Liquidity Held</th>
+                    <th>Profit Created</th>
+                    <th>Total Value Locked</th>
                     <th>Actions</th>
                   </tr>
                 </thead>
@@ -574,9 +598,13 @@ export default function EditHomePage() {
                     <tr key={card.id} className="token-row">
                       <td className="token-id">{card.id}</td>
                       <td className="token-status">
-                        <span className={`status-badge ${card.isComingSoon ? 'coming-soon' : 'active'}`}>
+                        <button 
+                          className={`status-toggle ${card.isComingSoon ? 'coming-soon' : 'active'}`}
+                          onClick={() => updateTokenCard(card.id, 'isComingSoon', !card.isComingSoon)}
+                          title={`Click to change to ${card.isComingSoon ? 'Active' : 'Coming Soon'}`}
+                        >
                           {card.isComingSoon ? '🚧 Coming Soon' : '✅ Active'}
-                        </span>
+                        </button>
                       </td>
                       <td className="token-hidden">
                         <label className="hidden-toggle">
@@ -599,6 +627,8 @@ export default function EditHomePage() {
                         >
                           <option value="featured">🏠 Featured (Mainnet)</option>
                           <option value="practice">💼 Practice (Testnet)</option>
+                          <option value="user_created_mainnet">🌐 Mainnet All Projects</option>
+                          <option value="user_created_testnet">🌐 Testnet All Projects</option>
                         </select>
                       </td>
                       <td className="token-dex">
@@ -699,6 +729,12 @@ export default function EditHomePage() {
             <div className="top-controls">
               <div className="tab-toggle">
                 <button 
+                  className={previewActiveTab === 'all' ? 'active' : ''} 
+                  onClick={() => setPreviewActiveTab('all')}
+                >
+                  🔍 All Projects
+                </button>
+                <button 
                   className={previewActiveTab === 'featured' ? 'active' : ''} 
                   onClick={() => setPreviewActiveTab('featured')}
                 >
@@ -710,59 +746,94 @@ export default function EditHomePage() {
                 >
                   Practice Trading
                 </button>
+
               </div>
             </div>
 
             <div className="token-grid">
-              {tokenCards.filter(card => card.tabType === previewActiveTab && !card.isHidden).map((card) => {
-                if (card.isComingSoon) {
+              {(() => {
+                let displayCards = [];
+                if (previewActiveTab === 'all') {
+                  // Show only user-created projects for All Projects tab (matching home page logic)
+                  displayCards = tokenCards.filter(card => 
+                    !card.isHidden && 
+                    (card.tabType === 'user_created_mainnet' || card.tabType === 'user_created_testnet')
+                  );
+                } else {
+                  // Show tokens for specific tab
+                  displayCards = tokenCards.filter(card => card.tabType === previewActiveTab && !card.isHidden);
+                }
+                
+                return displayCards.map((card) => {
+                  if (card.isComingSoon) {
+                    return (
+                      <div key={`coming-soon-${card.id}`} className="token-card coming-soon">
+                        <div className="token-card-box">
+                          <span className="token-symbol">🚧 {t('coming_soon')}</span>
+                        </div>
+                      </div>
+                    );
+                  }
+
                   return (
-                    <div key={`coming-soon-${card.id}`} className="token-card coming-soon">
-                      <div className="token-card-box">
-                        <span className="token-symbol">🚧 {t('coming_soon')}</span>
+                    <div key={`token-${card.id}`} className="token-card-wrapper">
+                      <div className="token-card">
+                        <div className="token-card-box">
+                          <span className="token-symbol">
+                            <span className="btc-symbol">₿</span> {card.symbol || tokenSymbol}
+                          </span>
+                        </div>
+
+                        <div className="token-card-meta">
+                          <p>
+                            <span className="label">{t('revenue_locked')}:</span>{' '}
+                            <span className="value sats">
+                              <img src="/icons/sats1.svg" alt="sats" style={{ width: '16px', height: '16px', verticalAlign: 'middle', marginRight: '2px' }} />
+                              <img src="/icons/Vector.svg" alt="lightning" style={{ width: '16px', height: '16px', verticalAlign: 'middle', marginRight: '4px' }} />
+                              {card.revenue ? `${card.revenue} sats` : 'Real-time data'}
+                            </span>
+                          </p>
+                          <p>
+                            <span className="label">{t('liquidity_held')}:</span>{' '}
+                            <span className="value sats">
+                              <img src="/icons/sats1.svg" alt="sats" style={{ width: '16px', height: '16px', verticalAlign: 'middle', marginRight: '2px' }} />
+                              <img src="/icons/Vector.svg" alt="lightning" style={{ width: '16px', height: '16px', verticalAlign: 'middle', marginRight: '4px' }} />
+                              {card.liquidity ? `${card.liquidity} sats` : 'Real-time data'}
+                            </span>
+                          </p>
+                        </div>
                       </div>
                     </div>
                   );
-                }
-
-                return (
-                  <div key={`token-${card.id}`} className="token-card-wrapper">
-                    <div className="token-card">
-                      <div className="token-card-box">
-                        <span className="token-symbol">
-                          <span className="btc-symbol">₿</span> {card.symbol || tokenSymbol}
-                        </span>
-                      </div>
-
-                      <div className="token-card-meta">
-                        <p>
-                          <span className="label">{t('revenue_locked')}:</span>{' '}
-                          <span className="value sats">
-                            <img src="/icons/sats1.svg" alt="sats" style={{ width: '16px', height: '16px', verticalAlign: 'middle', marginRight: '2px' }} />
-                            <img src="/icons/Vector.svg" alt="lightning" style={{ width: '16px', height: '16px', verticalAlign: 'middle', marginRight: '4px' }} />
-                            {card.revenue ? `${card.revenue} sats` : 'Real-time data'}
-                          </span>
-                        </p>
-                        <p>
-                          <span className="label">{t('liquidity_held')}:</span>{' '}
-                          <span className="value sats">
-                            <img src="/icons/sats1.svg" alt="sats" style={{ width: '16px', height: '16px', verticalAlign: 'middle', marginRight: '2px' }} />
-                            <img src="/icons/Vector.svg" alt="lightning" style={{ width: '16px', height: '16px', verticalAlign: 'middle', marginRight: '4px' }} />
-                            {card.liquidity ? `${card.liquidity} sats` : 'Real-time data'}
-                          </span>
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                );
-              })}
+                });
+              })()}
               
-              {tokenCards.filter(card => card.tabType === previewActiveTab && !card.isHidden).length === 0 && (
-                <div className="empty-preview">
-                  {/* eslint-disable-next-line react/no-unescaped-entities */}
-                  <p>No visible tokens assigned to {previewActiveTab === 'featured' ? 'Featured' : 'Practice Trading'} tab</p>
-                </div>
-              )}
+              {(() => {
+                let displayCards = [];
+                if (previewActiveTab === 'all') {
+                  // For "All Projects" tab, only show user-created projects (matching home page logic)
+                  displayCards = tokenCards.filter(card => 
+                    !card.isHidden && 
+                    (card.tabType === 'user_created_mainnet' || card.tabType === 'user_created_testnet')
+                  );
+                } else {
+                  displayCards = tokenCards.filter(card => card.tabType === previewActiveTab && !card.isHidden);
+                }
+                
+                if (displayCards.length === 0) {
+                  return (
+                    <div className="empty-preview">
+                      <p>
+                        {previewActiveTab === 'all' 
+                          ? 'No user-created projects found. User projects will appear here after minting is completed.'
+                          : `No visible tokens assigned to ${previewActiveTab === 'featured' ? 'Featured' : 'Practice Trading'} tab`
+                        }
+                      </p>
+                    </div>
+                  );
+                }
+                return null;
+              })()}
             </div>
           </div>
         </div>

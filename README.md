@@ -34,14 +34,14 @@ A comprehensive Next.js application for creating and managing tokens on the Stac
 ## 📦 Installation
 
 1. **Clone the repository**
-   ```bash
-   git clone https://github.com/Teiko-Nakamoto/create-token-js.git
-   cd create-token-js
+```bash
+git clone https://github.com/Teiko-Nakamoto/create-token-js.git
+cd create-token-js
    ```
 
 2. **Install dependencies**
    ```bash
-   npm install
+npm install
    ```
 
 3. **Environment Setup**
@@ -67,7 +67,7 @@ A comprehensive Next.js application for creating and managing tokens on the Stac
 
 5. **Start Development Server**
    ```bash
-   npm run dev
+npm run dev
    ```
 
 ## 🎯 Usage

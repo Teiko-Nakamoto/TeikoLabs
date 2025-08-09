@@ -25,7 +25,7 @@ export default function TokenStats({ revenue, liquidity, remainingSupply }) {
       </h2>
       
       <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-        {/* Revenue Locked */}
+        {/* Profit Created */}
         <div style={{ 
           padding: '12px',
           background: 'rgba(255, 255, 255, 0.1)',
@@ -50,7 +50,7 @@ export default function TokenStats({ revenue, liquidity, remainingSupply }) {
           </div>
         </div>
         
-        {/* Liquidity Held */}
+        {/* Total Value Locked */}
         <div style={{ 
           padding: '12px',
           background: 'rgba(255, 255, 255, 0.1)',

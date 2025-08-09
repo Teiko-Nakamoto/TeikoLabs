@@ -57,7 +57,7 @@ export async function GET(request) {
     }
 
     console.log('✅ Majority holder data fetched successfully');
-
+    
     return NextResponse.json({
       success: true,
       token: {

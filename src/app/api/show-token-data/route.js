@@ -66,3 +66,34 @@ export async function GET(request) {
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 } 
+    // Get trades data
+    const { data: trades, error: tradesError } = await supabaseServer
+      .from('trades')
+      .select('*')
+      .eq('token_symbol', tokenSymbol)
+      .order('created_at', { ascending: false })
+      .limit(50);
+
+    if (tradesError) {
+      console.error('❌ Error fetching trades:', tradesError);
+    }
+
+    console.log('✅ Token data fetched successfully');
+
+    return NextResponse.json({
+      success: true,
+      tokenCard: tokenCard,
+      userTokens: userTokens || [],
+      trades: trades || [],
+      summary: {
+        tokenCardExists: !!tokenCard,
+        userTokensCount: userTokens ? userTokens.length : 0,
+        tradesCount: trades ? trades.length : 0
+      }
+    });
+
+  } catch (error) {
+    console.error('❌ Error fetching token data:', error);
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+  }
+} 

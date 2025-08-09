@@ -389,7 +389,7 @@ export default function RevenuePage() {
       console.log('View transaction:', `https://explorer.hiro.so/txid/${formattedTxId}?chain=testnet`);
 
       // Show success toast
-      alert(`✅ Revenue claim submitted! Transaction ID: ${formattedTxId}`);
+      alert(`✅ Profit claim submitted! Transaction ID: ${formattedTxId}`);
       
       // Store transaction ID and claim amount for step 4
       localStorage.setItem('lastClaimTxId', formattedTxId);
@@ -701,7 +701,7 @@ export default function RevenuePage() {
                       ← Back to Step 1
                     </button>
                     <button onClick={nextStep} className="next-button" disabled={!revenueData.isUserMajorityHolder}>
-                      {revenueData.isUserMajorityHolder ? 'Continue to Claim Revenue' : 'Continue to Claim (Requires Majority Status)'}
+                      {revenueData.isUserMajorityHolder ? 'Continue to Claim Profit' : 'Continue to Claim (Requires Majority Status)'}
                     </button>
                   </div>
                 </div>

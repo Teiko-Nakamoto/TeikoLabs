@@ -46,6 +46,8 @@ export default function CreateTokenPage() {
   const [mintSupplyToDexDetails, setMintSupplyToDexDetails] = useState(null);
   const [dexTokenBalance, setDexTokenBalance] = useState(null);
   const [isCheckingDexBalance, setIsCheckingDexBalance] = useState(false);
+  const [mintingStatusUpdated, setMintingStatusUpdated] = useState(false);
+  const [isUpdatingMintingStatus, setIsUpdatingMintingStatus] = useState(false);
   
   // Admin wallet address
   const ADMIN_ADDRESS = 'ST37918Q7NBZ52AMV133VTY5C864KVK0S2HZ3CGA4';
@@ -277,6 +279,21 @@ export default function CreateTokenPage() {
       return;
     }
 
+    // For testnet, validate the TP prefix format
+    if (selectedNetwork === 'testnet') {
+      if (!validateTestnetInitials(symbol)) {
+        setIsSymbolAvailable(false);
+        setSymbolCheckMessage(`⚠️ Testnet projects must start with "TP" followed by 2-4 characters (e.g., TPBTC, TPETH)`);
+        return;
+      }
+      
+      // For testnet, allow reuse of project initials
+      setIsSymbolAvailable(true);
+      setSymbolCheckMessage(`✅ "${symbol}" is valid for testnet (reusable)`);
+      return;
+    }
+
+    // For mainnet, check uniqueness as before
     setIsCheckingSymbol(true);
     try {
       console.log(`🔍 Checking symbol uniqueness for "${symbol}" on ${selectedNetwork}`);
@@ -1440,6 +1457,18 @@ export default function CreateTokenPage() {
       if (balance > 0) {
         setMintSupplyToDexSuccess(true);
         setMintSupplyToDexStatus('✅ Supply already minted to DEX!');
+        
+        // Update minting status in database since supply is confirmed
+        setIsUpdatingMintingStatus(true);
+        try {
+          await updateMintingStatus(transactionDetails.contractAddress);
+          setMintingStatusUpdated(true);
+          console.log('✅ Minting status updated in database (supply already minted)');
+        } catch (error) {
+          console.error('❌ Failed to update minting status:', error);
+        } finally {
+          setIsUpdatingMintingStatus(false);
+        }
       }
     } catch (error) {
       console.error('❌ Error checking DEX balance:', error);
@@ -1502,6 +1531,18 @@ export default function CreateTokenPage() {
 
       setMintSupplyToDexSuccess(true);
       setMintSupplyToDexStatus('✅ Supply successfully minted to DEX!');
+
+      // Update minting status in database
+      setIsUpdatingMintingStatus(true);
+      try {
+        await updateMintingStatus(transactionDetails.contractAddress);
+        setMintingStatusUpdated(true);
+        console.log('✅ Minting status updated in database');
+      } catch (error) {
+        console.error('❌ Failed to update minting status:', error);
+      } finally {
+        setIsUpdatingMintingStatus(false);
+      }
 
     } catch (error) {
       console.error('❌ Mint supply to DEX error:', error);
@@ -1635,6 +1676,48 @@ export default function CreateTokenPage() {
       console.log('⚠️ Continuing without database save...');
       // Don't throw error - just log it so deployment can continue
     }
+  };
+
+  // Function to update minting completion status in database
+  const updateMintingStatus = async (tokenContractAddress) => {
+    try {
+      console.log('💾 Updating minting completion status...');
+      console.log('📋 Minting data:', {
+        tokenContractAddress
+      });
+
+      const response = await fetch('/api/user-tokens/update-minting-status', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          tokenContractAddress,
+          mintingCompleted: true
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        console.error('❌ Minting status update failed:', errorData);
+        throw new Error(errorData.error || 'Failed to update minting status');
+      }
+
+      const result = await response.json();
+      console.log('✅ Minting status updated successfully:', result);
+      return result;
+    } catch (error) {
+      console.error('❌ Minting status update error:', error);
+      console.log('⚠️ Continuing without minting status update...');
+      return null;
+    }
+  };
+
+  // Function to handle project completion
+  const handleProjectCompletion = () => {
+    console.log('🎉 Project completed! Redirecting to home page...');
+    // Simple redirect to home page with all projects tab
+    window.location.href = '/?tab=all';
   };
 
 
@@ -1962,18 +2045,22 @@ export default function CreateTokenPage() {
                   <input
                     type="text"
                     id="tokenSymbol"
-                          placeholder={isCheckingDeployedTokens ? "Checking for existing projects..." : hasDeployedToken ? "You already have a deployed project" : "Enter project initials"}
+                          placeholder={isCheckingDeployedTokens ? "Checking for existing projects..." : hasDeployedToken ? "You already have a deployed project" : selectedNetwork === 'testnet' ? "Enter 2-4 characters (e.g., BTC, ETH)" : "Enter project initials"}
                           className="modern-input"
                           maxLength="6"
                     value={tokenSymbol}
                           disabled={isCheckingDeployedTokens || hasDeployedToken}
                           onChange={(e) => {
-                            const value = e.target.value.replace(/[^A-Za-z0-9]/g, '').toUpperCase();
-                            setTokenSymbol(value);
-                            checkSymbolUniqueness(value);
+                            const formattedValue = formatTestnetInitials(e.target.value);
+                            setTokenSymbol(formattedValue);
+                            checkSymbolUniqueness(formattedValue);
                           }}
                   />
-                        <span className="input-hint">1-6 characters, letters & numbers only</span>
+                        <span className="input-hint">
+                          {selectedNetwork === 'testnet' 
+                            ? "2-4 characters, will be prefixed with 'TP' (e.g., BTC → TPBTC)" 
+                            : "1-6 characters, letters & numbers only"}
+                        </span>
                         {isCheckingSymbol && (
                           <div className="symbol-check-status checking">
                             🔍 Checking availability...
@@ -2475,8 +2562,22 @@ export default function CreateTokenPage() {
                           <li>✅ Token deployed and ready</li>
                           <li>✅ DEX treasury deployed</li>
                           <li>✅ Token supply minted to DEX</li>
+                          {mintingStatusUpdated && <li>✅ Project status updated in database</li>}
+                          {mintingStatusUpdated && <li>✅ Project added to home page display</li>}
                         </ul>
-                        <p>Your token is now ready for trading on the DEX!</p>
+                        <p>Your token is now ready for trading on the DEX and will appear on the home page!</p>
+                        
+                        {/* Complete Button */}
+                        <div className="complete-button-section">
+                          <button
+                            className="complete-project-btn active"
+                            onClick={handleProjectCompletion}
+                            style={{ cursor: 'pointer' }}
+                          >
+                            <span className="btn-icon">🏠</span>
+                            <span className="btn-text">Complete & Go to Home Page</span>
+                          </button>
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -2510,6 +2611,49 @@ export default function CreateTokenPage() {
       setCurrentStep(currentStep - 1);
     }
   };
+
+  // Function to format testnet project initials with TP prefix
+  const formatTestnetInitials = (input) => {
+    if (!input) return '';
+    
+    // Remove any non-alphanumeric characters and convert to uppercase
+    const cleanInput = input.replace(/[^A-Za-z0-9]/g, '').toUpperCase();
+    
+    // If it's testnet, ensure it starts with TP
+    if (selectedNetwork === 'testnet') {
+      if (cleanInput.startsWith('TP')) {
+        // Already has TP prefix, return as is (max 6 chars total)
+        return cleanInput.slice(0, 6);
+      } else {
+        // Add TP prefix and limit to 6 chars total
+        return `TP${cleanInput}`.slice(0, 6);
+      }
+    }
+    
+    // For mainnet, return as is (max 6 chars)
+    return cleanInput.slice(0, 6);
+  };
+
+  // Function to validate testnet project initials
+  const validateTestnetInitials = (symbol) => {
+    if (selectedNetwork === 'testnet') {
+      // Must start with TP and have 2-4 additional characters
+      const pattern = /^TP[A-Z0-9]{2,4}$/;
+      return pattern.test(symbol);
+    }
+    return true; // No special validation for mainnet
+  };
+
+  // Update symbol formatting when network changes
+  useEffect(() => {
+    if (tokenSymbol) {
+      const formattedValue = formatTestnetInitials(tokenSymbol);
+      if (formattedValue !== tokenSymbol) {
+        setTokenSymbol(formattedValue);
+        checkSymbolUniqueness(formattedValue);
+      }
+    }
+  }, [selectedNetwork]);
 
   return (
     <div className="create-project-page">
@@ -4357,6 +4501,29 @@ export default function CreateTokenPage() {
           .complete-project-btn:hover {
             background: linear-gradient(135deg, #16a34a 0%, #15803d 100%);
             transform: translateY(-1px);
+          }
+
+          .complete-project-btn.disabled {
+            background: linear-gradient(135deg, #6b7280 0%, #4b5563 100%);
+            cursor: not-allowed;
+            opacity: 0.6;
+          }
+
+          .complete-project-btn.disabled:hover {
+            transform: none;
+            background: linear-gradient(135deg, #6b7280 0%, #4b5563 100%);
+          }
+
+          .complete-button-section {
+            margin-top: 24px;
+            text-align: center;
+          }
+
+          .completion-note {
+            margin-top: 12px;
+            color: #9ca3af;
+            font-size: 0.9rem;
+            font-style: italic;
           }
 
           .cancel-btn {

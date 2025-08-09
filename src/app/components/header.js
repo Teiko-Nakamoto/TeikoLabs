@@ -3,13 +3,13 @@ import Link from 'next/link';
 import React, { useState, useRef, useEffect } from 'react';
 import '../components/header.css';
 import ConnectWallet from './connectwallet';
-import HowItWorks from './HowItWorks'; // ✅ Import popup component
+import LearnAboutHowTo from './LearnAboutHowTo'; // ✅ Import popup component
 import '../../i18n';
 import { useTranslation } from 'react-i18next';
 
 export default function Header() {
   const { t, i18n } = useTranslation();
-  const [showHowItWorks, setShowHowItWorks] = useState(false); // ✅ Control modal
+  const [showLearnAboutHowTo, setShowLearnAboutHowTo] = useState(false); // ✅ Control modal
   const walletRef = useRef(null);
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState('');
@@ -101,7 +101,7 @@ export default function Header() {
           <div className="center-link desktop-only">
             {/* How It Works button - Desktop only */}
             <button 
-              onClick={() => setShowHowItWorks(true)}
+              onClick={() => setShowLearnAboutHowTo(true)}
               className="nav-link"
               style={{ 
                 textDecoration: 'none',
@@ -112,16 +112,16 @@ export default function Header() {
                 font: 'inherit'
               }}
             >
-              {t('how_it_works')}
+              How It Works
             </button>
           </div>
           
           {/* Mobile menu button */}
           <div className="mobile-menu-button">
             <button 
-              onClick={() => setShowHowItWorks(true)}
+              onClick={() => setShowLearnAboutHowTo(true)}
               className="mobile-menu-btn"
-              title={t('how_it_works')}
+              title="How It Works"
             >
               <span>ℹ️</span>
             </button>
@@ -241,8 +241,8 @@ export default function Header() {
 
 
 
-      {/* ✅ Render How It Works popup */}
-      {showHowItWorks && <HowItWorks onClose={() => setShowHowItWorks(false)} />}
+      {/* ✅ Render Learn About How To popup */}
+      {showLearnAboutHowTo && <LearnAboutHowTo onClose={() => setShowLearnAboutHowTo(false)} />}
 
 
     </>

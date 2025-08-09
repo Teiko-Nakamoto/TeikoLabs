@@ -469,7 +469,7 @@ export default function LockUnlockPage() {
               justifyContent: 'center',
               gap: '4px'
             }}>
-              Current Revenue Available to Claim: {revenue}
+              Current Profit Available to Claim: {revenue}
               <img 
                 src="/icons/sats1.svg" 
                 alt="Sats Lightning" 
@@ -627,7 +627,7 @@ export default function LockUnlockPage() {
                                            Trading fees need to reach the minimum threshold before you can unlock.
                    </p>
                    <div style={{ fontSize: '13px', color: '#a0aec0', marginBottom: '16px' }}>
-                     <p><strong>Current Revenue:</strong> {revenue} sats</p>
+                     <p><strong>Current Profit:</strong> {revenue} sats</p>
                      <p><strong>Required Threshold:</strong> {threshold} sats</p>
                      <p><strong>Shortfall:</strong> {threshold !== '--' && revenue !== '--' ? (parseFloat(threshold.replace(/,/g, '')) - parseFloat(revenue.replace(/,/g, ''))).toLocaleString() : '--'} sats</p>
                    </div>

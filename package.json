@@ -15,6 +15,7 @@
     "@stacks/network": "^7.0.2",
     "@stacks/transactions": "^7.1.0",
     "@supabase/supabase-js": "^2.39.0",
+    "@vercel/speed-insights": "^1.2.0",
     "i18next": "^24.1.0",
     "i18next-browser-languagedetector": "^8.0.2",
     "i18next-http-backend": "^2.5.0",

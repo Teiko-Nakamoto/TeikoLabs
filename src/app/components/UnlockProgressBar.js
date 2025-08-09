@@ -237,7 +237,7 @@ const UnlockProgressBar = React.memo(function UnlockProgressBar({
             justifyContent: 'center',
             gap: '4px'
           }}>
-            Current Revenue Available to Claim: {revenue}
+            Current Profit Available to Claim: {revenue}
             <img 
               src="/icons/sats1.svg" 
               alt="Sats Lightning" 

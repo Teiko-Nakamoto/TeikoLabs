@@ -13,6 +13,40 @@
   position: relative;
 }
 
+/* Status Toggle Button */
+.status-toggle {
+  background: none;
+  border: 2px solid;
+  border-radius: 8px;
+  padding: 6px 12px;
+  color: white;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  min-width: 110px;
+}
+
+.status-toggle.active {
+  border-color: #10B981;
+  background: rgba(16, 185, 129, 0.1);
+}
+
+.status-toggle.active:hover {
+  background: rgba(16, 185, 129, 0.2);
+  transform: scale(1.05);
+}
+
+.status-toggle.coming-soon {
+  border-color: #F59E0B;
+  background: rgba(245, 158, 11, 0.1);
+}
+
+.status-toggle.coming-soon:hover {
+  background: rgba(245, 158, 11, 0.2);
+  transform: scale(1.05);
+}
+
 /* Admin Controls */
 .admin-controls {
   position: fixed;
@@ -841,6 +875,40 @@
   display: flex;
   align-items: center;
   justify-content: center;
+  gap: 0.5rem;
+  cursor: pointer;
+  padding: 0.5rem;
+  border-radius: 6px;
+  transition: all 0.2s ease;
+}
+
+.hidden-toggle:hover {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.hidden-checkbox {
+  width: 16px;
+  height: 16px;
+  accent-color: #ef4444;
+  cursor: pointer;
+}
+
+.toggle-label {
+  font-size: 0.85rem;
+  color: #ffffff;
+  cursor: pointer;
+  user-select: none;
+}
+
+/* Hidden token row styling */
+.token-row.hidden-token {
+  opacity: 0.6;
+  background: rgba(239, 68, 68, 0.1);
+}
+
+.token-row.hidden-token:hover {
+  opacity: 0.8;
+}
   gap: 0.5rem;
   cursor: pointer;
   padding: 0.5rem;

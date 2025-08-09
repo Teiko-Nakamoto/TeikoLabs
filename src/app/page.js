@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { useTranslation } from 'react-i18next';
+import { useSearchParams } from 'next/navigation';
 import Header from './components/header';
 import Footer from './components/footer';
 import BackgroundImage from './components/BackgroundImage';
@@ -12,8 +13,9 @@ import { getRevenueBalance, getLiquidityBalance, getTokenSymbol } from './utils/
 
 export default function HomePage() {
   const { t } = useTranslation();
-  const [activeTab, setActiveTab] = useState('featured');
-  const [defaultTab, setDefaultTab] = useState('featured');
+  const searchParams = useSearchParams();
+  const [activeTab, setActiveTab] = useState('all'); // Changed from 'featured' to 'all'
+  const [defaultTab, setDefaultTab] = useState('all'); // Changed from 'featured' to 'all'
   const [tokenCards, setTokenCards] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showProjects, setShowProjects] = useState(false);
@@ -24,6 +26,30 @@ export default function HomePage() {
   // State for wallet connection
   const [connectedAddress, setConnectedAddress] = useState('');
   const [isConnectingWallet, setIsConnectingWallet] = useState(false);
+
+  // State for All Projects tab
+  const [searchTerm, setSearchTerm] = useState('');
+  const [networkFilter, setNetworkFilter] = useState('all'); // 'all', 'testnet', 'mainnet'
+  const [showSearchBar, setShowSearchBar] = useState(false);
+
+  // Handle tab parameter from URL
+  useEffect(() => {
+    const tabParam = searchParams.get('tab');
+    if (tabParam && ['featured', 'practice', 'all'].includes(tabParam)) {
+      setActiveTab(tabParam);
+      if (tabParam === 'all') {
+        setShowProjects(true);
+      }
+    }
+  }, [searchParams]);
+
+  // Reset search and filter when switching away from All Projects tab
+  useEffect(() => {
+    if (activeTab !== 'all') {
+      setSearchTerm('');
+      setNetworkFilter('all');
+    }
+  }, [activeTab]);
 
   // Check wallet connection on component mount and when storage changes
   useEffect(() => {
@@ -91,7 +117,8 @@ export default function HomePage() {
       const { STACKS_TESTNET, STACKS_MAINNET } = await import('@stacks/network');
       
       // Determine network based on tab type
-      const network = tokenCard.tabType === 'practice' ? STACKS_TESTNET : STACKS_MAINNET;
+      const isTestnet = tokenCard.tabType === 'practice' || tokenCard.tabType === 'user_created_testnet';
+      const network = isTestnet ? STACKS_TESTNET : STACKS_MAINNET;
       
       // Fetch symbol (if not already cached)
       let symbol = tokenCard.symbol || '';
@@ -232,24 +259,54 @@ export default function HomePage() {
     return () => clearInterval(interval);
   }, []);
 
-  // Filter token cards based on active tab (exclude hidden tokens)
-  let displayedCards = [];
-  
-  // Ensure tokenCards is always an array
-  const safeTokenCards = Array.isArray(tokenCards) ? tokenCards : [];
-  
+  // Filter tokens based on search term and network filter - ONLY for user-created projects in "All Projects" tab
+  const filteredTokens = tokenCards.filter(card => {
+    // Only show user-created projects in "All Projects" tab
+    const isUserCreatedMainnet = card.tabType === 'user_created_mainnet';
+    const isUserCreatedTestnet = card.tabType === 'user_created_testnet';
+    const isUserCreatedProject = isUserCreatedMainnet || isUserCreatedTestnet;
+    
+    // First filter: must be a user-created project
+    if (!isUserCreatedProject) {
+      return false;
+    }
+    
+    // Filter by network within user-created projects
+    let networkMatch = true;
+    if (networkFilter === 'testnet') {
+      networkMatch = isUserCreatedTestnet;
+    } else if (networkFilter === 'mainnet') {
+      networkMatch = isUserCreatedMainnet;
+    } else if (networkFilter === 'user_created_mainnet') {
+      networkMatch = isUserCreatedMainnet;
+    } else if (networkFilter === 'user_created_testnet') {
+      networkMatch = isUserCreatedTestnet;
+    }
+    // For 'all' network filter, show all user-created projects
+    
+    // Filter by search term
+    const searchMatch = !searchTerm || 
+      card.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      card.symbol?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      card.description?.toLowerCase().includes(searchTerm.toLowerCase());
+    
+    return networkMatch && searchMatch;
+  });
+
+  // Get displayed cards based on active tab
+  const displayedCards = (() => {
   if (activeTab === 'featured') {
-    // Featured tab: Show cards assigned to featured tab (not hidden)
-    displayedCards = safeTokenCards.filter(card => card.tabType === 'featured' && !card.isHidden);
-    console.log('📋 Featured tab - Admin-configured cards:', displayedCards.length);
+      return tokenCards.filter(card => card.tabType === 'featured');
   } else if (activeTab === 'practice') {
-    // Practice trading tab: Show cards assigned to practice tab (not hidden)
-    displayedCards = safeTokenCards.filter(card => card.tabType === 'practice' && !card.isHidden);
-    console.log('📋 Practice tab - Admin-configured cards:', displayedCards.length);
-  }
+      return tokenCards.filter(card => card.tabType === 'practice');
+    } else if (activeTab === 'all') {
+      return filteredTokens;
+    }
+    return tokenCards.filter(card => card.tabType === 'featured');
+  })();
   
   console.log('📋 Current active tab:', activeTab);
-  console.log('📋 All admin-configured token cards:', safeTokenCards.map(card => ({ 
+  console.log('📋 All admin-configured token cards:', tokenCards.map(card => ({ 
     id: card.id, 
     tabType: card.tabType,
     symbol: card.symbol,
@@ -266,9 +323,9 @@ export default function HomePage() {
   // Debug info for user (temporary)
   console.log('🔍 DEBUG INFO:');
   console.log(`   Active Tab: ${activeTab}`);
-  console.log(`   Total Cards: ${safeTokenCards.length}`);
-  console.log(`   Featured Cards: ${safeTokenCards.filter(card => card.tabType === 'featured' && !card.isHidden).length}`);
-  console.log(`   Practice Cards: ${safeTokenCards.filter(card => card.tabType === 'practice' && !card.isHidden).length}`);
+  console.log(`   Total Cards: ${tokenCards.length}`);
+  console.log(`   Featured Cards: ${tokenCards.filter(card => card.tabType === 'featured' && !card.isHidden).length}`);
+  console.log(`   Practice Cards: ${tokenCards.filter(card => card.tabType === 'practice' && !card.isHidden).length}`);
   console.log(`   Displayed Cards: ${displayedCards.length}`);
   console.log(`   Coming Soon Cards: ${displayedCards.filter(card => card.isComingSoon).length}`);
 
@@ -321,7 +378,7 @@ export default function HomePage() {
               marginBottom: '8px',
               fontFamily: 'Arial, sans-serif'
             }}>
-              Earn Trading Fees From Supporting Projects
+              Bitcoin Powered Crowdfunding, Where Every Project Generates Profit on Every Trade.
             </p>
             
             <div style={{
@@ -339,14 +396,40 @@ export default function HomePage() {
               }}>
                 Powered By
               </span>
-              <img 
-                src="/icons/mas-network-logo.png" 
-                alt="MAS Network" 
-                style={{ 
-                  height: '40px',
-                  width: 'auto'
-                }} 
-              />
+              <a 
+                href="https://themasnetwork.com" 
+                target="_blank" 
+                rel="noopener noreferrer"
+                style={{ display: 'inline-block' }}
+              >
+                <img 
+                  src="/icons/mas-network-logo.png" 
+                  alt="MAS Network" 
+                  style={{ 
+                    height: '40px',
+                    width: 'auto',
+                    cursor: 'pointer',
+                    transition: 'filter 0.3s ease, transform 0.2s ease',
+                    filter: 'brightness(1)'
+                  }}
+                  onMouseEnter={(e) => {
+                    e.target.style.filter = 'brightness(1.2) drop-shadow(0 0 8px #fca311)';
+                    e.target.style.transform = 'scale(1.05)';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.target.style.filter = 'brightness(1)';
+                    e.target.style.transform = 'scale(1)';
+                  }}
+                  onMouseDown={(e) => {
+                    e.target.style.filter = 'brightness(1.3) drop-shadow(0 0 12px #ffb347)';
+                    e.target.style.transform = 'scale(0.98)';
+                  }}
+                  onMouseUp={(e) => {
+                    e.target.style.filter = 'brightness(1.2) drop-shadow(0 0 8px #fca311)';
+                    e.target.style.transform = 'scale(1.05)';
+                  }}
+                />
+              </a>
             </div>
           </div>
         )}
@@ -436,6 +519,9 @@ export default function HomePage() {
                 <button className={activeTab === 'practice' ? 'active' : ''} onClick={() => setActiveTab('practice')}>
                   🧪 {t('practice_trading')} (Testnet)
                 </button>
+                <button className={activeTab === 'all' ? 'active' : ''} onClick={() => setActiveTab('all')}>
+                  🔍 All Projects
+                </button>
               </div>
               
               {/* Tab description */}
@@ -447,10 +533,50 @@ export default function HomePage() {
               }}>
                 {activeTab === 'featured' ? (
                   <span>🚀 <strong>Mainnet:</strong> Real Projects With Real Profit</span>
-                ) : (
+                ) : activeTab === 'practice' ? (
                   <span>🧪 <strong>Testnet:</strong> Practice With Fake Money</span>
+                ) : (
+                  <span>🔍 <strong>All Projects:</strong> Search and Filter All Available Projects</span>
                 )}
               </div>
+
+              {/* Search and Filter Controls for All Projects tab */}
+              {activeTab === 'all' && (
+                <div className="all-tokens-controls">
+                  {/* Search Bar */}
+                  <div className="search-container">
+                    <input
+                      type="text"
+                      placeholder="Search projects by name, symbol, or description..."
+                      value={searchTerm}
+                      onChange={(e) => setSearchTerm(e.target.value)}
+                      className="search-input"
+                    />
+                    <span className="search-icon">🔍</span>
+                  </div>
+
+                  {/* Network Filter */}
+                  <div className="network-filter-container">
+                    <span className="network-filter-label">Network:</span>
+                    <select
+                      value={networkFilter}
+                      onChange={(e) => setNetworkFilter(e.target.value)}
+                      className="network-filter-select"
+                    >
+                      <option value="all">All Networks</option>
+                      <option value="user_created_mainnet">Mainnet</option>
+                      <option value="user_created_testnet">Testnet</option>
+                    </select>
+                  </div>
+
+                  {/* Results Count */}
+                  <div className="results-count">
+                    Showing {filteredTokens.length} of {tokenCards.filter(card => 
+                      card.tabType === 'user_created_mainnet' || card.tabType === 'user_created_testnet'
+                    ).length} projects
+                  </div>
+                </div>
+              )}
             </div>
 
             <div className="token-grid">
@@ -586,14 +712,69 @@ export default function HomePage() {
                 {activeTab === 'featured' ? (
                   <>🚀 <strong>Mainnet tokens coming soon!</strong><br />
                   Real tokens with real value will be available here.</>
-                ) : (
+                ) : activeTab === 'practice' ? (
                   <>🧪 <strong>Testnet tokens coming soon!</strong><br />
                   Practice tokens will be available here.</>
+                ) : (
+                  <>🔍 <strong>No user-created projects yet!</strong><br />
+                  Projects created by users will appear here after minting is completed.</>
                 )}
               </p>
+              {activeTab !== 'all' && (
               <p style={{ fontSize: '0.9rem', marginTop: '0.5rem' }}>
                 Admin can configure tokens in the admin panel
               </p>
+              )}
+            </div>
+          )}
+            </div>
+          </>
+        )}
+      </main>
+      <Footer />
+    </div>
+  );
+}
+                        padding: '10px 20px',
+                        borderRadius: '5px',
+                        textDecoration: 'none',
+                        fontSize: '16px',
+                        textAlign: 'center',
+                      }}
+                    >
+                      {t('get_free_fake_bitcoin')}
+                    </a>
+                  </div>
+                )}
+              </div>
+            );
+          })}
+          
+          {/* Show message if no tokens are configured for this tab */}
+          {displayedCards.length === 0 && (
+            <div className="empty-state" style={{ 
+              textAlign: 'center', 
+              padding: '2rem', 
+              color: '#9CA3AF',
+              gridColumn: '1 / -1'
+            }}>
+              <p>
+                {activeTab === 'featured' ? (
+                  <>🚀 <strong>Mainnet tokens coming soon!</strong><br />
+                  Real tokens with real value will be available here.</>
+                ) : activeTab === 'practice' ? (
+                  <>🧪 <strong>Testnet tokens coming soon!</strong><br />
+                  Practice tokens will be available here.</>
+                ) : (
+                  <>🔍 <strong>No user-created projects yet!</strong><br />
+                  Projects created by users will appear here after minting is completed.</>
+                )}
+              </p>
+              {activeTab !== 'all' && (
+              <p style={{ fontSize: '0.9rem', marginTop: '0.5rem' }}>
+                Admin can configure tokens in the admin panel
+              </p>
+              )}
             </div>
           )}
             </div>

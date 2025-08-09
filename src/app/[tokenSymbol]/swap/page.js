@@ -187,25 +187,84 @@ export default function SwapPage() {
   useEffect(() => {
     const fetchTokenData = async () => {
       try {
-        const response = await fetch('/api/get-token-cards');
-        const result = await response.json();
+        console.log('🔍 Fetching token data for symbol:', tokenSymbol);
         
-        if (result.tokenCards) {
-          // Find token by symbol (case-insensitive)
-          const token = result.tokenCards.find(t => 
+        // Set a timeout for the entire token fetching process
+        const timeoutPromise = new Promise((_, reject) => 
+          setTimeout(() => reject(new Error('Token fetching timeout')), 15000)
+        );
+        
+        const fetchPromise = (async () => {
+        
+        // First, try to find admin-configured token
+        const adminResponse = await fetch('/api/get-token-cards');
+        const adminResult = await adminResponse.json();
+        
+        if (adminResult.tokenCards) {
+          // Find admin token by symbol (case-insensitive)
+          const adminToken = adminResult.tokenCards.find(t => 
             t.symbol && t.symbol.toLowerCase() === tokenSymbol.toLowerCase()
           );
           
-          if (token) {
-            setTokenData(token);
+          if (adminToken) {
+            console.log('🔍 Found admin token:', adminToken);
+            setTokenData(adminToken);
             // Fetch token-specific stats after setting token data
-            await fetchTokenStats(token);
-          } else {
-            console.error('Token not found with symbol:', tokenSymbol);
+            await fetchTokenStats(adminToken);
+            return;
           }
         }
+        
+        // If admin token not found, try to find user token
+        console.log('🔍 Admin token not found, checking user tokens...');
+        const userResponse = await fetch('/api/user-tokens/list?limit=100');
+        const userResult = await userResponse.json();
+        
+        if (userResult.success && userResult.tokens) {
+          // Find user token by symbol (case-insensitive)
+          const userToken = userResult.tokens.find(t => 
+            t.tokenSymbol && t.tokenSymbol.toLowerCase() === tokenSymbol.toLowerCase()
+          );
+          
+          if (userToken) {
+            console.log('🔍 Found user token:', userToken);
+            // Transform user token to match admin token format
+            const transformedToken = {
+              id: `user-${userToken.id}`,
+              name: userToken.tokenName,
+              symbol: userToken.tokenSymbol,
+              description: userToken.tokenDescription,
+              tabType: userToken.deploymentStatus === 'deployed' ? 'featured' : 'practice',
+              isComingSoon: false,
+              isHidden: false,
+              // Contract information for real-time data fetching
+              dexContractAddress: userToken.dexContractAddress,
+              tokenContractAddress: userToken.tokenContractAddress,
+              // Add other fields as needed
+              creatorWalletAddress: userToken.creatorWalletAddress,
+              deploymentStatus: userToken.deploymentStatus,
+              network: userToken.network,
+              isVerified: userToken.isVerified,
+              createdAt: userToken.createdAt
+            };
+            
+            setTokenData(transformedToken);
+            // For user tokens, skip blockchain stats if not deployed
+            if (userToken.deploymentStatus === 'deployed' && userToken.dexContractAddress) {
+              await fetchTokenStats(transformedToken);
+            } else {
+              console.log('🔍 User token not deployed yet, skipping blockchain stats');
+            }
+            return;
+          }
+        }
+        
+        console.error('❌ Token not found with symbol:', tokenSymbol);
+        })();
+        
+        await Promise.race([fetchPromise, timeoutPromise]);
       } catch (error) {
-        console.error('Error fetching token data:', error);
+        console.error('❌ Error fetching token data:', error);
       } finally {
         setLoading(false);
       }

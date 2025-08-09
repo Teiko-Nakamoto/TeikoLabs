@@ -26,6 +26,11 @@ export default function Footer() {
           <div className="footer-section">
             <h3>Teiko Labs</h3>
             <p>The Future of Bitcoin DeFi</p>
+            <div className="footer-links">
+              <a href="/terms" className="footer-link">
+                Terms of Service & Risk Disclaimer
+              </a>
+            </div>
           </div>
           
           <div className="footer-section">
@@ -66,7 +71,10 @@ export default function Footer() {
               <a href="https://platform.hiro.so/faucet" target="_blank" rel="noopener noreferrer">
                 Get Testnet SBTC
               </a>
-              <a href="https://explorer.hiro.so" target="_blank" rel="noopener noreferrer">
+              <a href="https://app.velar.com/swap" target="_blank" rel="noopener noreferrer">
+                Get SBTC to Trade
+              </a>
+              <a href="https://explorer.hiro.so/txid/ST37918Q7NBZ52AMV133VTY5C864KVK0S2HZ3CGA4.mas-sats-dex?chain=testnet" target="_blank" rel="noopener noreferrer">
                 Stacks Explorer
               </a>
             </div>
@@ -117,6 +125,14 @@ export default function Footer() {
             <p style={{ fontSize: '0.9rem', color: '#9ca3af' }}>
               Expected: Q1 2024
             </p>
+            <button onClick={() => setShowAuditPopup(false)} style={{ marginTop: '1rem' }}>Close</button>
+          </div>
+        </div>
+      )}
+    </>
+  );
+}
+
             <button onClick={() => setShowAuditPopup(false)} style={{ marginTop: '1rem' }}>Close</button>
           </div>
         </div>

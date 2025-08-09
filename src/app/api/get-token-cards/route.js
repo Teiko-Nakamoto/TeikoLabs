@@ -9,7 +9,7 @@ export async function GET() {
     const tokenCards = await getTokenCardsServer();
     
     // Get default tab setting (with error handling for missing table)
-    let defaultTab = 'featured'; // Default fallback
+    let defaultTab = 'all'; // Changed from 'featured' to 'all' as default
     try {
       const { data: settings } = await supabaseServer
         .from('app_settings')
