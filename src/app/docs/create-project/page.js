@@ -170,23 +170,7 @@ export default function CreateProjectPage() {
           </div>
 
           <div className="docs-body">
-            <section className="docs-section">
-              <div className="coming-soon-container">
-                <div className="coming-soon-icon">🚀</div>
-                <h2>Project Creation Coming Soon</h2>
-                <p>
-                  We're currently working on the project creation feature that will allow you to launch your own 
-                  project and raise capital through our Bitcoin-backed platform.
-                </p>
-                <p>
-                  This section will include detailed instructions on how to create your project, set up your treasury, 
-                  configure trading parameters, and launch your crowdfunding campaign.
-                </p>
-                <p>
-                  Check back soon for complete guidance on launching your project and connecting with the community!
-                </p>
-              </div>
-            </section>
+
           </div>
         </div>
       </main>
