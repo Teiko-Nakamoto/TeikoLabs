@@ -68,7 +68,11 @@ export async function GET(request) {
       },
       majorityHolder: majorityHolder,
       majorityPercentage: majorityPercentage,
-      totalHolders: holders ? holders.length : 0
+      totalHolders: holders ? holders.length : 0,
+      hasMajorityHolder: majorityHolder !== null,
+      address: majorityHolder ? majorityHolder.wallet : null,
+      lockedTokens: majorityHolder ? majorityHolder.balance : 0,
+      percentage: majorityPercentage
     });
 
   } catch (error) {

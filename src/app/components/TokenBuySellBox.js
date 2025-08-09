@@ -1475,7 +1475,7 @@ const TokenBuySellBox = React.memo(function TokenBuySellBox({
         {activeSection === 'profit' && <ProfitLoss tokenData={tokenData} trades={trades} currentPrice={currentPrice} />}
 
         {/* Show TokenStats when stats section is selected */}
-        {activeSection === 'stats' && <TokenStats revenue={revenue} liquidity={liquidity} remainingSupply={remainingSupply} />}
+        {activeSection === 'stats' && <TokenStats revenue={revenue} liquidity={liquidity} remainingSupply={remainingSupply} dexInfo={tokenData?.dexInfo} tokenInfo={tokenData?.tokenInfo} />}
       </div>
 
       {/* Price Information Modal */}

@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { handleTransaction } from '../utils/swapLogic';
 import TransactionToast from './TransactionToast';
-import { getUserTokenBalance, getUserSatsBalance, calculateEstimatedTokensForSats, calculateEstimatedSatsForTokens, getCurrentPrice, getSbtcBalance, getTotalTokenBalance, getTotalLockedTokens } from '../utils/fetchTokenData';
+import { getUserTokenBalance, getUserSatsBalance, calculateEstimatedTokensForSats, calculateEstimatedSatsForTokens, getCurrentPrice, getSbtcBalance, getTotalTokenBalance, getTotalLockedTokens, parseContractInfo } from '../utils/fetchTokenData';
 import ProfitLoss from './ProfitLoss';
 import TokenStats from './TokenStats';
 import './BuySellBox.css';
@@ -40,7 +40,8 @@ export default function BuySellBox({
   setActiveSection, 
   revenue, 
   liquidity, 
-  remainingSupply
+  remainingSupply,
+  tokenData // Add tokenData for contract info
 }) {
   // Restore tab selection from localStorage on component mount
   useEffect(() => {
@@ -87,10 +88,14 @@ export default function BuySellBox({
   // Function to fetch and store price calculation snapshot
   const fetchPriceSnapshot = async () => {
     try {
+      // Parse contract info from tokenData (source of truth)
+      const contractInfo = parseContractInfo(tokenData);
+      console.log('🔍 fetchPriceSnapshot using contract info:', contractInfo);
+      
       const [sbtcBalance, totalTokens, lockedTokens] = await Promise.all([
-        getSbtcBalance(),
-        getTotalTokenBalance(),
-        getTotalLockedTokens()
+        getSbtcBalance(contractInfo),
+        getTotalTokenBalance(contractInfo),
+        getTotalLockedTokens(contractInfo)
       ]);
       
       // Calculate derived values
@@ -1056,7 +1061,7 @@ export default function BuySellBox({
         {activeSection === 'profit' && <ProfitLoss />}
 
         {/* Show TokenStats when stats section is selected */}
-        {activeSection === 'stats' && <TokenStats revenue={revenue} liquidity={liquidity} remainingSupply={remainingSupply} />}
+        {activeSection === 'stats' && <TokenStats revenue={revenue} liquidity={liquidity} remainingSupply={remainingSupply} dexInfo={tokenData?.dexInfo} tokenInfo={tokenData?.tokenInfo} />}
       </div>
 
       {/* Price Information Modal */}

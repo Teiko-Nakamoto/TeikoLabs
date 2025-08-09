@@ -415,6 +415,45 @@ export default function SwapPage() {
               📋 Smart Contract Addresses
             </h3>
             
+            {/* Network Info */}
+            <div style={{ 
+              marginBottom: '16px', 
+              padding: '12px', 
+              background: '#1a202c', 
+              borderRadius: '8px',
+              border: '2px solid #fca311',
+              textAlign: 'center'
+            }}>
+              <div style={{ 
+                color: '#fca311', 
+                fontSize: '14px', 
+                fontWeight: 'bold', 
+                marginBottom: '4px' 
+              }}>
+                🌐 Network:
+              </div>
+              <div style={{ 
+                color: '#fff', 
+                fontSize: '16px', 
+                fontWeight: 'bold',
+                textTransform: 'uppercase'
+              }}>
+                {(() => {
+                  // Determine network from tokenData
+                  if (tokenData?.network) {
+                    return tokenData.network;
+                  }
+                  if (tokenData?.tabType === 'practice' || tokenData?.tabType === 'user_created_testnet') {
+                    return 'testnet';
+                  }
+                  if (tokenData?.tabType === 'featured' || tokenData?.tabType === 'user_created_mainnet') {
+                    return 'mainnet';
+                  }
+                  return 'testnet'; // default fallback
+                })()}
+              </div>
+            </div>
+            
             {/* DEX Contract */}
             <div style={{ 
               marginBottom: '16px', 

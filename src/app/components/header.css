@@ -289,12 +289,19 @@
   display: flex;
   align-items: center;
   gap: 1rem;
+  position: relative;
 }
 
 .language-profile span {
   display: flex;
   align-items: center;
   gap: 0.3rem;
+}
+
+/* Language dropdown override */
+.language-profile > div {
+  z-index: 9999 !important;
+  position: relative;
 }
 
 .icon {

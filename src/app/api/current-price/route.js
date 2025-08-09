@@ -1,16 +1,24 @@
 // API Route: Get Current Token Price (Server-side with API key + caching)
 import { NextResponse } from 'next/server';
 import { fetchCallReadOnlyFunction } from '@stacks/transactions';
-import { STACKS_TESTNET } from '@stacks/network';
+import { STACKS_TESTNET, STACKS_MAINNET } from '@stacks/network';
 import { rateLimitMiddleware, addRateLimitHeaders } from '../../utils/rateLimiter';
 import { withCors } from '../../utils/corsMiddleware';
 
 // Contract configuration
 const DEX_CONTRACT_ADDRESS = 'ST37918Q7NBZ52AMV133VTY5C864KVK0S2HZ3CGA4';
-const DEX_CONTRACT_NAME = 'dear-cyan-dex';
+const DEX_CONTRACT_NAME = 'mas-sats-dex';
 
 async function handler(request) {
   try {
+    // Parse query parameters for contract info
+    const { searchParams } = new URL(request.url);
+    const contractAddress = searchParams.get('address') || DEX_CONTRACT_ADDRESS;
+    const contractName = searchParams.get('name') || DEX_CONTRACT_NAME;
+    const networkParam = searchParams.get('network') || 'testnet';
+    const network = networkParam === 'mainnet' ? STACKS_MAINNET : STACKS_TESTNET;
+
+    console.log('🔍 API: Current price using contract:', { contractAddress, contractName, network: networkParam });
 
     // Apply rate limiting
     const rateLimitInfo = await rateLimitMiddleware(request, 'blockchain');
@@ -27,33 +35,33 @@ async function handler(request) {
       return addRateLimitHeaders(response, rateLimitInfo);
     }
 
-    console.log('🔍 API: Calculating current price with cached data...');
+    console.log('🔍 API: Calculating current price with contract data...');
 
     // Get blockchain data
     const [sbtcBalance, tokenBalance, totalLocked] = await Promise.all([
       fetchCallReadOnlyFunction({
-        contractAddress: DEX_CONTRACT_ADDRESS,
-        contractName: DEX_CONTRACT_NAME,
+        contractAddress,
+        contractName,
         functionName: 'get-sbtc-balance',
         functionArgs: [],
-        network: STACKS_TESTNET,
-        senderAddress: DEX_CONTRACT_ADDRESS,
+        network,
+        senderAddress: contractAddress,
       }),
       fetchCallReadOnlyFunction({
-        contractAddress: DEX_CONTRACT_ADDRESS,
-        contractName: DEX_CONTRACT_NAME,
+        contractAddress,
+        contractName,
         functionName: 'get-token-balance',
         functionArgs: [],
-        network: STACKS_TESTNET,
-        senderAddress: DEX_CONTRACT_ADDRESS,
+        network,
+        senderAddress: contractAddress,
       }),
       fetchCallReadOnlyFunction({
-        contractAddress: DEX_CONTRACT_ADDRESS,
-        contractName: DEX_CONTRACT_NAME,
+        contractAddress,
+        contractName,
         functionName: 'get-total-locked',
         functionArgs: [],
-        network: STACKS_TESTNET,
-        senderAddress: DEX_CONTRACT_ADDRESS,
+        network,
+        senderAddress: contractAddress,
       })
     ]);
 

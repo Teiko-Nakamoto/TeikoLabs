@@ -146,70 +146,7 @@ export default function Header() {
               >
                 {languages.find(l => l.code === i18n.language)?.label || t('language')}
             </span>
-              {open && (
-                <div
-                  ref={dropdownRef}
-                  style={{
-                    position: 'absolute',
-                    top: '110%',
-                    left: 0,
-                    background: '#1c2d4e',
-                    border: '1px solid #374151',
-                    borderRadius: '12px',
-                    zIndex: 100,
-                    minWidth: '160px',
-                    boxShadow: '0 2px 8px rgba(0,0,0,0.12)',
-                    color: '#fff',
-                    padding: '8px 0',
-                    maxHeight: '160px', // Show search + 3 options
-                    overflowY: 'auto'
-                  }}
-                >
-                  {languages.length > 10 && (
-                    <div style={{ padding: '8px 12px', background: '#2d3748', borderRadius: '8px', margin: '0 8px 8px 8px' }}>
-                      <input
-                        type="text"
-                        placeholder={t('language')}
-                        value={search}
-                        onChange={e => setSearch(e.target.value)}
-                        style={{
-                          width: '100%',
-                          padding: '6px 8px',
-                          borderRadius: '6px',
-                          border: '1px solid #374151',
-                          background: '#1c2d4e',
-                          color: '#fff',
-                          outline: 'none'
-                        }}
-                      />
-                    </div>
-                  )}
-                  {filteredLanguages.map(lang => (
-                    <div
-                      key={lang.code}
-                      onClick={() => {
-                        i18n.changeLanguage(lang.code);
-                        setOpen(false);
-                        setSearch('');
-                      }}
-                      style={{
-                        padding: '10px 18px',
-                        cursor: 'pointer',
-                        background: i18n.language === lang.code ? '#2563eb' : 'transparent',
-                        fontWeight: i18n.language === lang.code ? 'bold' : 'normal',
-                        color: i18n.language === lang.code ? '#fff' : '#fff',
-                        borderRadius: '8px',
-                        margin: '2px 8px'
-                      }}
-                    >
-                      {lang.label}
-                    </div>
-                  ))}
-                  {filteredLanguages.length === 0 && (
-                    <div style={{ padding: '10px 18px', color: '#aaa', textAlign: 'center' }}>{t('language')}...</div>
-                  )}
-                </div>
-              )}
+
             </div>
 
             
@@ -240,6 +177,168 @@ export default function Header() {
       </header>
 
 
+
+      {/* Language Selection Popup */}
+      {open && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          background: 'rgba(0, 0, 0, 0.7)',
+          display: 'flex',
+          justifyContent: 'center',
+          alignItems: 'center',
+          zIndex: 10000,
+          backdropFilter: 'blur(8px)'
+        }}>
+          <div 
+            ref={dropdownRef}
+            style={{
+              background: 'linear-gradient(135deg, #1c2d4e 0%, #2d4a7c 100%)',
+              borderRadius: '20px',
+              padding: '2rem',
+              color: '#fff',
+              width: '90%',
+              maxWidth: '400px',
+              maxHeight: '70vh',
+              overflowY: 'auto',
+              border: '2px solid #60a5fa',
+              boxShadow: '0 20px 60px rgba(28, 45, 78, 0.5)',
+              position: 'relative'
+            }}
+          >
+            <div style={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              marginBottom: '1.5rem',
+              borderBottom: '2px solid #60a5fa',
+              paddingBottom: '1rem'
+            }}>
+              <h2 style={{
+                color: '#fca311',
+                fontSize: '1.5rem',
+                fontWeight: 'bold',
+                margin: 0
+              }}>
+                🌐 {t('language')}
+              </h2>
+              <button
+                onClick={() => {
+                  setOpen(false);
+                  setSearch('');
+                }}
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  color: '#fff',
+                  fontSize: '1.5rem',
+                  cursor: 'pointer',
+                  padding: '0.5rem',
+                  borderRadius: '50%',
+                  transition: 'all 0.3s ease'
+                }}
+                onMouseEnter={(e) => {
+                  e.target.style.background = 'rgba(252, 163, 17, 0.2)';
+                  e.target.style.color = '#fca311';
+                }}
+                onMouseLeave={(e) => {
+                  e.target.style.background = 'none';
+                  e.target.style.color = '#fff';
+                }}
+              >
+                ×
+              </button>
+            </div>
+
+            {languages.length > 10 && (
+              <div style={{ 
+                marginBottom: '1rem',
+                padding: '0.5rem',
+                background: 'rgba(255, 255, 255, 0.1)',
+                borderRadius: '8px',
+                border: '1px solid rgba(255, 255, 255, 0.2)'
+              }}>
+                <input
+                  type="text"
+                  placeholder={`Search ${t('language')}...`}
+                  value={search}
+                  onChange={e => setSearch(e.target.value)}
+                  style={{
+                    width: '100%',
+                    padding: '0.75rem',
+                    borderRadius: '6px',
+                    border: '1px solid #374151',
+                    background: 'rgba(255, 255, 255, 0.05)',
+                    color: '#fff',
+                    outline: 'none',
+                    fontSize: '1rem'
+                  }}
+                />
+              </div>
+            )}
+
+            <div style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
+              gap: '0.5rem',
+              maxHeight: '300px',
+              overflowY: 'auto'
+            }}>
+              {filteredLanguages.map(lang => (
+                <div
+                  key={lang.code}
+                  onClick={() => {
+                    i18n.changeLanguage(lang.code);
+                    setOpen(false);
+                    setSearch('');
+                  }}
+                  style={{
+                    padding: '0.75rem 1rem',
+                    cursor: 'pointer',
+                    background: i18n.language === lang.code ? '#fca311' : 'rgba(255, 255, 255, 0.1)',
+                    fontWeight: i18n.language === lang.code ? 'bold' : 'normal',
+                    color: i18n.language === lang.code ? '#000' : '#fff',
+                    borderRadius: '8px',
+                    border: `1px solid ${i18n.language === lang.code ? '#fca311' : 'rgba(255, 255, 255, 0.2)'}`,
+                    transition: 'all 0.3s ease',
+                    textAlign: 'center'
+                  }}
+                  onMouseEnter={(e) => {
+                    if (i18n.language !== lang.code) {
+                      e.target.style.background = 'rgba(252, 163, 17, 0.2)';
+                      e.target.style.borderColor = '#fca311';
+                      e.target.style.transform = 'translateY(-2px)';
+                    }
+                  }}
+                  onMouseLeave={(e) => {
+                    if (i18n.language !== lang.code) {
+                      e.target.style.background = 'rgba(255, 255, 255, 0.1)';
+                      e.target.style.borderColor = 'rgba(255, 255, 255, 0.2)';
+                      e.target.style.transform = 'translateY(0)';
+                    }
+                  }}
+                >
+                  {lang.label}
+                </div>
+              ))}
+            </div>
+
+            {filteredLanguages.length === 0 && (
+              <div style={{ 
+                padding: '2rem', 
+                color: '#aaa', 
+                textAlign: 'center',
+                fontStyle: 'italic'
+              }}>
+                No {t('language')} found...
+              </div>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* ✅ Render Learn About How To popup */}
       {showLearnAboutHowTo && <LearnAboutHowTo onClose={() => setShowLearnAboutHowTo(false)} />}

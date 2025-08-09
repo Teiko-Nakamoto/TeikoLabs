@@ -416,22 +416,19 @@ export default function LockUnlockPage() {
           }}>
             <div style={{
               fontSize: '14px', 
-              color: '#fff', 
+              color: '#ffa500', 
               fontWeight: '600', 
               marginBottom: '12px',
-              textAlign: 'center'
+              textAlign: 'center',
+              width: '92%'
             }}>
-              Progress to Unlock <img 
-                src="/icons/The Mas Network.svg" 
-                alt="MAS Sats" 
-                style={{ width: '18px', height: '18px', verticalAlign: 'middle', marginLeft: '4px' }}
-              />
+              Progress to Unlock
             </div>
             
             {/* Visual Progress Bar */}
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', marginBottom: '12px' }}>
+            <div style={{ display: 'flex', alignItems: 'flex-start', gap: '8px', marginBottom: '12px' }}>
               <div style={{
-                width: '200px',
+                width: '92%',
                 height: '20px',
                 backgroundColor: 'rgba(255, 255, 255, 0.1)',
                 borderRadius: '10px',
@@ -439,78 +436,132 @@ export default function LockUnlockPage() {
                 border: '1px solid rgba(255, 255, 255, 0.2)',
                 position: 'relative'
               }}>
-                                 <div style={{
-                   width: `${threshold === '--' || revenue === '--' ? 0 : Math.min(100, Math.max(0, (parseFloat(revenue.replace(/,/g, '')) / parseFloat(threshold.replace(/,/g, ''))) * 100))}%`,
-                   height: '100%',
-                   background: 'linear-gradient(90deg, #ffa500, #ff8c00)',
-                   borderRadius: '10px',
-                   transition: 'width 0.3s ease'
-                 }}></div>
+                <div style={{
+                  width: `${threshold === '--' || revenue === '--' ? 0 : Math.min(100, Math.max(0, (parseFloat(revenue.replace(/,/g, '')) / parseFloat(threshold.replace(/,/g, ''))) * 100))}%`,
+                  height: '100%',
+                  background: 'linear-gradient(90deg, #ffa500, #ff8c00)',
+                  borderRadius: '10px',
+                  transition: 'width 0.3s ease'
+                }}></div>
               </div>
               
-              {/* Lock/Unlock Emoji */}
-                             <div style={{ 
-                 display: 'flex', 
-                 alignItems: 'center', 
-                 justifyContent: 'center',
-                 fontSize: '1.5rem'
-               }}>
-                 {threshold === '--' || revenue === '--' ? '🔒' : (parseFloat(revenue.replace(/,/g, '')) >= parseFloat(threshold.replace(/,/g, '')) ? '🔓' : '🔒')}
-               </div>
+              {/* Lock/Unlock Emoji with Threshold Info below */}
+              <div style={{
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                gap: '4px'
+              }}>
+                <div style={{ 
+                  fontSize: '1.5rem'
+                }}>
+                  {threshold === '--' || revenue === '--' ? '🔒' : (parseFloat(revenue.replace(/,/g, '')) >= parseFloat(threshold.replace(/,/g, '')) ? '🔓' : '🔒')}
+                </div>
+                
+                {/* Threshold Info stacked under emoji */}
+                <div style={{
+                  fontSize: '9px',
+                  color: '#ffa500',
+                  textAlign: 'center'
+                }}>
+                  {threshold !== '--' && revenue !== '--' && parseFloat(revenue.replace(/,/g, '')) >= parseFloat(threshold.replace(/,/g, '')) ? (
+                    <>
+                      <div style={{ fontSize: '12px', fontWeight: 'bold' }}>Maintain:</div>
+                      <div style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '4px',
+                        fontSize: '12px',
+                        fontWeight: 'bold',
+                        justifyContent: 'center'
+                      }}>
+                        {threshold === '--' ? 'Loading...' : threshold}
+                        <img 
+                          src="/icons/sats1.svg" 
+                          alt="Sats" 
+                          style={{ 
+                            width: '14px', 
+                            height: '14px'
+                          }} 
+                        />
+                        <img 
+                          src="/icons/Vector.svg" 
+                          alt="Vector" 
+                          style={{ 
+                            width: '14px', 
+                            height: '14px'
+                          }} 
+                        />
+                      </div>
+                    </>
+                  ) : (
+                    <>
+                      <div>Min Needed</div>
+                      <div>to Unlock:</div>
+                      <div style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '4px',
+                        fontSize: '12px',
+                        fontWeight: 'bold',
+                        justifyContent: 'center'
+                      }}>
+                        {threshold === '--' ? 'Loading...' : threshold}
+                        <img 
+                          src="/icons/sats1.svg" 
+                          alt="Sats" 
+                          style={{ 
+                            width: '14px', 
+                            height: '14px'
+                          }} 
+                        />
+                        <img 
+                          src="/icons/Vector.svg" 
+                          alt="Vector" 
+                          style={{ 
+                            width: '14px', 
+                            height: '14px'
+                          }} 
+                        />
+                      </div>
+                    </>
+                  )}
+                </div>
+              </div>
             </div>
             
             <div style={{
-              fontSize: '12px',
+              fontSize: '14px',
               color: '#ffa500',
               textAlign: 'center',
               marginBottom: '4px',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              gap: '4px'
+              gap: '6px',
+              fontWeight: 'bold'
             }}>
               Current Profit Available to Claim: {revenue}
               <img 
                 src="/icons/sats1.svg" 
-                alt="Sats Lightning" 
+                alt="Sats" 
                 style={{ 
-                  width: '12px', 
-                  height: '12px',
-                  filter: 'brightness(0) invert(1)'
+                  width: '16px', 
+                  height: '16px'
+                }} 
+              />
+              <img 
+                src="/icons/Vector.svg" 
+                alt="Vector" 
+                style={{ 
+                  width: '16px', 
+                  height: '16px'
                 }} 
               />
             </div>
             
-                         <div style={{
-               fontSize: '12px',
-               color: '#ffa500',
-               textAlign: 'center',
-               marginBottom: '4px',
-               display: 'flex',
-               alignItems: 'center',
-               justifyContent: 'center',
-               gap: '4px'
-             }}>
-               Min Threshold Needed to Unlock: {threshold === '--' ? 'Loading...' : threshold}
-               <img 
-                 src="/icons/sats1.svg" 
-                 alt="Sats Lightning" 
-                 style={{ 
-                   width: '12px', 
-                   height: '12px',
-                   filter: 'brightness(0) invert(1)'
-                 }} 
-               />
-             </div>
-            
-            <div style={{
-              fontSize: '10px',
-              color: '#ff6b6b',
-              textAlign: 'center',
-              fontWeight: 'bold'
-            }}>
-              REAL BLOCKCHAIN DATA
-            </div>
+
+
           </div>
 
           <div className="user-stats">

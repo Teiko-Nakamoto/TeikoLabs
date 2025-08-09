@@ -185,21 +185,17 @@ const UnlockProgressBar = React.memo(function UnlockProgressBar({
         <div style={{ flex: 1, minWidth: '200px' }}>
           <div style={{ 
             fontSize: '14px', 
-            color: '#fff', 
+            color: '#ffa500', 
             fontWeight: '600', 
             marginBottom: '12px',
             textAlign: 'center',
-            width: '50%'
+            width: '92%'
           }}>
-            Progress to Unlock <img 
-              src="/icons/The Mas Network.svg" 
-              alt="MAS Sats" 
-              style={{ width: '18px', height: '18px', verticalAlign: 'middle', marginLeft: '4px' }}
-            />
+            Progress to Unlock
           </div>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-start', gap: '8px' }}>
+          <div style={{ display: 'flex', alignItems: 'flex-start', gap: '8px' }}>
             <div style={{
-              width: '50%',
+              width: '92%',
               height: '20px',
               backgroundColor: 'rgba(255, 255, 255, 0.1)',
               borderRadius: '10px',
@@ -216,71 +212,124 @@ const UnlockProgressBar = React.memo(function UnlockProgressBar({
               }}></div>
             </div>
             
-            {/* Lock/Unlock Emoji - Next to Progress Bar */}
-            <div style={{ 
-              display: 'flex', 
-              alignItems: 'center', 
-              justifyContent: 'center',
-              fontSize: '1.5rem'
+            {/* Lock/Unlock Emoji with Threshold Info below */}
+            <div style={{
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              gap: '4px'
             }}>
-              {currentRevenue >= minimumRevenueThreshold ? '🔓' : '🔒'}
+              <div style={{ 
+                fontSize: '1.5rem'
+              }}>
+                {currentRevenue >= minimumRevenueThreshold ? '🔓' : '🔒'}
+              </div>
+              
+              {/* Threshold Info stacked under emoji */}
+              <div style={{
+                fontSize: '9px',
+                color: '#ffa500',
+                textAlign: 'center'
+              }}>
+                {currentRevenue >= minimumRevenueThreshold ? (
+                  <>
+                    <div style={{ fontSize: '12px', fontWeight: 'bold' }}>Maintain:</div>
+                    <div style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '4px',
+                      fontSize: '12px',
+                      fontWeight: 'bold',
+                      justifyContent: 'center'
+                    }}>
+                      {loadingThreshold ? 'Loading...' : minimumRevenueThreshold.toLocaleString()}
+                      <img 
+                        src="/icons/sats1.svg" 
+                        alt="Sats" 
+                        style={{ 
+                          width: '14px', 
+                          height: '14px'
+                        }} 
+                      />
+                      <img 
+                        src="/icons/Vector.svg" 
+                        alt="Vector" 
+                        style={{ 
+                          width: '14px', 
+                          height: '14px'
+                        }} 
+                      />
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <div>Min Needed</div>
+                    <div>to Unlock:</div>
+                    <div style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '4px',
+                      fontSize: '12px',
+                      fontWeight: 'bold',
+                      justifyContent: 'center'
+                    }}>
+                      {loadingThreshold ? 'Loading...' : minimumRevenueThreshold.toLocaleString()}
+                      <img 
+                        src="/icons/sats1.svg" 
+                        alt="Sats" 
+                        style={{ 
+                          width: '14px', 
+                          height: '14px'
+                        }} 
+                      />
+                      <img 
+                        src="/icons/Vector.svg" 
+                        alt="Vector" 
+                        style={{ 
+                          width: '14px', 
+                          height: '14px'
+                        }} 
+                      />
+                    </div>
+                  </>
+                )}
+              </div>
             </div>
           </div>
+          
+          {/* Current Profit centered between progress bar ends */}
           <div style={{
-            fontSize: '12px',
+            fontSize: '14px',
             color: '#ffa500',
             textAlign: 'center',
             marginTop: '8px',
-            width: '50%',
+            width: '92%',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            gap: '4px'
+            gap: '6px',
+            fontWeight: 'bold'
           }}>
             Current Profit Available to Claim: {revenue}
             <img 
               src="/icons/sats1.svg" 
-              alt="Sats Lightning" 
+              alt="Sats" 
               style={{ 
-                width: '12px', 
-                height: '12px',
-                filter: 'brightness(0) invert(1)'
+                width: '16px', 
+                height: '16px'
               }} 
             />
-          </div>
-          <div style={{
-            fontSize: '12px',
-            color: '#ffa500',
-            textAlign: 'center',
-            marginTop: '4px',
-            width: '50%',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            gap: '4px'
-          }}>
-            Min Threshold Needed to Unlock: {loadingThreshold ? 'Loading...' : minimumRevenueThreshold.toLocaleString()}
             <img 
-              src="/icons/sats1.svg" 
-              alt="Sats Lightning" 
+              src="/icons/Vector.svg" 
+              alt="Vector" 
               style={{ 
-                width: '12px', 
-                height: '12px',
-                filter: 'brightness(0) invert(1)'
+                width: '16px', 
+                height: '16px'
               }} 
             />
           </div>
-          {/* DUMMY DATA indicator */}
-          <div style={{
-            fontSize: '10px',
-            color: '#ff6b6b',
-            textAlign: 'center',
-            marginTop: '2px',
-            width: '50%',
-            fontWeight: 'bold'
-          }}>
-            {loadingThreshold ? 'LOADING...' : 'REAL BLOCKCHAIN DATA'}
-          </div>
+
+
         </div>
       </div>
       

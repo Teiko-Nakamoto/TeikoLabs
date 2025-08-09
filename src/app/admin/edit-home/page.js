@@ -765,46 +765,46 @@ export default function EditHomePage() {
                 }
                 
                 return displayCards.map((card) => {
-                  if (card.isComingSoon) {
-                    return (
-                      <div key={`coming-soon-${card.id}`} className="token-card coming-soon">
-                        <div className="token-card-box">
-                          <span className="token-symbol">🚧 {t('coming_soon')}</span>
-                        </div>
-                      </div>
-                    );
-                  }
-
+                if (card.isComingSoon) {
                   return (
-                    <div key={`token-${card.id}`} className="token-card-wrapper">
-                      <div className="token-card">
-                        <div className="token-card-box">
-                          <span className="token-symbol">
-                            <span className="btc-symbol">₿</span> {card.symbol || tokenSymbol}
-                          </span>
-                        </div>
-
-                        <div className="token-card-meta">
-                          <p>
-                            <span className="label">{t('revenue_locked')}:</span>{' '}
-                            <span className="value sats">
-                              <img src="/icons/sats1.svg" alt="sats" style={{ width: '16px', height: '16px', verticalAlign: 'middle', marginRight: '2px' }} />
-                              <img src="/icons/Vector.svg" alt="lightning" style={{ width: '16px', height: '16px', verticalAlign: 'middle', marginRight: '4px' }} />
-                              {card.revenue ? `${card.revenue} sats` : 'Real-time data'}
-                            </span>
-                          </p>
-                          <p>
-                            <span className="label">{t('liquidity_held')}:</span>{' '}
-                            <span className="value sats">
-                              <img src="/icons/sats1.svg" alt="sats" style={{ width: '16px', height: '16px', verticalAlign: 'middle', marginRight: '2px' }} />
-                              <img src="/icons/Vector.svg" alt="lightning" style={{ width: '16px', height: '16px', verticalAlign: 'middle', marginRight: '4px' }} />
-                              {card.liquidity ? `${card.liquidity} sats` : 'Real-time data'}
-                            </span>
-                          </p>
-                        </div>
+                    <div key={`coming-soon-${card.id}`} className="token-card coming-soon">
+                      <div className="token-card-box">
+                        <span className="token-symbol">🚧 {t('coming_soon')}</span>
                       </div>
                     </div>
                   );
+                }
+
+                return (
+                  <div key={`token-${card.id}`} className="token-card-wrapper">
+                    <div className="token-card">
+                      <div className="token-card-box">
+                        <span className="token-symbol">
+                          <span className="btc-symbol">₿</span> {card.symbol || tokenSymbol}
+                        </span>
+                      </div>
+
+                      <div className="token-card-meta">
+                        <p>
+                          <span className="label">{t('revenue_locked')}:</span>{' '}
+                          <span className="value sats">
+                            <img src="/icons/sats1.svg" alt="sats" style={{ width: '16px', height: '16px', verticalAlign: 'middle', marginRight: '2px' }} />
+                            <img src="/icons/Vector.svg" alt="lightning" style={{ width: '16px', height: '16px', verticalAlign: 'middle', marginRight: '4px' }} />
+                            {card.revenue ? `${card.revenue} sats` : 'Real-time data'}
+                          </span>
+                        </p>
+                        <p>
+                          <span className="label">{t('liquidity_held')}:</span>{' '}
+                          <span className="value sats">
+                            <img src="/icons/sats1.svg" alt="sats" style={{ width: '16px', height: '16px', verticalAlign: 'middle', marginRight: '2px' }} />
+                            <img src="/icons/Vector.svg" alt="lightning" style={{ width: '16px', height: '16px', verticalAlign: 'middle', marginRight: '4px' }} />
+                            {card.liquidity ? `${card.liquidity} sats` : 'Real-time data'}
+                          </span>
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                );
                 });
               })()}
               
@@ -822,14 +822,14 @@ export default function EditHomePage() {
                 
                 if (displayCards.length === 0) {
                   return (
-                    <div className="empty-preview">
+                <div className="empty-preview">
                       <p>
                         {previewActiveTab === 'all' 
                           ? 'No user-created projects found. User projects will appear here after minting is completed.'
                           : `No visible tokens assigned to ${previewActiveTab === 'featured' ? 'Featured' : 'Practice Trading'} tab`
                         }
                       </p>
-                    </div>
+                </div>
                   );
                 }
                 return null;

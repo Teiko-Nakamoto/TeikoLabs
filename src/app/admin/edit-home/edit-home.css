@@ -909,37 +909,3 @@
 .token-row.hidden-token:hover {
   opacity: 0.8;
 }
-  gap: 0.5rem;
-  cursor: pointer;
-  padding: 0.5rem;
-  border-radius: 6px;
-  transition: all 0.2s ease;
-}
-
-.hidden-toggle:hover {
-  background: rgba(255, 255, 255, 0.05);
-}
-
-.hidden-checkbox {
-  width: 16px;
-  height: 16px;
-  accent-color: #ef4444;
-  cursor: pointer;
-}
-
-.toggle-label {
-  font-size: 0.85rem;
-  color: #ffffff;
-  cursor: pointer;
-  user-select: none;
-}
-
-/* Hidden token row styling */
-.token-row.hidden-token {
-  opacity: 0.6;
-  background: rgba(239, 68, 68, 0.1);
-}
-
-.token-row.hidden-token:hover {
-  opacity: 0.8;
-}

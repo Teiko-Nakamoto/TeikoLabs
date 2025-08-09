@@ -4,6 +4,8 @@ import { useState, useEffect } from 'react';
 import { useParams } from 'next/navigation';
 import Header from '../../components/header';
 import LockUnlockButton from '../../components/LockUnlockButton';
+import SmartContractButton from '../../components/SmartContractButton';
+import LockedWalletDisplay from '../../components/LockedWalletDisplay';
 import './revenue-page.css';
 
 export default function RevenuePage() {
@@ -15,6 +17,8 @@ export default function RevenuePage() {
   const [currentStep, setCurrentStep] = useState(1);
   const [userWallet, setUserWallet] = useState(null);
   const [isMajorityHolder, setIsMajorityHolder] = useState(false);
+  const [showContracts, setShowContracts] = useState(false);
+  const [contractCopied, setContractCopied] = useState('');
 
   const [claimAmount, setClaimAmount] = useState(() => {
     // Load saved claim amount from localStorage on component mount
@@ -118,14 +122,14 @@ export default function RevenuePage() {
       const data = await response.json();
       console.log('🔍 Raw majority holder API response:', data);
       
-      if (data.address && data.address !== 'Unknown') {
-        // Get user's wallet address
-        const userAddress = getConnectedWalletAddress();
-        
-        // Fetch user's locked balance
-        const userLockedTokens = await fetchUserLockedBalance(userAddress);
-        
-        // Check if user is the majority holder
+      // Get user's wallet address
+      const userAddress = getConnectedWalletAddress();
+      
+      // Fetch user's locked balance
+      const userLockedTokens = await fetchUserLockedBalance(userAddress);
+      
+      if (data.hasMajorityHolder && data.address) {
+        // There is a majority holder
         const isUserMajorityHolder = userAddress === data.address;
         
         setRevenueData(prev => ({
@@ -143,9 +147,21 @@ export default function RevenuePage() {
         console.log('✅ User locked tokens:', userLockedTokens);
         console.log('✅ Is user majority holder:', isUserMajorityHolder);
       } else {
-        console.log('⚠️ No valid majority holder data received');
+        // No majority holder exists
+        console.log('⚠️ No majority holder exists');
         console.log('⚠️ Address:', data.address);
         console.log('⚠️ Locked tokens:', data.lockedTokens);
+        
+        setRevenueData(prev => ({
+          ...prev,
+          majorityHolderAddress: 'No majority holder',
+          majorityHolderLockedTokens: '0',
+          userLockedTokens: userLockedTokens.toLocaleString(),
+          isUserMajorityHolder: false
+        }));
+        
+        setIsMajorityHolder(false);
+        console.log('✅ Set "No majority holder" state');
       }
     } catch (error) {
       console.error('❌ Error fetching majority holder data:', error);
@@ -171,6 +187,15 @@ export default function RevenuePage() {
           
           // Set token data from passed data
           setTokenData(dataFromTrade.tokenData);
+          
+          // Debug: Log contract information structure
+          console.log('📋 Token data contract info:', {
+            dexInfo: dataFromTrade.tokenData?.dexInfo,
+            tokenInfo: dataFromTrade.tokenData?.tokenInfo,
+            dexContractAddress: dataFromTrade.tokenData?.dexContractAddress,
+            tokenContractAddress: dataFromTrade.tokenData?.tokenContractAddress,
+            fullTokenData: dataFromTrade.tokenData
+          });
           
           // Set revenue data from passed data (convert numbers to formatted strings for display)
           setRevenueData({
@@ -281,21 +306,34 @@ export default function RevenuePage() {
         const majorityResponse = await fetch(`/api/get-majority-holder?tokenId=${token.id}`);
         majorityHolderData = await majorityResponse.json();
         console.log('👑 Majority holder data:', majorityHolderData);
+        console.log('👑 hasMajorityHolder:', majorityHolderData.hasMajorityHolder);
+        
+        // Handle case when no majority holder exists
+        if (!majorityHolderData.hasMajorityHolder) {
+          majorityHolderData = {
+            ...majorityHolderData,
+            address: 'No majority holder',
+            lockedTokens: 0,
+            percentage: 0
+          };
+          console.log('👑 No majority holder - setting address to:', majorityHolderData.address);
+        }
       } catch (error) {
         console.error('Error fetching majority holder:', error);
         // Use fallback data if API fails
         majorityHolderData = {
-          address: 'ST1ABC...XYZ (Unknown)',
-          lockedTokens: totalLockedTokens,
+          address: 'Unable to load holder data',
+          lockedTokens: 0,
           totalLockedTokens: totalLockedTokens,
           majorityThreshold: majorityThreshold,
-          percentage: 50.1
+          percentage: 0,
+          hasMajorityHolder: false
         };
       }
       
       const availableToClaim = totalRevenue; // Show total revenue available
       
-      setRevenueData({
+      const revenueDataToSet = {
         totalRevenue: totalRevenue.toLocaleString(),
         availableToClaim: availableToClaim.toLocaleString(),
         userLockedTokens: userLockedTokens.toLocaleString(),
@@ -307,7 +345,10 @@ export default function RevenuePage() {
         majorityHolderAddress: majorityHolderData.address,
         majorityHolderLockedTokens: majorityHolderData.lockedTokens.toLocaleString(),
         majorityHolderPercentage: majorityHolderData.percentage.toFixed(1)
-      });
+      };
+      
+      console.log('👑 Setting revenueData with majorityHolderAddress:', revenueDataToSet.majorityHolderAddress);
+      setRevenueData(revenueDataToSet);
       
       console.log('✅ Real revenue data loaded:', {
         totalLockedTokens,
@@ -330,7 +371,7 @@ export default function RevenuePage() {
         majorityThreshold: '1',
         tradingFees: '0',
         claimHistory: [],
-        majorityHolderAddress: 'ST1ABC...XYZ (Unknown)',
+        majorityHolderAddress: 'No majority holder',
         majorityHolderLockedTokens: '0',
         majorityHolderPercentage: '0.0'
       });
@@ -418,7 +459,23 @@ export default function RevenuePage() {
   if (loading) {
     return (
       <>
-        <Header />
+        {/* Custom header for revenue page with locked wallet */}
+        <header className="revenue-header-nav" style={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          padding: '1rem 2rem',
+          background: 'rgba(255, 255, 255, 0.05)',
+          borderBottom: '1px solid rgba(255, 255, 255, 0.1)'
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+            <a href="/" style={{ textDecoration: 'none' }}>
+              <img src="/logo.png" alt="Teiko Labs Logo" style={{ height: '40px' }} />
+            </a>
+          </div>
+          <LockedWalletDisplay />
+        </header>
+        
         <main className="revenue-page">
           <div style={{ textAlign: 'center', padding: '3rem', color: 'white' }}>
             <div style={{ 
@@ -440,7 +497,23 @@ export default function RevenuePage() {
   if (!tokenData) {
     return (
       <>
-        <Header />
+        {/* Custom header for revenue page with locked wallet */}
+        <header className="revenue-header-nav" style={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          padding: '1rem 2rem',
+          background: 'rgba(255, 255, 255, 0.05)',
+          borderBottom: '1px solid rgba(255, 255, 255, 0.1)'
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+            <a href="/" style={{ textDecoration: 'none' }}>
+              <img src="/logo.png" alt="Teiko Labs Logo" style={{ height: '40px' }} />
+            </a>
+          </div>
+          <LockedWalletDisplay />
+        </header>
+        
         <main className="revenue-page">
           <div style={{ textAlign: 'center', padding: '3rem', color: 'white' }}>
             <p>Token not found</p>
@@ -452,7 +525,23 @@ export default function RevenuePage() {
 
   return (
     <>
-      <Header />
+      {/* Custom header for revenue page with locked wallet */}
+      <header className="revenue-header-nav" style={{
+        display: 'flex',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        padding: '1rem 2rem',
+        background: 'rgba(255, 255, 255, 0.05)',
+        borderBottom: '1px solid rgba(255, 255, 255, 0.1)'
+      }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+          <a href="/" style={{ textDecoration: 'none' }}>
+            <img src="/logo.png" alt="Teiko Labs Logo" style={{ height: '40px' }} />
+          </a>
+        </div>
+        <LockedWalletDisplay />
+      </header>
+      
       <main className="revenue-page">
         <div className="revenue-container">
           {/* Header Section */}
@@ -460,7 +549,9 @@ export default function RevenuePage() {
             <div style={{ 
               display: 'flex', 
               justifyContent: 'flex-start', 
-              marginBottom: '1rem'
+              marginBottom: '1rem',
+              gap: '10px',
+              alignItems: 'center'
             }}>
               <button 
                 onClick={() => {
@@ -480,12 +571,17 @@ export default function RevenuePage() {
               >
                 ← Back to Trading
               </button>
+              
+              <SmartContractButton 
+                onClick={() => setShowContracts(true)}
+                style={{
+                  padding: '10px 16px' // Slightly smaller padding for header
+                }}
+              />
             </div>
             
             <div className="token-info">
-              <h1>💰 Revenue Claiming Process</h1>
-              <p className="token-name">{tokenData.name || 'Token'}</p>
-              <p className="token-symbol">{tokenData.symbol || 'SYMBOL'}</p>
+              <h1>Claim Profit 💰</h1>
             </div>
             
             {/* Available Revenue Display - Centered */}
@@ -525,10 +621,7 @@ export default function RevenuePage() {
           <div className="step-content">
                         {currentStep === 1 && (
               <div className="step-panel">
-                <div className="step-header">
-                  <h2>Revenue Information & Requirements</h2>
-                  <p>Learn how revenue is generated and what you need to claim it</p>
-                </div>
+
                 
                 <div className="info-content">
 
@@ -540,7 +633,7 @@ export default function RevenuePage() {
                         <div className="explanation-icon">💱</div>
                         <div className="explanation-content">
                           <h4>Trading Fees</h4>
-                          <p>Every trade on this token generates a small fee that accumulates as revenue</p>
+                          <p>Each project charges a 1.5% fee for every trade of its treasury</p>
                         </div>
                       </div>
                     </div>
@@ -600,14 +693,28 @@ export default function RevenuePage() {
                       <div className="majority-section">
                         <h3>👑 Current Majority Holder</h3>
                         <div className="holder-info">
-                                                  <div className="info-row" style={{ wordBreak: 'break-all', overflowWrap: 'break-word' }}>
-                          <span className="label">Holder Address:</span>
-                          <span className="value" style={{ wordBreak: 'break-all', overflowWrap: 'break-word' }}>{revenueData.majorityHolderAddress || 'ST1ABC...XYZ (Loading...)'}</span>
-                        </div>
-                          <div className="info-row">
-                            <span className="label">Locked Tokens:</span>
-                            <span className="value">{revenueData.majorityHolderLockedTokens || '0'} tokens</span>
-                          </div>
+                          {revenueData.majorityHolderAddress === 'No majority holder' ? (
+                            <div className="info-row">
+                              <span className="label">Status:</span>
+                              <span className="value" style={{ color: '#9ca3af' }}>No majority holder - No one has locked tokens yet</span>
+                            </div>
+                          ) : revenueData.majorityHolderAddress === 'Unable to load holder data' ? (
+                            <div className="info-row">
+                              <span className="label">Status:</span>
+                              <span className="value" style={{ color: '#ef4444' }}>Unable to load holder data</span>
+                            </div>
+                          ) : (
+                            <>
+                              <div className="info-row" style={{ wordBreak: 'break-all', overflowWrap: 'break-word' }}>
+                                <span className="label">Holder Address:</span>
+                                <span className="value" style={{ wordBreak: 'break-all', overflowWrap: 'break-word' }}>{revenueData.majorityHolderAddress || 'Loading...'}</span>
+                              </div>
+                              <div className="info-row">
+                                <span className="label">Locked Tokens:</span>
+                                <span className="value">{revenueData.majorityHolderLockedTokens || '0'} tokens</span>
+                              </div>
+                            </>
+                          )}
                         </div>
                       </div>
 
@@ -634,11 +741,14 @@ export default function RevenuePage() {
                                 <span className="label">Tokens Needed to Lock:</span>
                                 <span className="value">
                                   {(() => {
+                                    if (revenueData.majorityHolderAddress === 'No majority holder') {
+                                      return 'Any amount (you can be the first!)';
+                                    }
                                     const majorityHolderTokens = parseFloat(revenueData.majorityHolderLockedTokens?.replace(/,/g, '') || '0');
                                     const userTokens = parseFloat(revenueData.userLockedTokens?.replace(/,/g, '') || '0');
                                     const tokensNeeded = Math.max(0, majorityHolderTokens - userTokens + 0.00000001);
-                                    return tokensNeeded.toLocaleString(undefined, { maximumFractionDigits: 8 });
-                                  })()} tokens
+                                    return tokensNeeded.toLocaleString(undefined, { maximumFractionDigits: 8 }) + ' tokens';
+                                  })()}
                                 </span>
                               </div>
                               <div className="info-row">
@@ -677,22 +787,100 @@ export default function RevenuePage() {
                     </div>
                   ) : (
                     <div className="action-required">
-                      <div className="warning-box">
-                        <h4>⚠️ Action Required</h4>
-                        <p>To claim revenue, you must become the majority holder by locking more tokens than the current holder.</p>
-                        <p><strong>Current majority holder has: {revenueData.majorityHolderLockedTokens} tokens</strong></p>
-                        <p><strong>You need to lock: {revenueData.majorityThreshold} tokens or more</strong></p>
-                        
-                        {/* Lock Tokens Button for Non-Majority Holders */}
-                        <div className="lock-section">
-                          <LockUnlockButton 
-                            tokenId={tokenId}
-                            className="lock-button"
-                          >
-                            🔒 Lock Tokens to Become Majority Holder
-                          </LockUnlockButton>
+                      {revenueData.majorityHolderAddress === 'No majority holder' ? (
+                        // No majority holder exists - different UI based on user's token holdings
+                        <div>
+                          {parseFloat(revenueData.userLockedTokens?.replace(/,/g, '') || '0') === 0 ? (
+                            // User has no locked tokens
+                            <div className="first-person-section">
+                              <div className="highlight-box" style={{
+                                background: 'linear-gradient(135deg, #10b981, #059669)',
+                                padding: '24px',
+                                borderRadius: '12px',
+                                textAlign: 'center',
+                                marginBottom: '20px'
+                              }}>
+                                <h3 style={{ color: 'white', marginBottom: '12px', fontSize: '20px' }}>
+                                  🎉 Become the first person to withdraw the project's profit!
+                                </h3>
+                                <p style={{ color: 'white', fontSize: '16px', marginBottom: '16px' }}>
+                                  Lock any amount and then Claim majority holder status
+                                </p>
+                                <div className="lock-section">
+                                  <LockUnlockButton 
+                                    tokenId={tokenId}
+                                    className="lock-button"
+                                    style={{
+                                      backgroundColor: 'white',
+                                      color: '#059669',
+                                      fontWeight: 'bold',
+                                      padding: '12px 24px',
+                                      fontSize: '16px'
+                                    }}
+                                  >
+                                    🔒 Lock Tokens
+                                  </LockUnlockButton>
+                                </div>
+                              </div>
+                            </div>
+                          ) : (
+                            // User has locked tokens but no one is majority holder
+                            <div className="claim-majority-section">
+                              <div className="highlight-box" style={{
+                                background: 'linear-gradient(135deg, #3b82f6, #1d4ed8)',
+                                padding: '24px',
+                                borderRadius: '12px',
+                                textAlign: 'center',
+                                marginBottom: '20px'
+                              }}>
+                                <h3 style={{ color: 'white', marginBottom: '12px', fontSize: '20px' }}>
+                                  👑 You can claim majority holder status!
+                                </h3>
+                                <p style={{ color: 'white', fontSize: '16px', marginBottom: '16px' }}>
+                                  You have {revenueData.userLockedTokens} locked tokens and no one else is the majority holder
+                                </p>
+                                <button
+                                  className="claim-majority-button"
+                                  style={{
+                                    backgroundColor: 'white',
+                                    color: '#1d4ed8',
+                                    fontWeight: 'bold',
+                                    padding: '12px 24px',
+                                    fontSize: '16px',
+                                    border: 'none',
+                                    borderRadius: '8px',
+                                    cursor: 'pointer'
+                                  }}
+                                  onClick={() => {
+                                    // Trigger a refresh of majority holder data
+                                    fetchMajorityHolderData();
+                                  }}
+                                >
+                                  👑 Claim Majority Holder Status
+                                </button>
+                              </div>
+                            </div>
+                          )}
                         </div>
-                      </div>
+                      ) : (
+                        // There is a majority holder - show normal UI
+                        <div className="warning-box">
+                          <h4>⚠️ Action Required</h4>
+                          <p>To claim revenue, you must become the majority holder by locking more tokens than the current holder.</p>
+                          <p><strong>Current majority holder has: {revenueData.majorityHolderLockedTokens} tokens</strong></p>
+                          <p><strong>You need to lock: {revenueData.majorityThreshold} tokens or more</strong></p>
+                          
+                          {/* Lock Tokens Button for Non-Majority Holders */}
+                          <div className="lock-section">
+                            <LockUnlockButton 
+                              tokenId={tokenId}
+                              className="lock-button"
+                            >
+                              🔒 Lock Tokens
+                            </LockUnlockButton>
+                          </div>
+                        </div>
+                      )}
                     </div>
                   )}
                   
@@ -928,6 +1116,246 @@ export default function RevenuePage() {
 
         </div>
       </main>
+
+      {/* Smart Contract Addresses popup */}
+      {showContracts && (
+        <div className="popup-overlay" onClick={() => setShowContracts(false)} style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          width: '100%',
+          height: '100%',
+          backgroundColor: 'rgba(0, 0, 0, 0.5)',
+          zIndex: 1000,
+          display: 'flex',
+          justifyContent: 'center',
+          alignItems: 'center'
+        }}>
+          <div className="popup contracts-popup" onClick={(e) => e.stopPropagation()} style={{
+            background: '#2d3748',
+            borderRadius: '12px',
+            padding: '20px',
+            maxWidth: '500px',
+            width: '90%',
+            maxHeight: '80%',
+            overflow: 'auto'
+          }}>
+            <h3 style={{ 
+              marginTop: 0, 
+              marginBottom: '20px', 
+              color: '#fff', 
+              textAlign: 'center',
+              fontSize: '18px'
+            }}>
+              📋 Smart Contract Addresses
+            </h3>
+            
+            {/* Network Info */}
+            <div style={{ 
+              marginBottom: '16px', 
+              padding: '12px', 
+              background: '#1a202c', 
+              borderRadius: '8px',
+              border: '2px solid #fca311',
+              textAlign: 'center'
+            }}>
+              <div style={{ 
+                color: '#fca311', 
+                fontSize: '14px', 
+                fontWeight: 'bold', 
+                marginBottom: '4px' 
+              }}>
+                🌐 Network:
+              </div>
+              <div style={{ 
+                color: '#fff', 
+                fontSize: '16px', 
+                fontWeight: 'bold',
+                textTransform: 'uppercase'
+              }}>
+                {(() => {
+                  // Determine network from tokenData
+                  if (tokenData?.network) {
+                    return tokenData.network;
+                  }
+                  if (tokenData?.tabType === 'practice' || tokenData?.tabType === 'user_created_testnet') {
+                    return 'testnet';
+                  }
+                  if (tokenData?.tabType === 'featured' || tokenData?.tabType === 'user_created_mainnet') {
+                    return 'mainnet';
+                  }
+                  return 'testnet'; // default
+                })()}
+              </div>
+            </div>
+            
+            {/* Contract Addresses */}
+            {/* DEX Contract - handle multiple possible data structures */}
+            {(tokenData?.dexInfo || tokenData?.dexContractAddress) && (
+              <div style={{ marginBottom: '16px' }}>
+                <div style={{ 
+                  color: '#fca311', 
+                  fontSize: '14px', 
+                  fontWeight: 'bold', 
+                  marginBottom: '8px' 
+                }}>
+                  🏛️ DEX Contract:
+                </div>
+                <div style={{
+                  background: '#1a202c',
+                  padding: '12px',
+                  borderRadius: '6px',
+                  fontFamily: 'monospace',
+                  fontSize: '12px',
+                  color: '#e2e8f0',
+                  wordBreak: 'break-all',
+                  border: '1px solid #4a5568'
+                }}>
+                  {(() => {
+                    // Handle different data structures
+                    if (tokenData.dexInfo?.address && tokenData.dexInfo?.name) {
+                      return `${tokenData.dexInfo.address}.${tokenData.dexInfo.name}`;
+                    } else if (tokenData.dexInfo) {
+                      return tokenData.dexInfo;
+                    } else if (tokenData.dexContractAddress) {
+                      return tokenData.dexContractAddress;
+                    }
+                    return 'Not configured';
+                  })()}
+                </div>
+                <button
+                  onClick={() => {
+                    const contractAddress = (() => {
+                      if (tokenData.dexInfo?.address && tokenData.dexInfo?.name) {
+                        return `${tokenData.dexInfo.address}.${tokenData.dexInfo.name}`;
+                      } else if (tokenData.dexInfo) {
+                        return tokenData.dexInfo;
+                      } else if (tokenData.dexContractAddress) {
+                        return tokenData.dexContractAddress;
+                      }
+                      return '';
+                    })();
+                    
+                    if (contractAddress) {
+                      navigator.clipboard.writeText(contractAddress);
+                      setContractCopied('dex');
+                      setTimeout(() => setContractCopied(''), 2000);
+                    }
+                  }}
+                  style={{
+                    background: contractCopied === 'dex' ? '#10b981' : '#3b82f6',
+                    color: 'white',
+                    border: 'none',
+                    padding: '6px 12px',
+                    borderRadius: '4px',
+                    fontSize: '11px',
+                    cursor: 'pointer',
+                    marginTop: '6px',
+                    transition: 'all 0.2s'
+                  }}
+                >
+                  {contractCopied === 'dex' ? '✅ Copied!' : '📋 Copy'}
+                </button>
+              </div>
+            )}
+
+            {/* Token Contract - handle multiple possible data structures */}
+            {(tokenData?.tokenInfo || tokenData?.tokenContractAddress) && (
+              <div style={{ marginBottom: '16px' }}>
+                <div style={{ 
+                  color: '#fca311', 
+                  fontSize: '14px', 
+                  fontWeight: 'bold', 
+                  marginBottom: '8px' 
+                }}>
+                  🪙 Token Contract:
+                </div>
+                <div style={{
+                  background: '#1a202c',
+                  padding: '12px',
+                  borderRadius: '6px',
+                  fontFamily: 'monospace',
+                  fontSize: '12px',
+                  color: '#e2e8f0',
+                  wordBreak: 'break-all',
+                  border: '1px solid #4a5568'
+                }}>
+                  {(() => {
+                    // Handle different data structures
+                    if (tokenData.tokenInfo?.address && tokenData.tokenInfo?.name) {
+                      return `${tokenData.tokenInfo.address}.${tokenData.tokenInfo.name}`;
+                    } else if (tokenData.tokenInfo) {
+                      return tokenData.tokenInfo;
+                    } else if (tokenData.tokenContractAddress) {
+                      return tokenData.tokenContractAddress;
+                    }
+                    return 'Not configured';
+                  })()}
+                </div>
+                <button
+                  onClick={() => {
+                    const contractAddress = (() => {
+                      if (tokenData.tokenInfo?.address && tokenData.tokenInfo?.name) {
+                        return `${tokenData.tokenInfo.address}.${tokenData.tokenInfo.name}`;
+                      } else if (tokenData.tokenInfo) {
+                        return tokenData.tokenInfo;
+                      } else if (tokenData.tokenContractAddress) {
+                        return tokenData.tokenContractAddress;
+                      }
+                      return '';
+                    })();
+                    
+                    if (contractAddress) {
+                      navigator.clipboard.writeText(contractAddress);
+                      setContractCopied('token');
+                      setTimeout(() => setContractCopied(''), 2000);
+                    }
+                  }}
+                  style={{
+                    background: contractCopied === 'token' ? '#10b981' : '#3b82f6',
+                    color: 'white',
+                    border: 'none',
+                    padding: '6px 12px',
+                    borderRadius: '4px',
+                    fontSize: '11px',
+                    cursor: 'pointer',
+                    marginTop: '6px',
+                    transition: 'all 0.2s'
+                  }}
+                >
+                  {contractCopied === 'token' ? '✅ Copied!' : '📋 Copy'}
+                </button>
+              </div>
+            )}
+
+            <div style={{ 
+              textAlign: 'center', 
+              marginTop: '20px',
+              fontSize: '11px',
+              color: '#9ca3af'
+            }}>
+              These contracts are the source of truth for all revenue calculations and API calls
+            </div>
+
+            <button
+              onClick={() => setShowContracts(false)}
+              style={{
+                background: '#4a5568',
+                color: 'white',
+                border: 'none',
+                padding: '10px 20px',
+                borderRadius: '6px',
+                fontSize: '14px',
+                cursor: 'pointer',
+                width: '100%',
+                marginTop: '16px'
+              }}
+            >
+              Close
+            </button>
+          </div>
+        </div>
+      )}
     </>
   );
 } 

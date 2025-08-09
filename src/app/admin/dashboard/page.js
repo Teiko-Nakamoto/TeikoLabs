@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useTranslation } from 'react-i18next';
 import Header from '../../components/header';
+import ApiStatistics from '../../components/ApiStatistics';
 import './admin-dashboard.css';
 
 export default function AdminDashboard() {
@@ -11,6 +12,7 @@ export default function AdminDashboard() {
   const router = useRouter();
   const [adminData, setAdminData] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [showApiStats, setShowApiStats] = useState(false);
   
   // Admin wallet addresses (comma-separated)
   const ADMIN_ADDRESSES = process.env.NEXT_PUBLIC_ADMIN_ADDRESSES?.split(',') || ['ST37918Q7NBZ52AMV133VTY5C864KVK0S2HZ3CGA4'];
@@ -135,18 +137,21 @@ export default function AdminDashboard() {
                  >
                    🏠 Edit Home Screen
                  </button>
-                 <button className="admin-action-button">
-                   📊 View Statistics
-                 </button>
-                 <button className="admin-action-button">
-                   🔧 Manage Tokens
-                 </button>
-                 <button 
-                   className="admin-action-button"
-                   onClick={() => router.push('/admin/api-management')}
-                 >
-                   🔌 API Management
-                 </button>
+                                 <button 
+                  className="admin-action-button"
+                  onClick={() => setShowApiStats(true)}
+                >
+                  📊 API Statistics
+                </button>
+                <button className="admin-action-button">
+                  🔧 Manage Tokens
+                </button>
+                <button 
+                  className="admin-action-button"
+                  onClick={() => router.push('/admin/api-management')}
+                >
+                  📋 API Rules
+                </button>
                  <button className="admin-action-button">
                    ⚙️ System Settings
                  </button>
@@ -163,6 +168,11 @@ export default function AdminDashboard() {
           </div>
         </div>
       </main>
+      
+      {/* API Statistics Popup */}
+      {showApiStats && (
+        <ApiStatistics onClose={() => setShowApiStats(false)} />
+      )}
     </>
   );
 } 

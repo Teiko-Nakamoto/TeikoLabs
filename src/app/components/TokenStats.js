@@ -1,10 +1,40 @@
 'use client';
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 
-export default function TokenStats({ revenue, liquidity, remainingSupply }) {
+export default function TokenStats({ revenue, liquidity, remainingSupply, dexInfo, tokenInfo }) {
   const { t } = useTranslation();
+  const [majorityHolderAddress, setMajorityHolderAddress] = useState('Loading...');
+
+  // Fetch majority holder address from smart contract
+  useEffect(() => {
+    const fetchMajorityHolder = async () => {
+      if (!dexInfo) {
+        setMajorityHolderAddress('None');
+        return;
+      }
+
+      try {
+        console.log('🔍 Fetching majority holder address from smart contract...');
+        const response = await fetch(`/api/get-majority-holder-address?dexInfo=${encodeURIComponent(dexInfo)}&tokenInfo=${encodeURIComponent(tokenInfo || '')}`);
+        const data = await response.json();
+        
+        console.log('👑 Majority holder API response:', data);
+        
+        if (data.success && data.hasValidHolder && data.majorityHolderAddress) {
+          setMajorityHolderAddress(data.majorityHolderAddress);
+        } else {
+          setMajorityHolderAddress('None');
+        }
+      } catch (error) {
+        console.error('❌ Failed to fetch majority holder address:', error);
+        setMajorityHolderAddress('None');
+      }
+    };
+
+    fetchMajorityHolder();
+  }, [dexInfo, tokenInfo]);
   
   return (
     <div style={{
@@ -25,7 +55,7 @@ export default function TokenStats({ revenue, liquidity, remainingSupply }) {
       </h2>
       
       <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-        {/* Profit Created */}
+        {/* Current Majority Holder Address */}
         <div style={{ 
           padding: '12px',
           background: 'rgba(255, 255, 255, 0.1)',
@@ -35,18 +65,14 @@ export default function TokenStats({ revenue, liquidity, remainingSupply }) {
           <div style={{ fontSize: '12px', color: '#ccc', marginBottom: '6px' }}>
             {t('revenue_locked')}:
           </div>
-          <div style={{ fontSize: '14px', color: '#fff', fontWeight: '600', display: 'flex', alignItems: 'center', gap: '6px' }}>
-            <img 
-              src="/icons/sats1.svg" 
-              alt="sats" 
-              style={{ width: '14px', height: '14px', verticalAlign: 'middle' }}
-            />
-            <img 
-              src="/icons/Vector.svg" 
-              alt="lightning" 
-              style={{ width: '14px', height: '14px', verticalAlign: 'middle' }}
-            />
-            {revenue || '--'}
+          <div style={{ 
+            fontSize: '12px', 
+            color: '#fff', 
+            fontWeight: '600',
+            wordBreak: 'break-all',
+            lineHeight: '1.3'
+          }}>
+            {majorityHolderAddress}
           </div>
         </div>
         
