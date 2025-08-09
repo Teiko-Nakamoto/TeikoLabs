@@ -1,15 +1,18 @@
 'use client';
 
+import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 
 export default function LockUnlockButton({ tokenId, className = '', children }) {
   const router = useRouter();
+  const [showComingSoonPopup, setShowComingSoonPopup] = useState(false);
 
   const handleClick = () => {
-    router.push(`/lock-unlock/${tokenId}`);
+    setShowComingSoonPopup(true);
   };
 
   return (
+    <>
     <button
       onClick={handleClick}
       className={`lock-unlock-button ${className}`}
@@ -44,5 +47,81 @@ export default function LockUnlockButton({ tokenId, className = '', children }) 
     >
       {children || '🔒 Lock/Unlock Tokens'}
     </button>
+    
+    {/* Coming Soon Popup */}
+    {showComingSoonPopup && (
+      <div style={{
+        position: 'fixed',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        backgroundColor: 'rgba(0, 0, 0, 0.8)',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        zIndex: 1000
+      }}>
+        <div style={{
+          backgroundColor: '#1a1a2e',
+          border: '2px solid #fbbf24',
+          borderRadius: '16px',
+          padding: '40px',
+          maxWidth: '400px',
+          textAlign: 'center',
+          position: 'relative'
+        }}>
+          <div style={{
+            fontSize: '60px',
+            marginBottom: '20px'
+          }}>
+            🚧
+          </div>
+          <h2 style={{
+            color: '#fbbf24',
+            fontSize: '24px',
+            fontWeight: 'bold',
+            marginBottom: '16px',
+            fontFamily: 'Arial, sans-serif'
+          }}>
+            Coming Soon!
+          </h2>
+          <p style={{
+            color: '#ccc',
+            fontSize: '16px',
+            lineHeight: '1.5',
+            marginBottom: '24px',
+            fontFamily: 'Arial, sans-serif'
+          }}>
+            Lock/Unlock feature is currently under development. Stay tuned for updates!
+          </p>
+          <button
+            onClick={() => setShowComingSoonPopup(false)}
+            style={{
+              backgroundColor: '#fbbf24',
+              color: '#1a1a2e',
+              border: 'none',
+              borderRadius: '8px',
+              padding: '12px 24px',
+              fontSize: '16px',
+              fontWeight: 'bold',
+              cursor: 'pointer',
+              transition: 'all 0.2s ease'
+            }}
+            onMouseEnter={(e) => {
+              e.target.style.backgroundColor = '#f59e0b';
+              e.target.style.transform = 'translateY(-1px)';
+            }}
+            onMouseLeave={(e) => {
+              e.target.style.backgroundColor = '#fbbf24';
+              e.target.style.transform = 'translateY(0)';
+            }}
+          >
+            Got it!
+          </button>
+        </div>
+      </div>
+    )}
+  </>
   );
 } 
