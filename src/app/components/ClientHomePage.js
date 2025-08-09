@@ -35,8 +35,14 @@ export default function ClientHomePage() {
   const [accessSettings, setAccessSettings] = useState({
     createProject: true,
     lockUnlock: true,
-    claimRevenue: true
+    claimRevenue: true,
+    tokenTrading: {
+      featured: false,
+      practice: false,
+      allProjects: false
+    }
   });
+  const [showTradingUpdatePopup, setShowTradingUpdatePopup] = useState(false);
 
   // Load access settings from server
   useEffect(() => {
@@ -123,6 +129,25 @@ export default function ClientHomePage() {
 
   // Function to handle token card click
   const handleTokenCardClick = (tokenCard) => {
+    // Check if trading is disabled for this token category
+    const isTokenTradingDisabled = () => {
+      if (activeTab === 'featured' && accessSettings.tokenTrading?.featured) {
+        return true;
+      }
+      if (activeTab === 'practice' && accessSettings.tokenTrading?.practice) {
+        return true;
+      }
+      if (activeTab === 'all' && accessSettings.tokenTrading?.allProjects) {
+        return true;
+      }
+      return false;
+    };
+
+    if (isTokenTradingDisabled()) {
+      setShowTradingUpdatePopup(true);
+      return;
+    }
+
     if (!connectedAddress) {
       // Show loading state
       setIsConnectingWallet(true);
@@ -822,6 +847,81 @@ export default function ClientHomePage() {
             </p>
             <button
               onClick={() => setShowComingSoonPopup(false)}
+              style={{
+                backgroundColor: '#fbbf24',
+                color: '#1a1a2e',
+                border: 'none',
+                borderRadius: '8px',
+                padding: '12px 24px',
+                fontSize: '16px',
+                fontWeight: 'bold',
+                cursor: 'pointer',
+                transition: 'all 0.2s ease'
+              }}
+              onMouseEnter={(e) => {
+                e.target.style.backgroundColor = '#f59e0b';
+                e.target.style.transform = 'translateY(-1px)';
+              }}
+              onMouseLeave={(e) => {
+                e.target.style.backgroundColor = '#fbbf24';
+                e.target.style.transform = 'translateY(0)';
+              }}
+            >
+              Got it!
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Trading Update Popup */}
+      {showTradingUpdatePopup && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          backgroundColor: 'rgba(0, 0, 0, 0.8)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 1000
+        }}>
+          <div style={{
+            backgroundColor: '#1a1a2e',
+            border: '2px solid #fbbf24',
+            borderRadius: '16px',
+            padding: '40px',
+            maxWidth: '400px',
+            textAlign: 'center',
+            position: 'relative'
+          }}>
+            <div style={{
+              fontSize: '60px',
+              marginBottom: '20px'
+            }}>
+              🔄
+            </div>
+            <h2 style={{
+              color: '#fbbf24',
+              fontSize: '24px',
+              fontWeight: 'bold',
+              marginBottom: '16px',
+              fontFamily: 'Arial, sans-serif'
+            }}>
+              Feature Being Updated
+            </h2>
+            <p style={{
+              color: '#ccc',
+              fontSize: '16px',
+              lineHeight: '1.5',
+              marginBottom: '24px',
+              fontFamily: 'Arial, sans-serif'
+            }}>
+              This feature is currently being updated. Please check back soon for the latest improvements!
+            </p>
+            <button
+              onClick={() => setShowTradingUpdatePopup(false)}
               style={{
                 backgroundColor: '#fbbf24',
                 color: '#1a1a2e',

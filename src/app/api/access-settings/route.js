@@ -8,7 +8,12 @@ const ACCESS_SETTINGS_FILE = path.join(process.cwd(), 'access-settings.json');
 const DEFAULT_SETTINGS = {
   createProject: true,
   lockUnlock: true, 
-  claimRevenue: true
+  claimRevenue: true,
+  tokenTrading: {
+    featured: false,
+    practice: false,
+    allProjects: false
+  }
 };
 
 // Helper function to read settings
@@ -73,6 +78,15 @@ export async function POST(request) {
       if (key in settings) {
         validatedSettings[key] = Boolean(settings[key]);
       }
+    }
+
+    // Handle tokenTrading object separately
+    if (settings.tokenTrading && typeof settings.tokenTrading === 'object') {
+      validatedSettings.tokenTrading = {
+        featured: Boolean(settings.tokenTrading.featured),
+        practice: Boolean(settings.tokenTrading.practice),
+        allProjects: Boolean(settings.tokenTrading.allProjects)
+      };
     }
 
     // Merge with existing settings

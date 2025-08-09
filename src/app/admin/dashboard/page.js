@@ -18,7 +18,12 @@ export default function AdminDashboard() {
     createProject: true,
     tradePage: false,
     lockUnlock: true,
-    claimRevenue: true
+    claimRevenue: true,
+    tokenTrading: {
+      featured: false,
+      practice: false,
+      allProjects: false
+    }
   });
   
   // Admin wallet addresses (comma-separated)
@@ -471,6 +476,220 @@ export default function AdminDashboard() {
                     }}></span>
                   </span>
                 </label>
+              </div>
+
+              {/* Token Trading Controls Section */}
+              <div style={{
+                marginTop: '30px',
+                paddingTop: '20px',
+                borderTop: '1px solid rgba(255, 255, 255, 0.1)'
+              }}>
+                <h3 style={{
+                  color: '#fbbf24',
+                  fontSize: '18px',
+                  fontWeight: 'bold',
+                  marginBottom: '16px',
+                  fontFamily: 'Arial, sans-serif'
+                }}>
+                  🎯 Token Trading Controls
+                </h3>
+                <p style={{
+                  color: '#ccc',
+                  fontSize: '14px',
+                  marginBottom: '20px',
+                  fontStyle: 'italic'
+                }}>
+                  Control token card access by category. When enabled, shows "Feature being updated" popup.
+                </p>
+
+                {/* Featured Tokens Control */}
+                <div style={{
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  padding: '16px',
+                  backgroundColor: 'rgba(255, 255, 255, 0.05)',
+                  borderRadius: '8px',
+                  marginBottom: '16px',
+                  border: '1px solid rgba(255, 255, 255, 0.1)'
+                }}>
+                  <div>
+                    <h4 style={{ color: '#fff', margin: '0 0 4px 0', fontSize: '16px' }}>
+                      🚀 Featured Tokens
+                    </h4>
+                    <p style={{ color: '#888', margin: 0, fontSize: '14px' }}>
+                      Mainnet featured token cards
+                    </p>
+                  </div>
+                  <label style={{
+                    position: 'relative',
+                    display: 'inline-block',
+                    width: '60px',
+                    height: '34px'
+                  }}>
+                    <input
+                      type="checkbox"
+                      checked={accessSettings.tokenTrading.featured}
+                      onChange={(e) => saveAccessSettings({
+                        ...accessSettings,
+                        tokenTrading: {
+                          ...accessSettings.tokenTrading,
+                          featured: e.target.checked
+                        }
+                      })}
+                      style={{ opacity: 0, width: 0, height: 0 }}
+                    />
+                    <span style={{
+                      position: 'absolute',
+                      cursor: 'pointer',
+                      top: 0,
+                      left: 0,
+                      right: 0,
+                      bottom: 0,
+                      backgroundColor: accessSettings.tokenTrading.featured ? '#fbbf24' : '#ccc',
+                      transition: '.4s',
+                      borderRadius: '34px'
+                    }}>
+                      <span style={{
+                        position: 'absolute',
+                        content: '""',
+                        height: '26px',
+                        width: '26px',
+                        left: accessSettings.tokenTrading.featured ? '30px' : '4px',
+                        bottom: '4px',
+                        backgroundColor: 'white',
+                        transition: '.4s',
+                        borderRadius: '50%'
+                      }}></span>
+                    </span>
+                  </label>
+                </div>
+
+                {/* Practice Trading Control */}
+                <div style={{
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  padding: '16px',
+                  backgroundColor: 'rgba(255, 255, 255, 0.05)',
+                  borderRadius: '8px',
+                  marginBottom: '16px',
+                  border: '1px solid rgba(255, 255, 255, 0.1)'
+                }}>
+                  <div>
+                    <h4 style={{ color: '#fff', margin: '0 0 4px 0', fontSize: '16px' }}>
+                      🧪 Practice Trading
+                    </h4>
+                    <p style={{ color: '#888', margin: 0, fontSize: '14px' }}>
+                      Testnet practice token cards
+                    </p>
+                  </div>
+                  <label style={{
+                    position: 'relative',
+                    display: 'inline-block',
+                    width: '60px',
+                    height: '34px'
+                  }}>
+                    <input
+                      type="checkbox"
+                      checked={accessSettings.tokenTrading.practice}
+                      onChange={(e) => saveAccessSettings({
+                        ...accessSettings,
+                        tokenTrading: {
+                          ...accessSettings.tokenTrading,
+                          practice: e.target.checked
+                        }
+                      })}
+                      style={{ opacity: 0, width: 0, height: 0 }}
+                    />
+                    <span style={{
+                      position: 'absolute',
+                      cursor: 'pointer',
+                      top: 0,
+                      left: 0,
+                      right: 0,
+                      bottom: 0,
+                      backgroundColor: accessSettings.tokenTrading.practice ? '#fbbf24' : '#ccc',
+                      transition: '.4s',
+                      borderRadius: '34px'
+                    }}>
+                      <span style={{
+                        position: 'absolute',
+                        content: '""',
+                        height: '26px',
+                        width: '26px',
+                        left: accessSettings.tokenTrading.practice ? '30px' : '4px',
+                        bottom: '4px',
+                        backgroundColor: 'white',
+                        transition: '.4s',
+                        borderRadius: '50%'
+                      }}></span>
+                    </span>
+                  </label>
+                </div>
+
+                {/* All Projects Control */}
+                <div style={{
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  padding: '16px',
+                  backgroundColor: 'rgba(255, 255, 255, 0.05)',
+                  borderRadius: '8px',
+                  marginBottom: '16px',
+                  border: '1px solid rgba(255, 255, 255, 0.1)'
+                }}>
+                  <div>
+                    <h4 style={{ color: '#fff', margin: '0 0 4px 0', fontSize: '16px' }}>
+                      🔍 All Projects
+                    </h4>
+                    <p style={{ color: '#888', margin: 0, fontSize: '14px' }}>
+                      User-created project token cards
+                    </p>
+                  </div>
+                  <label style={{
+                    position: 'relative',
+                    display: 'inline-block',
+                    width: '60px',
+                    height: '34px'
+                  }}>
+                    <input
+                      type="checkbox"
+                      checked={accessSettings.tokenTrading.allProjects}
+                      onChange={(e) => saveAccessSettings({
+                        ...accessSettings,
+                        tokenTrading: {
+                          ...accessSettings.tokenTrading,
+                          allProjects: e.target.checked
+                        }
+                      })}
+                      style={{ opacity: 0, width: 0, height: 0 }}
+                    />
+                    <span style={{
+                      position: 'absolute',
+                      cursor: 'pointer',
+                      top: 0,
+                      left: 0,
+                      right: 0,
+                      bottom: 0,
+                      backgroundColor: accessSettings.tokenTrading.allProjects ? '#fbbf24' : '#ccc',
+                      transition: '.4s',
+                      borderRadius: '34px'
+                    }}>
+                      <span style={{
+                        position: 'absolute',
+                        content: '""',
+                        height: '26px',
+                        width: '26px',
+                        left: accessSettings.tokenTrading.allProjects ? '30px' : '4px',
+                        bottom: '4px',
+                        backgroundColor: 'white',
+                        transition: '.4s',
+                        borderRadius: '50%'
+                      }}></span>
+                    </span>
+                  </label>
+                </div>
               </div>
             </div>
 
