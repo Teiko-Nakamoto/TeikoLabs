@@ -1,14 +1,27 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 
 export default function LockUnlockButton({ tokenId, className = '', children }) {
   const router = useRouter();
   const [showComingSoonPopup, setShowComingSoonPopup] = useState(false);
+  const [accessSettings, setAccessSettings] = useState({ lockUnlock: true });
+
+  // Load access settings from localStorage
+  useEffect(() => {
+    const savedSettings = localStorage.getItem('accessSettings');
+    if (savedSettings) {
+      setAccessSettings(JSON.parse(savedSettings));
+    }
+  }, []);
 
   const handleClick = () => {
-    setShowComingSoonPopup(true);
+    if (accessSettings.lockUnlock) {
+      setShowComingSoonPopup(true);
+    } else {
+      router.push(`/lock-unlock/${tokenId}`);
+    }
   };
 
   return (

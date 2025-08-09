@@ -13,10 +13,31 @@ export default function AdminDashboard() {
   const [adminData, setAdminData] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [showApiStats, setShowApiStats] = useState(false);
+  const [showAccessManagement, setShowAccessManagement] = useState(false);
+  const [accessSettings, setAccessSettings] = useState({
+    createProject: true,
+    tradePage: false,
+    lockUnlock: true,
+    claimRevenue: true
+  });
   
   // Admin wallet addresses (comma-separated)
   const ADMIN_ADDRESSES = process.env.NEXT_PUBLIC_ADMIN_ADDRESSES?.split(',') || ['ST37918Q7NBZ52AMV133VTY5C864KVK0S2HZ3CGA4'];
   
+  // Load access settings from localStorage
+  useEffect(() => {
+    const savedSettings = localStorage.getItem('accessSettings');
+    if (savedSettings) {
+      setAccessSettings(JSON.parse(savedSettings));
+    }
+  }, []);
+
+  // Save access settings to localStorage
+  const saveAccessSettings = (newSettings) => {
+    setAccessSettings(newSettings);
+    localStorage.setItem('accessSettings', JSON.stringify(newSettings));
+  };
+
   useEffect(() => {
     // Check authentication status
     const checkAuth = () => {
@@ -143,8 +164,11 @@ export default function AdminDashboard() {
                 >
                   📊 API Statistics
                 </button>
-                <button className="admin-action-button">
-                  🔧 Manage Tokens
+                <button 
+                  className="admin-action-button"
+                  onClick={() => setShowAccessManagement(true)}
+                >
+                  🔧 Manage Access
                 </button>
                 <button 
                   className="admin-action-button"
@@ -172,6 +196,304 @@ export default function AdminDashboard() {
       {/* API Statistics Popup */}
       {showApiStats && (
         <ApiStatistics onClose={() => setShowApiStats(false)} />
+      )}
+
+      {/* Access Management Popup */}
+      {showAccessManagement && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          backgroundColor: 'rgba(0, 0, 0, 0.8)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 1000
+        }}>
+          <div style={{
+            backgroundColor: '#1a1a2e',
+            border: '2px solid #fbbf24',
+            borderRadius: '16px',
+            padding: '40px',
+            maxWidth: '500px',
+            width: '90%',
+            maxHeight: '80vh',
+            overflowY: 'auto'
+          }}>
+            <div style={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              marginBottom: '30px'
+            }}>
+              <h2 style={{
+                color: '#fbbf24',
+                fontSize: '24px',
+                fontWeight: 'bold',
+                margin: 0,
+                fontFamily: 'Arial, sans-serif'
+              }}>
+                🔧 Manage Access
+              </h2>
+              <button
+                onClick={() => setShowAccessManagement(false)}
+                style={{
+                  background: 'transparent',
+                  border: 'none',
+                  color: '#ccc',
+                  fontSize: '24px',
+                  cursor: 'pointer',
+                  padding: '0',
+                  width: '30px',
+                  height: '30px'
+                }}
+              >
+                ×
+              </button>
+            </div>
+
+            <p style={{
+              color: '#ccc',
+              fontSize: '16px',
+              marginBottom: '30px',
+              lineHeight: '1.5'
+            }}>
+              Control which features show "Coming Soon" popups to users. Toggle these settings to enable or disable access to features.
+            </p>
+
+            <div style={{ marginBottom: '30px' }}>
+              {/* Create Project Setting */}
+              <div style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                padding: '16px',
+                backgroundColor: 'rgba(255, 255, 255, 0.05)',
+                borderRadius: '8px',
+                marginBottom: '16px',
+                border: '1px solid rgba(255, 255, 255, 0.1)'
+              }}>
+                <div>
+                  <h4 style={{ color: '#fff', margin: '0 0 4px 0', fontSize: '16px' }}>
+                    🏗️ Create Project
+                  </h4>
+                  <p style={{ color: '#888', margin: 0, fontSize: '14px' }}>
+                    Homepage "Create Project" button
+                  </p>
+                </div>
+                <label style={{
+                  position: 'relative',
+                  display: 'inline-block',
+                  width: '60px',
+                  height: '34px'
+                }}>
+                  <input
+                    type="checkbox"
+                    checked={accessSettings.createProject}
+                    onChange={(e) => saveAccessSettings({
+                      ...accessSettings,
+                      createProject: e.target.checked
+                    })}
+                    style={{ opacity: 0, width: 0, height: 0 }}
+                  />
+                  <span style={{
+                    position: 'absolute',
+                    cursor: 'pointer',
+                    top: 0,
+                    left: 0,
+                    right: 0,
+                    bottom: 0,
+                    backgroundColor: accessSettings.createProject ? '#fbbf24' : '#ccc',
+                    transition: '.4s',
+                    borderRadius: '34px'
+                  }}>
+                    <span style={{
+                      position: 'absolute',
+                      content: '""',
+                      height: '26px',
+                      width: '26px',
+                      left: accessSettings.createProject ? '30px' : '4px',
+                      bottom: '4px',
+                      backgroundColor: 'white',
+                      transition: '.4s',
+                      borderRadius: '50%'
+                    }}></span>
+                  </span>
+                </label>
+              </div>
+
+              {/* Lock/Unlock Setting */}
+              <div style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                padding: '16px',
+                backgroundColor: 'rgba(255, 255, 255, 0.05)',
+                borderRadius: '8px',
+                marginBottom: '16px',
+                border: '1px solid rgba(255, 255, 255, 0.1)'
+              }}>
+                <div>
+                  <h4 style={{ color: '#fff', margin: '0 0 4px 0', fontSize: '16px' }}>
+                    🔒 Lock/Unlock Tokens
+                  </h4>
+                  <p style={{ color: '#888', margin: 0, fontSize: '14px' }}>
+                    Trade page Lock/Unlock button
+                  </p>
+                </div>
+                <label style={{
+                  position: 'relative',
+                  display: 'inline-block',
+                  width: '60px',
+                  height: '34px'
+                }}>
+                  <input
+                    type="checkbox"
+                    checked={accessSettings.lockUnlock}
+                    onChange={(e) => saveAccessSettings({
+                      ...accessSettings,
+                      lockUnlock: e.target.checked
+                    })}
+                    style={{ opacity: 0, width: 0, height: 0 }}
+                  />
+                  <span style={{
+                    position: 'absolute',
+                    cursor: 'pointer',
+                    top: 0,
+                    left: 0,
+                    right: 0,
+                    bottom: 0,
+                    backgroundColor: accessSettings.lockUnlock ? '#fbbf24' : '#ccc',
+                    transition: '.4s',
+                    borderRadius: '34px'
+                  }}>
+                    <span style={{
+                      position: 'absolute',
+                      content: '""',
+                      height: '26px',
+                      width: '26px',
+                      left: accessSettings.lockUnlock ? '30px' : '4px',
+                      bottom: '4px',
+                      backgroundColor: 'white',
+                      transition: '.4s',
+                      borderRadius: '50%'
+                    }}></span>
+                  </span>
+                </label>
+              </div>
+
+              {/* Claim Revenue Setting */}
+              <div style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                padding: '16px',
+                backgroundColor: 'rgba(255, 255, 255, 0.05)',
+                borderRadius: '8px',
+                marginBottom: '16px',
+                border: '1px solid rgba(255, 255, 255, 0.1)'
+              }}>
+                <div>
+                  <h4 style={{ color: '#fff', margin: '0 0 4px 0', fontSize: '16px' }}>
+                    💰 Claim Revenue
+                  </h4>
+                  <p style={{ color: '#888', margin: 0, fontSize: '14px' }}>
+                    Trade page Claim Revenue button
+                  </p>
+                </div>
+                <label style={{
+                  position: 'relative',
+                  display: 'inline-block',
+                  width: '60px',
+                  height: '34px'
+                }}>
+                  <input
+                    type="checkbox"
+                    checked={accessSettings.claimRevenue}
+                    onChange={(e) => saveAccessSettings({
+                      ...accessSettings,
+                      claimRevenue: e.target.checked
+                    })}
+                    style={{ opacity: 0, width: 0, height: 0 }}
+                  />
+                  <span style={{
+                    position: 'absolute',
+                    cursor: 'pointer',
+                    top: 0,
+                    left: 0,
+                    right: 0,
+                    bottom: 0,
+                    backgroundColor: accessSettings.claimRevenue ? '#fbbf24' : '#ccc',
+                    transition: '.4s',
+                    borderRadius: '34px'
+                  }}>
+                    <span style={{
+                      position: 'absolute',
+                      content: '""',
+                      height: '26px',
+                      width: '26px',
+                      left: accessSettings.claimRevenue ? '30px' : '4px',
+                      bottom: '4px',
+                      backgroundColor: 'white',
+                      transition: '.4s',
+                      borderRadius: '50%'
+                    }}></span>
+                  </span>
+                </label>
+              </div>
+            </div>
+
+            <div style={{
+              padding: '16px',
+              backgroundColor: 'rgba(255, 187, 36, 0.1)',
+              borderRadius: '8px',
+              border: '1px solid rgba(255, 187, 36, 0.3)',
+              marginBottom: '20px'
+            }}>
+              <p style={{
+                color: '#fbbf24',
+                margin: 0,
+                fontSize: '14px',
+                fontWeight: 'bold'
+              }}>
+                ℹ️ Note: When enabled (yellow), features show "Coming Soon" popups. When disabled (gray), features work normally.
+              </p>
+            </div>
+
+            <div style={{
+              display: 'flex',
+              gap: '12px',
+              justifyContent: 'flex-end'
+            }}>
+              <button
+                onClick={() => setShowAccessManagement(false)}
+                style={{
+                  backgroundColor: '#fbbf24',
+                  color: '#1a1a2e',
+                  border: 'none',
+                  borderRadius: '8px',
+                  padding: '12px 24px',
+                  fontSize: '16px',
+                  fontWeight: 'bold',
+                  cursor: 'pointer',
+                  transition: 'all 0.2s ease'
+                }}
+                onMouseEnter={(e) => {
+                  e.target.style.backgroundColor = '#f59e0b';
+                  e.target.style.transform = 'translateY(-1px)';
+                }}
+                onMouseLeave={(e) => {
+                  e.target.style.backgroundColor = '#fbbf24';
+                  e.target.style.transform = 'translateY(0)';
+                }}
+              >
+                Done
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </>
   );

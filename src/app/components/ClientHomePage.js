@@ -32,6 +32,19 @@ export default function ClientHomePage() {
   const [networkFilter, setNetworkFilter] = useState('all'); // 'all', 'testnet', 'mainnet'
   const [showSearchBar, setShowSearchBar] = useState(false);
   const [showComingSoonPopup, setShowComingSoonPopup] = useState(false);
+  const [accessSettings, setAccessSettings] = useState({
+    createProject: true,
+    lockUnlock: true,
+    claimRevenue: true
+  });
+
+  // Load access settings from localStorage
+  useEffect(() => {
+    const savedSettings = localStorage.getItem('accessSettings');
+    if (savedSettings) {
+      setAccessSettings(JSON.parse(savedSettings));
+    }
+  }, []);
 
   // Handle tab parameter from URL
   useEffect(() => {
@@ -436,7 +449,11 @@ export default function ClientHomePage() {
         }}>
           <button
             onClick={() => {
-              setShowComingSoonPopup(true);
+              if (accessSettings.createProject) {
+                setShowComingSoonPopup(true);
+              } else {
+                window.location.href = '/create-project';
+              }
             }}
             style={{
               display: 'flex',

@@ -53,6 +53,15 @@ const UnlockProgressBar = React.memo(function UnlockProgressBar({
   const [contractThreshold, setContractThreshold] = useState(0);
   const [loadingThreshold, setLoadingThreshold] = useState(true);
   const [showComingSoonPopup, setShowComingSoonPopup] = useState(false);
+  const [accessSettings, setAccessSettings] = useState({ claimRevenue: true });
+
+  // Load access settings from localStorage
+  useEffect(() => {
+    const savedSettings = localStorage.getItem('accessSettings');
+    if (savedSettings) {
+      setAccessSettings(JSON.parse(savedSettings));
+    }
+  }, []);
 
   // Fetch threshold from smart contract via API
   useEffect(() => {
@@ -384,7 +393,13 @@ const UnlockProgressBar = React.memo(function UnlockProgressBar({
           </button>
           
           <button
-            onClick={() => setShowComingSoonPopup(true)}
+            onClick={() => {
+              if (accessSettings.claimRevenue) {
+                setShowComingSoonPopup(true);
+              } else if (onClaimRevenue) {
+                onClaimRevenue();
+              }
+            }}
             style={{
               background: '#3b82f6', 
               color: '#fff', 
