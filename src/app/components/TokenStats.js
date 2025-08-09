@@ -63,7 +63,7 @@ export default function TokenStats({ revenue, liquidity, remainingSupply, dexInf
           border: '1px solid rgba(255, 255, 255, 0.2)'
         }}>
           <div style={{ fontSize: '12px', color: '#ccc', marginBottom: '6px' }}>
-            {t('revenue_locked')}:
+            {t('majority_holder')}:
           </div>
           <div style={{ 
             fontSize: '12px', 
