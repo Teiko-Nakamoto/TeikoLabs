@@ -93,7 +93,10 @@ export default function DocsPage() {
       {/* Sidebar */}
       <aside className={`docs-sidebar ${isSidebarOpen ? 'open' : ''}`}>
         <div className="docs-sidebar-header">
-          <h2 className="docs-sidebar-title">Documentation</h2>
+          <div className="docs-logo-section">
+            <img src="/logo.png" alt="Teiko Labs Logo" className="docs-logo" />
+            <h2 className="docs-sidebar-title">Documentation</h2>
+          </div>
           
           {/* Search */}
           <div className="docs-search">
