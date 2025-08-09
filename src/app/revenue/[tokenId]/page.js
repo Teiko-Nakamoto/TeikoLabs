@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useParams } from 'next/navigation';
+import Link from 'next/link';
 import Header from '../../components/header';
 import LockUnlockButton from '../../components/LockUnlockButton';
 import SmartContractButton from '../../components/SmartContractButton';
@@ -469,9 +470,9 @@ export default function RevenuePage() {
           borderBottom: '1px solid rgba(255, 255, 255, 0.1)'
         }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-            <a href="/" style={{ textDecoration: 'none' }}>
+            <Link href="/" style={{ textDecoration: 'none' }}>
               <img src="/logo.png" alt="Teiko Labs Logo" style={{ height: '40px' }} />
-            </a>
+            </Link>
           </div>
           <LockedWalletDisplay />
         </header>
@@ -507,9 +508,9 @@ export default function RevenuePage() {
           borderBottom: '1px solid rgba(255, 255, 255, 0.1)'
         }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-            <a href="/" style={{ textDecoration: 'none' }}>
+            <Link href="/" style={{ textDecoration: 'none' }}>
               <img src="/logo.png" alt="Teiko Labs Logo" style={{ height: '40px' }} />
-            </a>
+            </Link>
           </div>
           <LockedWalletDisplay />
         </header>
@@ -535,9 +536,9 @@ export default function RevenuePage() {
         borderBottom: '1px solid rgba(255, 255, 255, 0.1)'
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-          <a href="/" style={{ textDecoration: 'none' }}>
+          <Link href="/" style={{ textDecoration: 'none' }}>
             <img src="/logo.png" alt="Teiko Labs Logo" style={{ height: '40px' }} />
-          </a>
+          </Link>
         </div>
         <LockedWalletDisplay />
       </header>
