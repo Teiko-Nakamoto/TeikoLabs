@@ -3,8 +3,8 @@
   "lockUnlock": true,
   "claimRevenue": true,
   "tokenTrading": {
-    "featured": true,
-    "practice": true,
-    "allProjects": true
+    "featured": false,
+    "practice": false,
+    "allProjects": false
   }
 }

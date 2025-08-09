@@ -68,6 +68,9 @@ export default function Footer() {
           <div className="footer-section">
             <h4>Resources</h4>
             <div className="footer-links">
+              <a href="/docs">
+                Documentation
+              </a>
               <a href="https://platform.hiro.so/faucet" target="_blank" rel="noopener noreferrer">
                 Get Testnet SBTC
               </a>
