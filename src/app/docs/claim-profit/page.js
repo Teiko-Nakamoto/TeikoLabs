@@ -223,7 +223,7 @@ export default function ClaimProfitPage() {
                   <div className="consideration-grid">
                     <div className="consideration-item">
                       <h4>💰 Cost</h4>
-                      <p>Small transaction fee (~500-2000 sats) to lock tokens</p>
+                      <p>Only network fees (STX gas) - no additional platform fees</p>
                     </div>
                     
                     <div className="consideration-item">
