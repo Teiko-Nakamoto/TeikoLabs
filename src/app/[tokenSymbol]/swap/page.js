@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useParams } from 'next/navigation';
+import { useParams, useRouter } from 'next/navigation';
 import Header from '../../components/header';
 import TokenBuySellBox from '../../components/TokenBuySellBox';
 import TradeHistory from '../../components/tradehistory';
@@ -15,6 +15,7 @@ import './token-page.css';
 export default function SwapPage() {
   const { t } = useTranslation();
   const params = useParams();
+  const router = useRouter();
   const tokenSymbol = params.tokenSymbol;
   
   // Token-specific data
@@ -72,6 +73,9 @@ export default function SwapPage() {
 
   // Check if wallet is connected
   const connectedAddress = typeof window !== 'undefined' ? localStorage.getItem('connectedAddress') : null;
+
+  // Add polling ref to track if component is still mounted
+  const pollIntervalRef = useRef(null);
 
   // Redirect to home if no wallet connected (must be before any conditional returns)
   useEffect(() => {
@@ -274,6 +278,56 @@ export default function SwapPage() {
       fetchTokenData();
     }
   }, [tokenSymbol]);
+
+  // Poll access settings every 10 seconds to check if trading is disabled
+  useEffect(() => {
+    const checkTradingStatus = async () => {
+      try {
+        const response = await fetch('/api/access-settings');
+        const data = await response.json();
+        
+        if (data.success && data.settings && tokenData) {
+          // Determine which trading category this token belongs to
+          let isTradingDisabled = false;
+          
+          if (tokenData.tabType === 'featured') {
+            isTradingDisabled = data.settings.tokenTrading?.featured || false;
+          } else if (tokenData.tabType === 'practice') {
+            isTradingDisabled = data.settings.tokenTrading?.practice || false;
+          } else {
+            // Default to allProjects for any other category
+            isTradingDisabled = data.settings.tokenTrading?.allProjects || false;
+          }
+          
+          // If trading is disabled, redirect to homepage
+          if (isTradingDisabled) {
+            console.log('🚫 Trading disabled for this token category, redirecting to homepage...');
+            router.push('/');
+          }
+        }
+      } catch (error) {
+        console.error('Error checking trading status:', error);
+        // Don't redirect on error, just log it
+      }
+    };
+
+    // Only start polling if we have token data and component is mounted
+    if (tokenData && !loading) {
+      // Check immediately
+      checkTradingStatus();
+      
+      // Set up polling every 10 seconds
+      pollIntervalRef.current = setInterval(checkTradingStatus, 10000);
+    }
+
+    // Cleanup interval on unmount or when dependencies change
+    return () => {
+      if (pollIntervalRef.current) {
+        clearInterval(pollIntervalRef.current);
+        pollIntervalRef.current = null;
+      }
+    };
+  }, [tokenData, loading, router]);
 
   if (loading) {
     return (

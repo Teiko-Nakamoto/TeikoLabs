@@ -1,5 +1,10 @@
 {
   "createProject": true,
   "lockUnlock": true,
-  "claimRevenue": true
+  "claimRevenue": true,
+  "tokenTrading": {
+    "featured": true,
+    "practice": true,
+    "allProjects": true
+  }
 }
