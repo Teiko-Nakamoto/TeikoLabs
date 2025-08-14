@@ -14,15 +14,20 @@ export const HIRO_CONFIG = {
 };
 
 // Enhanced network configuration for Stacks.js with Hiro (SERVER-SIDE ONLY)
-export function getHiroNetworkServerSide() {
-  const { STACKS_TESTNET } = require('@stacks/network');
+export function getHiroNetworkServerSide(networkType = 'testnet') {
+  const { STACKS_TESTNET, STACKS_MAINNET } = require('@stacks/network');
   
   // This only works server-side where process.env is available
   const serverApiKey = process.env.HIRO_API_KEY;
-  const serverApiUrl = process.env.HIRO_API_URL || 'https://stacks-node-api.testnet.stacks.co';
+  const defaultUrl = networkType === 'mainnet' ? 'https://api.hiro.so' : 'https://stacks-node-api.testnet.stacks.co';
+  const serverApiUrl = process.env.HIRO_API_URL || defaultUrl;
+  
+  // Choose base network
+  const baseNetwork = networkType === 'mainnet' ? STACKS_MAINNET : STACKS_TESTNET;
   
   // Debug logging
   console.log('🔍 Debug: Environment check:', {
+    network: networkType,
     hasApiKey: !!serverApiKey,
     keyLength: serverApiKey?.length || 0,
     keyStart: serverApiKey?.substring(0, 8) || 'none',
@@ -30,9 +35,9 @@ export function getHiroNetworkServerSide() {
   });
   
   if (serverApiKey && serverApiKey !== 'your-api-key-here') {
-    console.log('🔑 Server: Using Hiro API with your API key');
+    console.log(`🔑 Server: Using Hiro API with your API key for ${networkType}`);
     return {
-      ...STACKS_TESTNET,
+      ...baseNetwork,
       coreApiUrl: serverApiUrl,
       fetchFn: (url, init = {}) => {
         return fetch(url, {
@@ -46,8 +51,8 @@ export function getHiroNetworkServerSide() {
       }
     };
   } else {
-    console.log('🌐 Server: Using public node (add HIRO_API_KEY to .env.local for better performance)');
-    return STACKS_TESTNET;
+    console.log(`🌐 Server: Using public node for ${networkType} (base URL: ${serverApiUrl})`);
+    return { ...baseNetwork, coreApiUrl: serverApiUrl };
   }
 }
 

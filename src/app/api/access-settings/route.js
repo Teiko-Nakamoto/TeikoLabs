@@ -11,8 +11,7 @@ const DEFAULT_SETTINGS = {
   claimRevenue: true,
   tokenTrading: {
     featured: false,
-    practice: false,
-    allProjects: false
+    practice: false
   }
 };
 
@@ -84,8 +83,7 @@ export async function POST(request) {
     if (settings.tokenTrading && typeof settings.tokenTrading === 'object') {
       validatedSettings.tokenTrading = {
         featured: Boolean(settings.tokenTrading.featured),
-        practice: Boolean(settings.tokenTrading.practice),
-        allProjects: Boolean(settings.tokenTrading.allProjects)
+        practice: Boolean(settings.tokenTrading.practice)
       };
     }
 

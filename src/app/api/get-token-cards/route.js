@@ -27,6 +27,16 @@ export async function GET() {
     
     console.log('✅ API: Successfully fetched token cards:', tokenCards.length);
     
+    // Debug: Log MAS token configuration
+    const masToken = tokenCards.find(t => t.symbol === 'MAS');
+    if (masToken) {
+      console.log('🔍 MAS token config:', {
+        tabType: masToken.tabType,
+        dexInfo: masToken.dexInfo,
+        network: masToken.dexInfo?.startsWith('SP') ? 'mainnet' : 'testnet'
+      });
+    }
+    
     return NextResponse.json({
       tokenCards,
       defaultTab

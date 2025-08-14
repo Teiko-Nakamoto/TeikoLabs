@@ -80,7 +80,7 @@ export default function TransactionToast({ message, txId, onClose, status = 'pen
         
         {/* Text */}
         <div style={{ fontWeight: 'bold', color: status === 'success' ? '#10b981' : '#fbbf24' }}>
-          {status === 'success' ? t('transaction_successful') : t('pending')}
+          {status === 'success' ? t('transaction_confirmed') : t('transaction_broadcasted')}
         </div>
       </div>
     </div>

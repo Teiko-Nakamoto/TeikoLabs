@@ -133,7 +133,8 @@ export async function getTokenCardsServer() {
     tokenInfo: card.token_info || '',
     symbol: card.symbol || '',
     revenue: card.revenue || 0,
-    liquidity: card.liquidity || 0
+    liquidity: card.liquidity || 0,
+    network: card.network || 'testnet'
   }));
 
   return transformedData;
@@ -162,6 +163,7 @@ export async function saveTokenCardsServer(tokenCards, defaultTab) {
     symbol: card.symbol || '',
     revenue: card.revenue || 0,
     liquidity: card.liquidity || 0,
+    network: card.network || 'testnet',
     created_at: new Date().toISOString(),
     updated_at: new Date().toISOString()
   }));

@@ -6,7 +6,6 @@ import './LearnAboutHowTo.css';
 
 const LearnAboutHowTo = ({ onClose }) => {
   const { t } = useTranslation();
-  const [activeTab, setActiveTab] = useState('funding'); // 'funding' or 'profit'
   const [showComingSoonPopup, setShowComingSoonPopup] = useState(false);
   const [accessSettings, setAccessSettings] = useState({ createProject: true });
 
@@ -50,147 +49,171 @@ const LearnAboutHowTo = ({ onClose }) => {
     <div className="learn-about-overlay" onClick={onClose}>
       <div className="learn-about-popup" onClick={(e) => e.stopPropagation()}>
         <div className="learn-about-header">
-          <h2>Learn How To</h2>
-          <button onClick={onClose} className="close-btn">×</button>
+          <h2>How It Works</h2>
         </div>
-        
-        {/* Toggle Buttons */}
-        <div className="toggle-container">
-          <button 
-            className={`toggle-btn ${activeTab === 'funding' ? 'active' : ''}`}
-            onClick={() => setActiveTab('funding')}
-          >
-            💰 Get Project Funding
-          </button>
-          <button 
-            className={`toggle-btn ${activeTab === 'profit' ? 'active' : ''}`}
-            onClick={() => setActiveTab('profit')}
-          >
-            📈 Generate Profit from Funding Projects
-          </button>
-        </div>
+        <button onClick={onClose} className="close-btn" style={{
+          position: 'absolute',
+          top: '1rem',
+          right: '1rem',
+          background: 'none',
+          border: 'none',
+          color: '#fbbf24',
+          fontSize: '2rem',
+          cursor: 'pointer',
+          transition: 'all 0.3s ease',
+          padding: '0',
+          width: '40px',
+          height: '40px',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          borderRadius: '50%',
+          zIndex: 100
+        }}>×</button>
         
         <div className="learn-about-content">
-          {activeTab === 'funding' && (
-            <div className="funding-section">
-              <div className="section-header">
-                <h3>💰 How to Get Project Funding</h3>
-                <p className="section-subtitle">Launch your Project and raise capital through the community using Bitcoin</p>
-              </div>
-              
-              <div className="step-container">
-                <div className="step">
-                  <div className="step-number">1</div>
-                  <div className="step-content">
-                    <h4>Create Your Project</h4>
-                    <p>Use our platform to launch your project publicly on the blockchain.</p>
-                  </div>
-                </div>
-                
-                <div className="step">
-                  <div className="step-number">2</div>
-                  <div className="step-content">
-                    <h4>Grow Project Treasury Ownership</h4>
-                    <p>Each project has 21 million units of ownership anyone can buy<br/>(Trades made using <a href="https://www.stacks.co/faq/what-is-sbtc" target="_blank" rel="noopener noreferrer" style={{color: '#fbbf24', textDecoration: 'underline'}}>sBTC</a> on Stacks blockchain)</p>
-                  </div>
-                </div>
-                
-                {/* Choice Split */}
-                <div className="choice-section">
-                  <div className="step">
-                    <div className="step-number">3</div>
-                    <div className="step-content">
-                      <h4>How To Profit</h4>
-                    </div>
-                  </div>
-                  
-                  <h4 className="choice-title">Choose Your Strategy:</h4>
-                  
-                  <div className="choice-container">
-                    <div className="choice-option">
-                      <div className="choice-number">A</div>
-                      <div className="choice-content">
-                        <h5>Earn From Trading Fees</h5>
-                        <p>Whoever locks away the most ownership of the project can claim trading fee profit from every transaction.</p>
-                      </div>
-                    </div>
-                    
-                    <div className="choice-divider">OR</div>
-                    
-                    <div className="choice-option">
-                      <div className="choice-number">B</div>
-                      <div className="choice-content">
-                        <h5>Sell Ownership For Profit</h5>
-                        <p>Sell ownership of project treasury for profit, leaving trading fees for anyone else to claim.</p>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
+          {/* MAS Sats Introduction */}
+          <div className="section-header">
+            <h3>🚀 Introducing MAS Sats</h3>
+            <div className="mas-sats-intro">
+              <img 
+                src="/icons/The Mas Network.svg" 
+                alt="MAS Sats" 
+                style={{ 
+                  width: '60px', 
+                  height: '60px', 
+                  marginBottom: '1rem',
+                  filter: 'drop-shadow(0 4px 8px rgba(251, 191, 36, 0.3))'
+                }} 
+              />
+              <h4 style={{ color: '#fbbf24', marginBottom: '0.5rem', fontSize: '1.3rem' }}>
+                Market Activated Satoshis
+              </h4>
+              <p style={{ 
+                color: '#9CA3AF', 
+                fontSize: '0.9rem', 
+                lineHeight: '1.5', 
+                marginBottom: '1rem',
+                fontFamily: 'Arial, sans-serif',
+                textAlign: 'center',
+                maxWidth: '500px',
+                margin: '0 auto 1rem'
+              }}>
+                Discourages dumps by allowing anyone to claim the trading fee revenue generated and saved in smart contracts on-chain. Incentivising holders to <span style={{ color: '#60A5FA' }}>HODL</span> and not <span style={{ color: '#EF4444' }}>DUMP</span>.
+              </p>
             </div>
-          )}
+          </div>
           
-          {activeTab === 'profit' && (
-            <div className="profit-section">
-              <div className="section-header">
-                <h3>📈 How to Generate Profit from Funding Projects</h3>
-                <p className="section-subtitle">Buy ownership in project treasuries and compete to earn trading fees</p>
+                     {/* MAS Sats Features */}
+           <div className="step-container">
+             <div className="step">
+               <div className="step-content">
+                 <h4>Key Features</h4>
+                 <p>MAS Sats operates on an <strong>infinite bonding curve</strong> with a maximum supply of <strong>21 million units</strong>, trading against <strong>sBTC</strong> for continuous liquidity and price discovery.</p>
+               </div>
+             </div>
+           </div>
+
+                     {/* Trading Section */}
+          
+          <div className="step-container">
+            <div className="step">
+              <div className="step-number">1</div>
+              <div className="step-content">
+                <h4>How Trading Works</h4>
+                <p>MAS Sats can be bought and sold on the infinite bonding curve. Whoever locks away the most MAS sats can withdraw revenue at any time, but cannot unlock tokens until the trading fee is paid back from trading.</p>
+              </div>
+            </div>
+            
+            {/* Choice Split */}
+            <div className="choice-section">
+              <div className="step">
+                <div className="step-number">2</div>
+                <div className="step-content">
+                  <h4>Choose Your Strategy</h4>
+                </div>
               </div>
               
-              <div className="step-container">
-                <div className="step">
-                  <div className="step-number">1</div>
-                  <div className="step-content">
-                    <h4>How Projects Make Money</h4>
-                    <p>Each project charges a 1.5% fee for every trade of its treasury<br/>(Max Treasury Supply: 21 Million)</p>
+              <h4 className="choice-title">Two Paths to Profit:</h4>
+              
+              <div className="choice-container">
+                <div className="choice-option">
+                  <div className="choice-number">A</div>
+                  <div className="choice-content">
+                    <h5>Accumulate & Lock Ownership</h5>
+                    <p>Accumulate MAS Sats and lock away ownership of your holdings in order to withdraw trading profit from every transaction.</p>
                   </div>
                 </div>
                 
-                {/* Choice Split */}
-                <div className="choice-section">
-                  <div className="step">
-                    <div className="step-number">2</div>
-                    <div className="step-content">
-                      <h4>How To Profit</h4>
-                    </div>
-                  </div>
-                  <h4 className="choice-title">Choose Your Strategy:</h4>
-                  <div className="choice-container">
-                    <div className="choice-option">
-                      <div className="choice-number">A</div>
-                      <div className="choice-content">
-                        <h5>Earn From Trading Fees</h5>
-                        <p>Whoever locks away the most ownership of the project can claim trading fee profit from every transaction.</p>
-                      </div>
-                    </div>
-                    
-                    <div className="choice-divider">OR</div>
-                    
-                    <div className="choice-option">
-                      <div className="choice-number">B</div>
-                      <div className="choice-content">
-                        <h5>Sell Ownership For Profit</h5>
-                        <p>Sell ownership of project treasury for profit, leaving trading fees for anyone else to claim.</p>
-                      </div>
-                    </div>
+                <div className="choice-divider">OR</div>
+                
+                <div className="choice-option">
+                  <div className="choice-number">B</div>
+                  <div className="choice-content">
+                    <h5>Trade for Profit/Loss</h5>
+                    <p>Trade MAS Sats on the infinite bonding curve for a profit or loss based on market movements.</p>
                   </div>
                 </div>
               </div>
             </div>
-          )}
+          </div>
+
+          {/* Liquidity Warning Section */}
+          <div style={{
+            background: 'linear-gradient(135deg, #fef3c7 0%, #fde68a 100%)',
+            border: '2px solid #f59e0b',
+            borderRadius: '12px',
+            padding: '20px',
+            margin: '24px 0',
+            textAlign: 'center'
+          }}>
+            <div style={{
+              fontSize: '24px',
+              marginBottom: '12px'
+            }}>
+              ⚠️
+            </div>
+            <h3 style={{
+              color: '#92400e',
+              fontSize: '18px',
+              fontWeight: '600',
+              margin: '0 0 12px 0',
+              fontFamily: 'Arial, sans-serif'
+            }}>
+              Low Liquidity Warning
+            </h3>
+            <p style={{
+              color: '#78350f',
+              fontSize: '14px',
+              lineHeight: '1.5',
+              margin: '0',
+              fontFamily: 'Arial, sans-serif'
+            }}>
+              <strong>Buying:</strong> Transactions with 999 sats or less may fail due to low liquidity.<br/>
+              <strong>Selling:</strong> Transactions with 7,000 tokens or less may fail due to low liquidity.
+            </p>
+          </div>
           
           <div className="learn-more-section">
-            {activeTab === 'funding' ? (
-              <Link href="/create-project" className="create-project-btn" onClick={handleCreateProjectClick}>
-                🚀 Create Project
+            <div style={{ display: 'flex', gap: '1rem', justifyContent: 'center', flexWrap: 'wrap' }}>
+              <Link href="/mas/swap" className="create-project-btn">
+                🚀 Trade MAS Sats
               </Link>
-            ) : (
-              <Link href="/?tab=all" className="create-project-btn">
-                📈 View Projects
-              </Link>
-            )}
+              <a 
+                href="https://app.velar.com/swap" 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="create-project-btn"
+                style={{ backgroundColor: '#3b82f6', borderColor: '#2563eb' }}
+              >
+                ₿ Get sBTC
+              </a>
+            </div>
             
             <div className="terms-link-section">
+              <Link href="/docs" className="terms-link" style={{ marginRight: '1rem' }}>
+                📚 Documentation
+              </Link>
               <Link href="/terms" className="terms-link">
                 📋 Terms of Service & Risk Disclaimer
               </Link>
@@ -244,7 +267,7 @@ const LearnAboutHowTo = ({ onClose }) => {
               marginBottom: '24px',
               fontFamily: 'Arial, sans-serif'
             }}>
-              Project creation feature is currently under development. Stay tuned for updates!
+              This feature is currently under development. Stay tuned for updates!
             </p>
             <button
               onClick={() => setShowComingSoonPopup(false)}

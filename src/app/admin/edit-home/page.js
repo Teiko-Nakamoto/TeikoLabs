@@ -32,7 +32,7 @@ export default function EditHomePage() {
   const [checkingRows, setCheckingRows] = useState(new Set());
   
   // Preview tab state
-  const [previewActiveTab, setPreviewActiveTab] = useState('all'); // Changed from 'featured' to 'all'
+  const [previewActiveTab, setPreviewActiveTab] = useState('featured'); // Changed back to 'featured'
   
   // Admin wallet addresses (comma-separated)
   const ADMIN_ADDRESSES = process.env.NEXT_PUBLIC_ADMIN_ADDRESSES?.split(',') || ['ST37918Q7NBZ52AMV133VTY5C864KVK0S2HZ3CGA4'];
@@ -483,18 +483,7 @@ export default function EditHomePage() {
               <h3>🎯 Default Tab Selection</h3>
               <p>Choose which tab users will see first when they visit the home page:</p>
               <div className="default-tab-controls">
-                <label className="default-tab-option">
-                  <input
-                    type="radio"
-                    name="defaultTab"
-                    value="all"
-                    checked={defaultTab === 'all'}
-                    onChange={(e) => setDefaultTab(e.target.value)}
-                  />
-                  <span className="radio-label">
-                    <strong>All Projects</strong> - Show all tokens with search and filter options
-                  </span>
-                </label>
+
                 <label className="default-tab-option">
                   <input
                     type="radio"
@@ -543,18 +532,7 @@ export default function EditHomePage() {
               >
                 Practice (Testnet) ({tokenCards.filter(card => card.tabType === 'practice').length})
               </button>
-              <button 
-                onClick={() => setFilterView('user_created_mainnet')} 
-                className={`filter-button ${filterView === 'user_created_mainnet' ? 'active' : ''}`}
-              >
-                Mainnet All Projects ({tokenCards.filter(card => card.tabType === 'user_created_mainnet').length})
-              </button>
-              <button 
-                onClick={() => setFilterView('user_created_testnet')} 
-                className={`filter-button ${filterView === 'user_created_testnet' ? 'active' : ''}`}
-              >
-                Testnet All Projects ({tokenCards.filter(card => card.tabType === 'user_created_testnet').length})
-              </button>
+
               <button 
                 onClick={() => setFilterView('hidden')} 
                 className={`filter-button ${filterView === 'hidden' ? 'active' : ''}`}
@@ -627,8 +605,7 @@ export default function EditHomePage() {
                         >
                           <option value="featured">🏠 Featured (Mainnet)</option>
                           <option value="practice">💼 Practice (Testnet)</option>
-                          <option value="user_created_mainnet">🌐 Mainnet All Projects</option>
-                          <option value="user_created_testnet">🌐 Testnet All Projects</option>
+
                         </select>
                       </td>
                       <td className="token-dex">
@@ -728,12 +705,7 @@ export default function EditHomePage() {
 
             <div className="top-controls">
               <div className="tab-toggle">
-                <button 
-                  className={previewActiveTab === 'all' ? 'active' : ''} 
-                  onClick={() => setPreviewActiveTab('all')}
-                >
-                  🔍 All Projects
-                </button>
+
                 <button 
                   className={previewActiveTab === 'featured' ? 'active' : ''} 
                   onClick={() => setPreviewActiveTab('featured')}
@@ -753,16 +725,8 @@ export default function EditHomePage() {
             <div className="token-grid">
               {(() => {
                 let displayCards = [];
-                if (previewActiveTab === 'all') {
-                  // Show only user-created projects for All Projects tab (matching home page logic)
-                  displayCards = tokenCards.filter(card => 
-                    !card.isHidden && 
-                    (card.tabType === 'user_created_mainnet' || card.tabType === 'user_created_testnet')
-                  );
-                } else {
                   // Show tokens for specific tab
                   displayCards = tokenCards.filter(card => card.tabType === previewActiveTab && !card.isHidden);
-                }
                 
                 return displayCards.map((card) => {
                 if (card.isComingSoon) {
@@ -809,25 +773,13 @@ export default function EditHomePage() {
               })()}
               
               {(() => {
-                let displayCards = [];
-                if (previewActiveTab === 'all') {
-                  // For "All Projects" tab, only show user-created projects (matching home page logic)
-                  displayCards = tokenCards.filter(card => 
-                    !card.isHidden && 
-                    (card.tabType === 'user_created_mainnet' || card.tabType === 'user_created_testnet')
-                  );
-                } else {
-                  displayCards = tokenCards.filter(card => card.tabType === previewActiveTab && !card.isHidden);
-                }
+                let displayCards = tokenCards.filter(card => card.tabType === previewActiveTab && !card.isHidden);
                 
                 if (displayCards.length === 0) {
                   return (
                 <div className="empty-preview">
                       <p>
-                        {previewActiveTab === 'all' 
-                          ? 'No user-created projects found. User projects will appear here after minting is completed.'
-                          : `No visible tokens assigned to ${previewActiveTab === 'featured' ? 'Featured' : 'Practice Trading'} tab`
-                        }
+                        {`No visible tokens assigned to ${previewActiveTab === 'featured' ? 'Featured' : 'Practice Trading'} tab`}
                       </p>
                 </div>
                   );

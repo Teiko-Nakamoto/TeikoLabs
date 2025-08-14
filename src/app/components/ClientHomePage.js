@@ -14,8 +14,8 @@ import { getRevenueBalance, getLiquidityBalance, getTokenSymbol } from '../utils
 export default function ClientHomePage() {
   const { t } = useTranslation();
   const searchParams = useSearchParams();
-  const [activeTab, setActiveTab] = useState('all'); // Changed from 'featured' to 'all'
-  const [defaultTab, setDefaultTab] = useState('all'); // Changed from 'featured' to 'all'
+  const [activeTab, setActiveTab] = useState('featured'); // Changed back to 'featured'
+  const [defaultTab, setDefaultTab] = useState('featured'); // Changed back to 'featured'
   const [tokenCards, setTokenCards] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showProjects, setShowProjects] = useState(false);
@@ -27,10 +27,6 @@ export default function ClientHomePage() {
   const [connectedAddress, setConnectedAddress] = useState('');
   const [isConnectingWallet, setIsConnectingWallet] = useState(false);
 
-  // State for All Projects tab
-  const [searchTerm, setSearchTerm] = useState('');
-  const [networkFilter, setNetworkFilter] = useState('all'); // 'all', 'testnet', 'mainnet'
-  const [showSearchBar, setShowSearchBar] = useState(false);
   const [showComingSoonPopup, setShowComingSoonPopup] = useState(false);
   const [accessSettings, setAccessSettings] = useState({
     createProject: true,
@@ -38,8 +34,7 @@ export default function ClientHomePage() {
     claimRevenue: true,
     tokenTrading: {
       featured: false,
-      practice: false,
-      allProjects: false
+      practice: false
     }
   });
   const [showTradingUpdatePopup, setShowTradingUpdatePopup] = useState(false);
@@ -85,22 +80,10 @@ export default function ClientHomePage() {
   // Handle tab parameter from URL
   useEffect(() => {
     const tabParam = searchParams.get('tab');
-    if (tabParam && ['featured', 'practice', 'all'].includes(tabParam)) {
+    if (tabParam && ['featured', 'practice'].includes(tabParam)) {
       setActiveTab(tabParam);
-      if (tabParam === 'all') {
-        setShowProjects(true);
-      }
     }
   }, [searchParams]);
-
-  // Reset search and filter when switching away from All Projects tab
-  useEffect(() => {
-    if (activeTab !== 'all') {
-      setSearchTerm('');
-      setNetworkFilter('all');
-      setShowSearchBar(false);
-    }
-  }, [activeTab]);
 
   // Check wallet connection on component mount and when storage changes
   useEffect(() => {
@@ -135,9 +118,6 @@ export default function ClientHomePage() {
         return true;
       }
       if (activeTab === 'practice' && accessSettings.tokenTrading?.practice) {
-        return true;
-      }
-      if (activeTab === 'all' && accessSettings.tokenTrading?.allProjects) {
         return true;
       }
       return false;
@@ -187,7 +167,7 @@ export default function ClientHomePage() {
       const { STACKS_TESTNET, STACKS_MAINNET } = await import('@stacks/network');
       
       // Determine network based on tab type
-      const isTestnet = tokenCard.tabType === 'practice' || tokenCard.tabType === 'user_created_testnet';
+      const isTestnet = tokenCard.tabType === 'practice';
       const network = isTestnet ? STACKS_TESTNET : STACKS_MAINNET;
       
       // Fetch symbol (if not already cached)
@@ -329,48 +309,12 @@ export default function ClientHomePage() {
     return () => clearInterval(interval);
   }, []);
 
-  // Filter tokens based on search term and network filter - ONLY for user-created projects in "All Projects" tab
-  const filteredTokens = tokenCards.filter(card => {
-    // Only show user-created projects in "All Projects" tab
-    const isUserCreatedMainnet = card.tabType === 'user_created_mainnet';
-    const isUserCreatedTestnet = card.tabType === 'user_created_testnet';
-    const isUserCreatedProject = isUserCreatedMainnet || isUserCreatedTestnet;
-    
-    // First filter: must be a user-created project
-    if (!isUserCreatedProject) {
-      return false;
-    }
-    
-    // Filter by network within user-created projects
-    let networkMatch = true;
-    if (networkFilter === 'testnet') {
-      networkMatch = isUserCreatedTestnet;
-    } else if (networkFilter === 'mainnet') {
-      networkMatch = isUserCreatedMainnet;
-    } else if (networkFilter === 'user_created_mainnet') {
-      networkMatch = isUserCreatedMainnet;
-    } else if (networkFilter === 'user_created_testnet') {
-      networkMatch = isUserCreatedTestnet;
-    }
-    // For 'all' network filter, show all user-created projects
-    
-    // Filter by search term
-    const searchMatch = !searchTerm || 
-      card.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      card.symbol?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      card.description?.toLowerCase().includes(searchTerm.toLowerCase());
-    
-    return networkMatch && searchMatch;
-  });
-
   // Get displayed cards based on active tab
   const displayedCards = (() => {
     if (activeTab === 'featured') {
       return tokenCards.filter(card => card.tabType === 'featured');
     } else if (activeTab === 'practice') {
       return tokenCards.filter(card => card.tabType === 'practice');
-    } else if (activeTab === 'all') {
-      return filteredTokens;
     }
     return tokenCards.filter(card => card.tabType === 'featured');
   })();
@@ -429,18 +373,45 @@ export default function ClientHomePage() {
               fontFamily: 'Arial, sans-serif',
               marginBottom: '8px'
             }}>
-              The Future of Bitcoin DeFi
+              The Future of Sustainable Bitcoin DeFi Trading
             </h1>
             
-            <p style={{
+            <div style={{
               textAlign: 'center',
-              color: '#fbbf24',
-              fontSize: '1.1rem',
-              marginBottom: '8px',
+              marginBottom: '20px',
               fontFamily: 'Arial, sans-serif'
             }}>
-              Bitcoin Powered Crowdfunding, Where Every Project Generates Profit on Every Trade.
-            </p>
+              <p style={{
+                color: '#fbbf24',
+                fontSize: '1.5rem',
+                marginBottom: '16px',
+                fontWeight: 'bold',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '12px'
+              }}>
+                Total Profit Generated
+                593
+                <img src="/icons/sats1.svg" alt="sats" style={{ width: '20px', height: '20px', verticalAlign: 'middle' }} />
+                <img src="/icons/Vector.svg" alt="lightning" style={{ width: '20px', height: '20px', verticalAlign: 'middle' }} />
+              </p>
+              <p style={{
+                color: '#fbbf24',
+                fontSize: '1.5rem',
+                marginBottom: '8px',
+                fontWeight: 'bold',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '12px'
+              }}>
+                Total Value Locked
+                3,676
+                <img src="/icons/sats1.svg" alt="sats" style={{ width: '20px', height: '20px', verticalAlign: 'middle' }} />
+                <img src="/icons/Vector.svg" alt="lightning" style={{ width: '20px', height: '20px', verticalAlign: 'middle' }} />
+              </p>
+            </div>
             
             <div style={{
               textAlign: 'center',
@@ -504,11 +475,7 @@ export default function ClientHomePage() {
         }}>
           <button
             onClick={() => {
-              if (accessSettings.createProject) {
-                setShowComingSoonPopup(true);
-              } else {
-                window.location.href = '/create-project';
-              }
+              window.location.href = '/mas/swap';
             }}
             style={{
               display: 'flex',
@@ -537,7 +504,17 @@ export default function ClientHomePage() {
               e.target.style.boxShadow = '0 4px 6px rgba(59, 130, 246, 0.3)';
             }}
           >
-            Create Project
+            Get
+                          <img 
+                src="/icons/The Mas Network.svg" 
+                alt="MAS Sats" 
+                style={{ 
+                  width: '28px', 
+                  height: '28px', 
+                  verticalAlign: 'middle',
+                  marginLeft: '8px'
+                }} 
+              />
           </button>
           
           <button
@@ -584,9 +561,6 @@ export default function ClientHomePage() {
                 <button className={activeTab === 'practice' ? 'active' : ''} onClick={() => setActiveTab('practice')}>
                   🧪 {t('practice_trading')} (Testnet)
                 </button>
-                <button className={activeTab === 'all' ? 'active' : ''} onClick={() => setActiveTab('all')}>
-                  🔍 All Projects
-                </button>
               </div>
               
               {/* Tab description */}
@@ -598,50 +572,10 @@ export default function ClientHomePage() {
               }}>
                 {activeTab === 'featured' ? (
                   <span>🚀 <strong>Mainnet:</strong> Real Projects With Real Profit</span>
-                ) : activeTab === 'practice' ? (
-                  <span>🧪 <strong>Testnet:</strong> Practice With Fake Money</span>
                 ) : (
-                  <span>🔍 <strong>All Projects:</strong> Search and Filter All Available Projects</span>
+                  <span>🧪 <strong>Testnet:</strong> Practice With Fake Money</span>
                 )}
               </div>
-
-              {/* Search and Filter Controls for All Projects tab */}
-              {activeTab === 'all' && (
-                <div className="all-tokens-controls">
-                  {/* Search Bar */}
-                  <div className="search-container">
-                    <input
-                      type="text"
-                      placeholder="Search projects by name, symbol, or description..."
-                      value={searchTerm}
-                      onChange={(e) => setSearchTerm(e.target.value)}
-                      className="search-input"
-                    />
-                    <span className="search-icon">🔍</span>
-                  </div>
-
-                  {/* Network Filter */}
-                  <div className="network-filter-container">
-                    <span className="network-filter-label">Network:</span>
-                    <select
-                      value={networkFilter}
-                      onChange={(e) => setNetworkFilter(e.target.value)}
-                      className="network-filter-select"
-                    >
-                      <option value="all">All Networks</option>
-                      <option value="user_created_mainnet">Mainnet</option>
-                      <option value="user_created_testnet">Testnet</option>
-                    </select>
-                  </div>
-
-                  {/* Results Count */}
-                  <div className="results-count">
-                    Showing {filteredTokens.length} of {tokenCards.filter(card => 
-                      card.tabType === 'user_created_mainnet' || card.tabType === 'user_created_testnet'
-                    ).length} projects
-                  </div>
-                </div>
-              )}
             </div>
 
             <div className="token-grid">
@@ -777,19 +711,14 @@ export default function ClientHomePage() {
                     {activeTab === 'featured' ? (
                       <>🚀 <strong>Mainnet tokens coming soon!</strong><br />
                       Real tokens with real value will be available here.</>
-                    ) : activeTab === 'practice' ? (
+                    ) : (
                       <>🧪 <strong>Testnet tokens coming soon!</strong><br />
                       Practice tokens will be available here.</>
-                    ) : (
-                      <>🔍 <strong>No user-created projects yet!</strong><br />
-                      Projects created by users will appear here after minting is completed.</>
                     )}
                   </p>
-                  {activeTab !== 'all' && (
-                    <p style={{ fontSize: '0.9rem', marginTop: '0.5rem' }}>
-                      Admin can configure tokens in the admin panel
-                    </p>
-                  )}
+                  <p style={{ fontSize: '0.9rem', marginTop: '0.5rem' }}>
+                    Admin can configure tokens in the admin panel
+                  </p>
                 </div>
               )}
             </div>

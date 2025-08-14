@@ -1,14 +1,5 @@
 import { request } from '@stacks/connect';
-import { 
-  uintCV, 
-  makeStandardFungiblePostCondition,
-  makeStandardSTXPostCondition,
-  FungibleConditionCode,
-  createAssetInfo,
-  postConditionToHex,
-  Pc,
-  PostConditionMode
-} from '@stacks/transactions';
+import { Cl } from '@stacks/transactions';
 
 // 🔧 Transaction queue to prevent broadcast conflicts
 let transactionQueue = [];
@@ -63,7 +54,6 @@ import {
   SATS_CONTRACT_ADDRESS,
   SATS_CONTRACT_NAME,
   TOKEN_CONTRACT_NAME,
-  getCurrentPrice,
 } from './fetchTokenData';
 
 // 🔧 Enhanced wallet readiness check for transactions
@@ -190,8 +180,6 @@ async function submitTransactionWithRetry(transactionParams, maxRetries = 2, use
       // Enhanced transaction request with better error handling
       const response = await request('stx_callContract', {
         ...transactionParams,
-        // Add additional parameters for better broadcast success
-        network: 'testnet',
         // Use optimal endpoint if available
         ...(optimalEndpoint && { endpoint: optimalEndpoint })
       });
@@ -227,12 +215,25 @@ async function submitTransactionWithRetry(transactionParams, maxRetries = 2, use
     }
   }
   
-  throw lastError || new Error('Transaction failed after all retries');
+  // Provide more specific error messages
+  if (lastError) {
+    if (lastError.message.includes('broadcast') || lastError.message.includes('network')) {
+      throw new Error('Transaction failed to broadcast to network. Please check your connection and try again.');
+    } else if (lastError.message.includes('User rejected')) {
+      throw new Error('Transaction was cancelled by user.');
+    } else if (lastError.message.includes('not connected')) {
+      throw new Error('Wallet not connected. Please connect your wallet and try again.');
+    } else {
+      throw lastError;
+    }
+  }
+  
+  throw new Error('Transaction failed after all retries. Please try again.');
 }
 
 
 
-export async function handleTransaction(tab, amount, setErrorMessage, setToast, expectedPrice, setDuplicateCallback = null, slippageProtection = null, estimatedOutput = null, currentPrice = null, tokenId = null, useSmartRetry = true) {
+export async function handleTransaction(tab, amount, setErrorMessage, setToast, expectedPrice, setDuplicateCallback = null, slippageProtection = null, estimatedOutput = null, currentPrice = null, tokenId = null, useSmartRetry = true, network = 'testnet') {
   // 🧪 EXPERIMENTAL: Router function to choose between flows
   if (slippageProtection && slippageProtection.enabled && estimatedOutput) {
     console.log('🧪 Using EXPERIMENTAL post-conditions flow');
@@ -240,15 +241,15 @@ export async function handleTransaction(tab, amount, setErrorMessage, setToast, 
       console.error('❌ ERROR: estimatedOutput is required for slippage protection!');
       return null;
     }
-    return await handleTransactionWithPostConditions(tab, amount, setErrorMessage, setToast, expectedPrice, setDuplicateCallback, slippageProtection, estimatedOutput, currentPrice, useSmartRetry);
+    return await handleTransactionWithPostConditions(tab, amount, setErrorMessage, setToast, expectedPrice, setDuplicateCallback, slippageProtection, estimatedOutput, currentPrice, useSmartRetry, network);
   } else {
     console.log('✅ Using standard transaction flow');
-    return await handleTransactionWithoutPostConditions(tab, amount, setErrorMessage, setToast, expectedPrice, setDuplicateCallback, currentPrice, useSmartRetry);
+    return await handleTransactionWithoutPostConditions(tab, amount, setErrorMessage, setToast, expectedPrice, setDuplicateCallback, currentPrice, useSmartRetry, network);
   }
 }
 
 // ✅ STANDARD FLOW: No post conditions (existing logic)
-async function handleTransactionWithoutPostConditions(tab, amount, setErrorMessage, setToast, expectedPrice, setDuplicateCallback = null, currentPrice = null, useSmartRetry = true) {
+async function handleTransactionWithoutPostConditions(tab, amount, setErrorMessage, setToast, expectedPrice, setDuplicateCallback = null, currentPrice = null, useSmartRetry = true, network = 'testnet') {
   let formattedTxId = '';
   let createdAtISO = null;
   let formattedSatsPerToken = '';
@@ -256,7 +257,7 @@ async function handleTransactionWithoutPostConditions(tab, amount, setErrorMessa
 
   const functionName = tab === 'buy' ? 'buy' : 'sell';
   const satsTraded = tab === 'buy' ? parseInt(amount) : Math.round(parseFloat(amount) * 1e8);
-  const functionArgs = [uintCV(satsTraded)];
+  const functionArgs = [Cl.uint(satsTraded)];
 
   try {
     console.log('⏳ Standard Transaction Pending...');
@@ -266,21 +267,19 @@ async function handleTransactionWithoutPostConditions(tab, amount, setErrorMessa
     const postConditionMode = 'allow';
 
     const transactionParams = {
-      contract: `${DEX_CONTRACT_ADDRESS}.${DEX_CONTRACT_NAME}`,
+      contractAddress: DEX_CONTRACT_ADDRESS,
+      contractName: DEX_CONTRACT_NAME,
       functionName,
       functionArgs,
-      postConditionMode,
-      postConditions,
-      network: 'testnet',
+      network,
     };
 
     console.log('🚀 About to send request with:', {
-      contract: `${DEX_CONTRACT_ADDRESS}.${DEX_CONTRACT_NAME}`,
+      contractAddress: DEX_CONTRACT_ADDRESS,
+      contractName: DEX_CONTRACT_NAME,
       functionName,
       functionArgs,
-      postConditionMode,
-      postConditions: postConditions.length,
-      network: 'testnet'
+      network
     });
 
     // 🔧 Use enhanced transaction submission with queue and retry logic
@@ -288,8 +287,8 @@ async function handleTransactionWithoutPostConditions(tab, amount, setErrorMessa
     
     console.log('✅ Request completed, response:', response);
 
-    const { txid: txId } = response;
-    formattedTxId = `0x${txId}`;
+    const { txId } = response;
+    formattedTxId = txId;
 
     // ✅ Check if this txId is already in localStorage
     const lastTx = localStorage.getItem('lastTx');
@@ -302,7 +301,10 @@ async function handleTransactionWithoutPostConditions(tab, amount, setErrorMessa
     }
     localStorage.setItem('lastTx', formattedTxId);
 
-    console.log('View transaction:', `https://explorer.hiro.so/txid/${formattedTxId}?chain=testnet`);
+    const explorerUrl = network === 'mainnet' 
+      ? `https://explorer.stacks.co/txid/${formattedTxId}`
+      : `https://explorer.hiro.so/txid/${formattedTxId}?chain=${network}`;
+    console.log('View transaction:', explorerUrl);
 
     setToast({
       message: `🔄 ${tab.toUpperCase()} transaction submitted`,
@@ -311,7 +313,7 @@ async function handleTransactionWithoutPostConditions(tab, amount, setErrorMessa
       status: 'pending',
     });
 
-    const confirmedData = await waitForConfirmation(txId);
+    const confirmedData = await waitForConfirmation(formattedTxId);
 
     if (confirmedData.tx_status !== 'success') {
       console.log('❌ Transaction failed:', txId);
@@ -395,7 +397,7 @@ async function handleTransactionWithoutPostConditions(tab, amount, setErrorMessa
       if (Array.isArray(confirmedData.events)) {
         const sbtcTransferEvent = confirmedData.events.find(event => 
           event.event_type === 'ft_transfer_event' && 
-          event.asset?.asset_id === 'ST1F7QA2MDF17S807EPA36TSS8AMEFY4KA9TVGWXT.sbtc-token::sbtc-token'
+          event.asset?.asset_id === 'SM3VDXK3WZZSA84XXFKAFAF15NNZX32CTSG82JFQ4.sbtc-token::sbtc-token'
         );
         
         if (sbtcTransferEvent) {
@@ -447,7 +449,7 @@ async function handleTransactionWithoutPostConditions(tab, amount, setErrorMessa
 }
 
 // 🧪 EXPERIMENTAL FLOW: With post conditions for slippage protection
-async function handleTransactionWithPostConditions(tab, amount, setErrorMessage, setToast, expectedPrice, setDuplicateCallback = null, slippageProtection, estimatedOutput, currentPrice = null, useSmartRetry = true) {
+async function handleTransactionWithPostConditions(tab, amount, setErrorMessage, setToast, expectedPrice, setDuplicateCallback = null, slippageProtection, estimatedOutput, currentPrice = null, useSmartRetry = true, network = 'testnet') {
   let formattedTxId = '';
   let createdAtISO = null;
   let formattedSatsPerToken = '';
@@ -455,7 +457,7 @@ async function handleTransactionWithPostConditions(tab, amount, setErrorMessage,
 
   const functionName = tab === 'buy' ? 'buy' : 'sell';
   const satsTraded = tab === 'buy' ? parseInt(amount) : Math.round(parseFloat(amount) * 1e8);
-  const functionArgs = [uintCV(satsTraded)];
+  const functionArgs = [Cl.uint(satsTraded)];
 
   try {
     console.log('🧪 Experimental Transaction with Post Conditions...');
@@ -480,7 +482,7 @@ async function handleTransactionWithPostConditions(tab, amount, setErrorMessage,
         // 🛡️ CONDITION 1: User sends exact SBTC amount
         const userSendsSbtcCondition = Pc.principal(slippageProtection.userAddress)
           .willSendEq(satsTraded)
-          .ft('ST1F7QA2MDF17S807EPA36TSS8AMEFY4KA9TVGWXT.sbtc-token', 'sbtc-token');
+          .ft('SM3VDXK3WZZSA84XXFKAFAF15NNZX32CTSG82JFQ4.sbtc-token', 'sbtc-token');
         
         // 🛡️ CONDITION 2: DEX contract sends at least minimum mas sats to user (slippage protection!)
         const contractSendsMasSatsCondition = Pc.principal(`${DEX_CONTRACT_ADDRESS}.${DEX_CONTRACT_NAME}`)
@@ -510,7 +512,7 @@ async function handleTransactionWithPostConditions(tab, amount, setErrorMessage,
         // 🛡️ CONDITION 2: DEX contract sends at least minimum SBTC to user (slippage protection!)
         const contractSendsSbtcCondition = Pc.principal(`${DEX_CONTRACT_ADDRESS}.${DEX_CONTRACT_NAME}`)
           .willSendGte(minExpectedSbtc)
-          .ft('ST1F7QA2MDF17S807EPA36TSS8AMEFY4KA9TVGWXT.sbtc-token', 'sbtc-token');
+          .ft('SM3VDXK3WZZSA84XXFKAFAF15NNZX32CTSG82JFQ4.sbtc-token', 'sbtc-token');
         
         postConditions.push(
           postConditionToHex(userSendsTokensCondition),
@@ -530,7 +532,7 @@ async function handleTransactionWithPostConditions(tab, amount, setErrorMessage,
       functionArgs,
       postConditionMode,
       postConditions: postConditions.length,
-      network: 'testnet'
+      network
     });
 
     const transactionParams = {
@@ -539,7 +541,7 @@ async function handleTransactionWithPostConditions(tab, amount, setErrorMessage,
       functionArgs,
       postConditionMode,
       postConditions,
-      network: 'testnet',
+      network,
     };
 
     // 🔧 Use enhanced transaction submission with retry logic
@@ -561,7 +563,10 @@ async function handleTransactionWithPostConditions(tab, amount, setErrorMessage,
     }
     localStorage.setItem('lastTx', formattedTxId);
 
-    console.log('View transaction:', `https://explorer.hiro.so/txid/${formattedTxId}?chain=testnet`);
+    const explorerUrl = network === 'mainnet' 
+      ? `https://explorer.stacks.co/txid/${formattedTxId}`
+      : `https://explorer.hiro.so/txid/${formattedTxId}?chain=${network}`;
+    console.log('View transaction:', explorerUrl);
 
     setToast({
       message: `🔄 ${tab.toUpperCase()} transaction submitted (with post conditions)`,
@@ -609,7 +614,7 @@ async function handleTransactionWithPostConditions(tab, amount, setErrorMessage,
       console.log('🔍 Transaction events for post condition debugging:', confirmedData.events);
     }
 
-    const currentPricePromise = getCurrentPrice();
+
     createdAtISO = new Date().toISOString();
 
     let tokensTraded = 0;

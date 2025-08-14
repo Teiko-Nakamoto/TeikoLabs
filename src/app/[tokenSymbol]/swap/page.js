@@ -4,12 +4,15 @@ import { useState, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useParams, useRouter } from 'next/navigation';
 import Header from '../../components/header';
-import TokenBuySellBox from '../../components/TokenBuySellBox';
+
 import TradeHistory from '../../components/tradehistory';
 import Chart from '../../components/chart';
 import LockUnlockButton from '../../components/LockUnlockButton';
 import UnlockProgressBar from '../../components/UnlockProgressBar';
+import ProfitLoss from '../../components/ProfitLoss';
+import TokenStats from '../../components/TokenStats';
 import { getTokenStatsData } from '../../utils/fetchTokenData';
+import { Cl, standardPrincipalCV } from '@stacks/transactions';
 import './token-page.css';
 
 export default function SwapPage() {
@@ -39,6 +42,9 @@ export default function SwapPage() {
   const [liquidity, setLiquidity] = useState('--');
   const [remainingSupply, setRemainingSupply] = useState('--');
   const [currentPrice, setCurrentPrice] = useState(0);
+  const [userSatsBalance, setUserSatsBalance] = useState(0);
+  const [userTokenBalance, setUserTokenBalance] = useState(0);
+  const [isHeaderVisible, setIsHeaderVisible] = useState(true);
 
   // Restore tab and active section from localStorage on component mount
   useEffect(() => {
@@ -83,6 +89,15 @@ export default function SwapPage() {
       window.location.href = '/';
     }
   }, [connectedAddress]);
+
+  // Read token balance when wallet address or token data changes
+  useEffect(() => {
+    if (connectedAddress && tokenData?.tokenInfo) {
+      readTokenBalanceFromContract();
+    } else {
+      setUserTokenBalance(0);
+    }
+  }, [connectedAddress, tokenData?.tokenInfo]);
 
   // Handle contract address copying
   const handleContractCopy = async (address, type) => {
@@ -163,6 +178,200 @@ export default function SwapPage() {
     }
   };
 
+  // Calculate user's token balance from trades
+  const calculateUserTokenBalance = () => {
+    if (!connectedAddress || !trades || trades.length === 0) {
+      setUserTokenBalance(0);
+      return;
+    }
+
+    try {
+      // Filter trades for this wallet
+      const userTrades = trades.filter(trade => trade.sender === connectedAddress);
+      
+      let totalBought = 0;
+      let totalSold = 0;
+
+      userTrades.forEach(trade => {
+        const tokensTraded = Math.abs(trade.tokens_traded || 0) / 1e8; // Convert from satoshis to tokens
+        
+        if (trade.type === 'buy') {
+          totalBought += tokensTraded;
+        } else if (trade.type === 'sell') {
+          totalSold += tokensTraded;
+        }
+      });
+
+      const calculatedHoldings = totalBought - totalSold;
+      const currentHoldings = Math.max(0, calculatedHoldings); // Ensure non-negative
+      
+      setUserTokenBalance(currentHoldings);
+      
+      console.log('📊 Token balance calculation:', {
+        totalTrades: trades.length,
+        userTrades: userTrades.length,
+        totalBought,
+        totalSold,
+        calculatedHoldings,
+        currentHoldings
+      });
+    } catch (error) {
+      console.error('Error calculating token balance:', error);
+      setUserTokenBalance(0);
+    }
+  };
+
+  // Read token balance from smart contract
+  const readTokenBalanceFromContract = async () => {
+    if (!connectedAddress || !tokenData?.tokenInfo) {
+      console.log('❌ Cannot read token balance: missing wallet or token info');
+      return;
+    }
+
+    try {
+      console.log('🔍 Reading token balance from contract for address:', connectedAddress);
+      console.log('🔍 Token info:', tokenData.tokenInfo);
+
+      // Parse token contract info (format: "address.contract-name")
+      const [tokenContractAddress, tokenContractName] = tokenData.tokenInfo.split('.');
+      
+      if (!tokenContractAddress || !tokenContractName) {
+        console.error('❌ Invalid token contract info format:', tokenData.tokenInfo);
+        return;
+      }
+
+      console.log('🔍 Parsed contract info:', {
+        tokenContractAddress,
+        tokenContractName,
+        fullTokenInfo: tokenData.tokenInfo
+      });
+
+      // Create the principal CV for the user's address
+      const userPrincipal = standardPrincipalCV(connectedAddress);
+
+      console.log('🚀 Making API call to /api/read-contract with:', {
+        contractAddress: tokenContractAddress,
+        contractName: tokenContractName,
+        functionName: 'get-balance',
+        functionArgs: [connectedAddress],
+        userPrincipal: userPrincipal
+      });
+
+      // Call the get-balance function on the token contract
+      const response = await fetch('/api/read-contract', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          contractAddress: tokenContractAddress,
+          contractName: tokenContractName,
+          functionName: 'get-balance',
+          functionArgs: [connectedAddress] // Pass the address as string, not CV
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const data = await response.json();
+      console.log('📊 Contract read response - FULL:', JSON.stringify(data, null, 2));
+      console.log('📊 Contract read response - result:', data.result);
+      console.log('📊 Contract read response - result type:', typeof data.result);
+      console.log('📊 Contract read response - success:', data.success);
+
+      if (data.success && data.result !== undefined && data.result !== null) {
+        console.log('🔍 Processing successful response...');
+        
+        // Check if result is already a number
+        let balanceInSats;
+        if (typeof data.result === 'number') {
+          balanceInSats = data.result;
+          console.log('🔍 Result is already a number:', balanceInSats);
+        } else if (typeof data.result === 'string') {
+          // Try to parse as integer
+          balanceInSats = parseInt(data.result);
+          console.log('🔍 Parsed string result to integer:', balanceInSats);
+          
+          // Check if parsing failed
+          if (isNaN(balanceInSats)) {
+            console.error('❌ Failed to parse result as integer:', data.result);
+            // Try to extract number from string formats like "ok u123456"
+            if (data.result.startsWith('ok u')) {
+              const numberPart = data.result.substring(4);
+              balanceInSats = parseInt(numberPart);
+              console.log('🔍 Extracted from "ok u" format:', numberPart, '->', balanceInSats);
+            } else if (data.result.startsWith('ok ')) {
+              const numberPart = data.result.substring(3);
+              balanceInSats = parseInt(numberPart);
+              console.log('🔍 Extracted from "ok " format:', numberPart, '->', balanceInSats);
+            }
+          }
+        } else if (typeof data.result === 'object' && data.result !== null) {
+          // Handle Clarity value object format: {type: 'uint', value: '4662430196513'}
+          console.log('🔍 Processing Clarity value object:', data.result);
+          
+          if (data.result.value !== undefined) {
+            // Extract the value from the object
+            const rawValue = data.result.value;
+            console.log('🔍 Extracted raw value from object:', rawValue, 'Type:', typeof rawValue);
+            
+            if (typeof rawValue === 'string') {
+              balanceInSats = parseInt(rawValue);
+              console.log('🔍 Parsed string value to integer:', balanceInSats);
+            } else if (typeof rawValue === 'number') {
+              balanceInSats = rawValue;
+              console.log('🔍 Used number value directly:', balanceInSats);
+            } else {
+              console.error('❌ Unexpected raw value type:', typeof rawValue, 'Value:', rawValue);
+              balanceInSats = 0;
+            }
+          } else {
+            console.error('❌ No value property in result object:', data.result);
+            balanceInSats = 0;
+          }
+        } else {
+          console.error('❌ Unexpected result type:', typeof data.result, 'Value:', data.result);
+          balanceInSats = 0;
+        }
+        
+        // Check if we have a valid number
+        if (isNaN(balanceInSats)) {
+          console.error('❌ Final balanceInSats is NaN, using 0 as fallback');
+          balanceInSats = 0;
+        }
+        
+        const balanceInTokens = balanceInSats / 100000000;
+        const finalBalance = Math.floor(balanceInTokens); // Round down to nearest whole number
+        
+        console.log('✅ Token balance from contract:', {
+          balanceInSats,
+          balanceInTokens,
+          finalBalance,
+          userAddress: connectedAddress,
+          isFinite: isFinite(finalBalance)
+        });
+        
+        setUserTokenBalance(finalBalance);
+      } else {
+        console.error('❌ Failed to read token balance:', data.error || 'No result in response');
+        console.log('🔍 Full response data:', data);
+        // Fallback to trade-based calculation
+        calculateUserTokenBalance();
+      }
+
+    } catch (error) {
+      console.error('❌ Error reading token balance from contract:', error);
+      console.error('❌ Error details:', {
+        message: error.message,
+        stack: error.stack
+      });
+      // Fallback to trade-based calculation
+      calculateUserTokenBalance();
+    }
+  };
+
   // Fetch token-specific stats data
   const fetchTokenStats = async (tokenData) => {
     try {
@@ -184,6 +393,58 @@ export default function SwapPage() {
       setRevenue('--');
       setLiquidity('--');
       setRemainingSupply('--');
+    }
+  };
+
+  // Fetch user sBTC balance for mainnet (using same logic as TradeHistory component)
+  const fetchUserSatsBalance = async () => {
+    try {
+      console.log('🔍 fetchUserSatsBalance called');
+      const connectedAddress = localStorage.getItem('connectedAddress');
+      console.log('🔍 connectedAddress:', connectedAddress);
+      
+      if (!connectedAddress) {
+        console.log('🔍 No connected address, setting balance to 0');
+        setUserSatsBalance(0);
+        return;
+      }
+
+      // Only fetch for mainnet tokens (SP/SM addresses)
+      const isMainnet = /^(SP|SM)/.test(connectedAddress);
+      console.log('🔍 isMainnet check:', isMainnet);
+
+      if (!isMainnet) {
+        console.log('🔍 Not mainnet address, setting balance to 0');
+        setUserSatsBalance(0);
+        return;
+      }
+
+      // Use same API call as TradeHistory component with proper caching
+      const url = `/api/mainnet-user-sats-balance?principal=${encodeURIComponent(connectedAddress)}&lastTx=baseline`;
+      console.log('🔍 Making API call to:', url);
+      
+      const response = await fetch(url);
+        console.log('🔍 API response status:', response.status);
+      
+        if (response.ok) {
+          const data = await response.json();
+          console.log('🔍 API response data:', data);
+        
+        if (data && typeof data.balance === 'number') {
+          setUserSatsBalance(data.balance);
+          console.log('🔍 User sBTC balance updated:', data.balance);
+        } else {
+          console.log('🔍 Invalid balance data, setting to 0');
+          setUserSatsBalance(0);
+        }
+      } else {
+        const errorText = await response.text();
+        console.log('🔍 API call failed with error:', errorText);
+        setUserSatsBalance(0);
+      }
+    } catch (error) {
+      console.error('Error fetching user sBTC balance:', error);
+      setUserSatsBalance(0);
     }
   };
 
@@ -279,6 +540,44 @@ export default function SwapPage() {
     }
   }, [tokenSymbol]);
 
+  // Listen for transaction events from UnlockProgressBar
+  useEffect(() => {
+    const handleTransactionPending = (event) => {
+      console.log('🔄 Transaction pending:', event.detail);
+      setPendingTransaction(true);
+      setIsSuccessfulTransaction(false);
+    };
+
+    const handleTransactionSuccessful = (event) => {
+      console.log('✅ Transaction successful:', event.detail);
+      setPendingTransaction(false);
+      setIsSuccessfulTransaction(true);
+      
+      // Refresh trades after successful transaction
+      setTimeout(() => {
+        refreshTrades();
+      }, 2000); // Wait 2 seconds for blockchain to update
+    };
+
+    const handleTransactionFailed = (event) => {
+      console.log('❌ Transaction failed:', event.detail);
+      setPendingTransaction(false);
+      setIsSuccessfulTransaction(false);
+    };
+
+    // Add event listeners
+    window.addEventListener('transactionPending', handleTransactionPending);
+    window.addEventListener('transactionSuccessful', handleTransactionSuccessful);
+    window.addEventListener('transactionFailed', handleTransactionFailed);
+
+    // Cleanup
+    return () => {
+      window.removeEventListener('transactionPending', handleTransactionPending);
+      window.removeEventListener('transactionSuccessful', handleTransactionSuccessful);
+      window.removeEventListener('transactionFailed', handleTransactionFailed);
+    };
+  }, []);
+
   // Poll access settings every 10 seconds to check if trading is disabled
   useEffect(() => {
     const checkTradingStatus = async () => {
@@ -295,8 +594,8 @@ export default function SwapPage() {
           } else if (tokenData.tabType === 'practice') {
             isTradingDisabled = data.settings.tokenTrading?.practice || false;
           } else {
-            // Default to allProjects for any other category
-            isTradingDisabled = data.settings.tokenTrading?.allProjects || false;
+            // Default to false for any other category
+            isTradingDisabled = false;
           }
           
           // If trading is disabled, redirect to homepage
@@ -328,6 +627,20 @@ export default function SwapPage() {
       }
     };
   }, [tokenData, loading, router]);
+
+  // Fetch user sBTC balance when tokenData changes and it's a mainnet token
+  useEffect(() => {
+    console.log('🔍 useEffect triggered for fetchUserSatsBalance, tokenData:', tokenData);
+    console.log('🔍 tokenData?.tabType:', tokenData?.tabType);
+    console.log('🔍 tokenData?.network:', tokenData?.network);
+    console.log('🔍 connectedAddress from localStorage:', typeof window !== 'undefined' ? localStorage.getItem('connectedAddress') : 'server-side');
+    if (tokenData) {
+      console.log('🔍 Calling fetchUserSatsBalance...');
+      fetchUserSatsBalance();
+    } else {
+      console.log('🔍 No tokenData, skipping fetchUserSatsBalance');
+    }
+  }, [tokenData]);
 
   if (loading) {
     return (
@@ -389,22 +702,32 @@ export default function SwapPage() {
           </div>
         )}
 
-        <div className="main-layout">
-        {/* Left side: Contract Info, Chart and Trade History */}
-        <div className="chart-section">
+        <div className="main-layout" style={{ 
+          display: 'flex', 
+          justifyContent: 'center',
+          maxWidth: '1200px',
+          margin: '0 auto',
+          padding: '0 20px'
+        }}>
+        {/* Centered content */}
+        <div className="chart-section" style={{ width: '100%' }}>
           {/* Unlock Progress Bar Component */}
-          <UnlockProgressBar
-            tokenSymbol={tokenData?.symbol || 'TOKEN'}
-            revenue={revenue}
-            liquidity={liquidity}
-            showButtons={true}
-            onShowContracts={() => setShowContracts(true)}
-            onClaimRevenue={handleClaimRevenue}
-            tokenId={tokenData.id}
-            LockUnlockButton={LockUnlockButton}
-            dexInfo={tokenData?.dexInfo}
-            tokenInfo={tokenData?.tokenInfo}
-          />
+          {isHeaderVisible && (
+            <UnlockProgressBar
+              tokenSymbol={tokenData?.symbol || 'TOKEN'}
+              revenue={revenue}
+              liquidity={liquidity}
+              showButtons={true}
+              onShowContracts={() => setShowContracts(true)}
+              onClaimRevenue={handleClaimRevenue}
+              tokenId={tokenData.id}
+              LockUnlockButton={LockUnlockButton}
+              dexInfo={tokenData?.dexInfo}
+              tokenInfo={tokenData?.tokenInfo}
+              tokenBalance={userTokenBalance || '0'}
+              holdingsSats={userSatsBalance || 0}
+            />
+          )}
 
           {/* Chart Component with Candlestick Options */}
           <Chart
@@ -414,44 +737,20 @@ export default function SwapPage() {
             tradeLimit={tradeLimit}
             setTradeLimit={setTradeLimit}
             currentPrice={currentPrice}
+            isHeaderVisible={isHeaderVisible}
+            setIsHeaderVisible={setIsHeaderVisible}
           />
 
-                                {/* Trade History with Blue and Pink Boxes */}
-           <TradeHistory 
-             trades={trades} 
-             pendingTransaction={pendingTransaction} 
-             isSuccessfulTransaction={isSuccessfulTransaction} 
-             tokenData={tokenData}
-             onTradesUpdate={setTrades}
-           />
-        </div>
 
-        {/* Right side: Buy/Sell + Toggle Display */}
-        <div className="trading-section">
-          {/* Always show BuySellBox with navigation buttons inside */}
-                     <TokenBuySellBox
-             tab={tab}
-             setTab={setTab}
-             amount={amount}
-             setAmount={setAmount}
-             estimatedResult={estimatedResult}
-             setEstimatedResult={setEstimatedResult}
-             refreshTrades={async () => {
-               if (tokenData) {
-                 await fetchTokenStats(tokenData);
-               }
-             }} // Hook to stats update
-             setPendingTransaction={setPendingTransaction}
-             setIsSuccessfulTransaction={setIsSuccessfulTransaction}
-             trades={trades}
-             activeSection={activeSection}
-             setActiveSection={setActiveSection}
-             revenue={revenue}
-             liquidity={liquidity}
-             remainingSupply={remainingSupply}
-             tokenData={tokenData} // Pass the current token data
-             onCurrentPriceChange={setCurrentPrice} // Pass current price to parent
-           />
+
+          {/* Trade History with Blue and Pink Boxes */}
+          <TradeHistory 
+            trades={trades} 
+            pendingTransaction={pendingTransaction} 
+            isSuccessfulTransaction={isSuccessfulTransaction} 
+            tokenData={tokenData}
+            onTradesUpdate={setTrades}
+          />
         </div>
       </div>
 
@@ -493,16 +792,32 @@ export default function SwapPage() {
                 textTransform: 'uppercase'
               }}>
                 {(() => {
-                  // Determine network from tokenData
+                  // Determine network from contract address prefix
                   if (tokenData?.network) {
                     return tokenData.network;
                   }
-                  if (tokenData?.tabType === 'practice' || tokenData?.tabType === 'user_created_testnet') {
+                  
+                  // Check DEX contract address first, then token contract address
+                  const dexAddress = tokenData?.dexInfo?.split('.')?.[0];
+                  const tokenAddress = tokenData?.tokenInfo?.split('.')?.[0];
+                  const contractAddress = dexAddress || tokenAddress;
+                  
+                  if (contractAddress) {
+                    if (contractAddress.startsWith('ST')) {
+                      return 'testnet';
+                    } else if (contractAddress.startsWith('SP')) {
+                      return 'mainnet';
+                    }
+                  }
+                  
+                  // Fallback to tabType if no contract address available
+                  if (tokenData?.tabType === 'practice') {
                     return 'testnet';
                   }
-                  if (tokenData?.tabType === 'featured' || tokenData?.tabType === 'user_created_mainnet') {
+                  if (tokenData?.tabType === 'featured') {
                     return 'mainnet';
                   }
+                  
                   return 'testnet'; // default fallback
                 })()}
               </div>
@@ -619,10 +934,10 @@ export default function SwapPage() {
                 marginBottom: '8px',
                 fontFamily: 'monospace'
               }}>
-                ST1F7QA2MDF17S807EPA36TSS8AMEFY4KA9TVGWXT.sbtc-token
+                SM3VDXK3WZZSA84XXFKAFAF15NNZX32CTSG82JFQ4.sbtc-token
               </div>
               <button 
-                onClick={() => handleContractCopy('ST1F7QA2MDF17S807EPA36TSS8AMEFY4KA9TVGWXT.sbtc-token', 'sbtc')}
+                onClick={() => handleContractCopy('SM3VDXK3WZZSA84XXFKAFAF15NNZX32CTSG82JFQ4.sbtc-token', 'sbtc')}
                 style={{ 
                   background: contractCopied === 'sbtc' ? '#22c55e' : '#3b82f6', 
                   border: 'none', 
@@ -637,8 +952,6 @@ export default function SwapPage() {
                 {contractCopied === 'sbtc' ? 'Copied!' : 'Copy'}
               </button>
             </div>
-
-
 
             <button 
               onClick={() => setShowContracts(false)}
@@ -662,3 +975,6 @@ export default function SwapPage() {
     </>
   );
 }
+
+
+

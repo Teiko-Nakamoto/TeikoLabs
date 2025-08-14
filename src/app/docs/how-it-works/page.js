@@ -19,11 +19,7 @@ export default function HowItWorksPage() {
           title: 'How It Works', 
           id: 'how-it-works', 
           href: '/docs/how-it-works',
-          isActive: pathname === '/docs/how-it-works',
-          subItems: pathname === '/docs/how-it-works' ? [
-            { title: 'Get Project Funding', id: 'get-project-funding', href: '#get-project-funding' },
-            { title: 'Generate Profit from Funding Projects', id: 'generate-profit', href: '#generate-profit' }
-          ] : []
+          isActive: pathname === '/docs/how-it-works'
         },
         { title: 'Create Project', id: 'create-project', href: '/docs/create-project' },
         { title: 'Trading', id: 'trading', href: '/docs/trading' },
@@ -57,11 +53,11 @@ export default function HowItWorksPage() {
             <Link href="/" className="docs-logo-link">
               <img src="/logo.png" alt="Teiko Labs Logo" className="docs-logo" />
             </Link>
-                      <div className="docs-title-section">
-            <div className="docs-site-name">Teikolabs.com</div>
-            <h2 className="docs-sidebar-title">Documentation</h2>
+            <div className="docs-title-section">
+              <div className="docs-site-name">Teikolabs.com</div>
+              <h2 className="docs-sidebar-title">Documentation</h2>
+            </div>
           </div>
-        </div>
         </div>
 
         <nav className="docs-nav">
@@ -77,24 +73,6 @@ export default function HowItWorksPage() {
                     >
                       {item.title}
                     </Link>
-                    {item.subItems && item.subItems.length > 0 && (
-                      <ul className="docs-nav-sublist">
-                        {item.subItems.map((subItem, subIndex) => (
-                          <li key={subIndex} className="docs-nav-subitem">
-                            <a 
-                              href={subItem.href}
-                              className="docs-nav-sublink"
-                              onClick={(e) => {
-                                e.preventDefault();
-                                document.getElementById(subItem.id).scrollIntoView({ behavior: 'smooth' });
-                              }}
-                            >
-                              {subItem.title}
-                            </a>
-                          </li>
-                        ))}
-                      </ul>
-                    )}
                   </li>
                 ))}
               </ul>
@@ -114,50 +92,74 @@ export default function HowItWorksPage() {
           </div>
 
           <div className="docs-body">
-            <section id="get-project-funding" className="docs-section">
-              <h2>💰 Get Project Funding</h2>
-              <p className="section-subtitle-docs">Launch your Project and raise capital through the community using Bitcoin</p>
-              
+            {/* MAS Sats Introduction */}
+            <section className="docs-section">
+              <div className="intro-section-docs">
+                <div className="intro-header-docs">
+                  <img 
+                    src="/icons/The Mas Network.svg" 
+                    alt="MAS Sats" 
+                    className="intro-image-docs"
+                  />
+                  <h2>🚀 Introducing MAS Sats</h2>
+                </div>
+                <p className="intro-subtitle-docs">Market Activated Satoshis</p>
+                <p className="intro-description-docs">
+                  Discourages dumps by allowing anyone to claim the trading fee revenue generated and saved in smart contracts on-chain. Incentivising holders to <span style={{ color: '#60A5FA' }}>HODL</span> and not <span style={{ color: '#EF4444' }}>DUMP</span>.
+                </p>
+              </div>
+            </section>
+
+            {/* MAS Sats Features */}
+            <section className="docs-section">
+              <div className="step-container-docs">
+                <div className="step-docs">
+                  <div className="step-content-docs">
+                    <h3>Key Features</h3>
+                    <p>MAS Sats operates on an <strong>infinite bonding curve</strong> with a maximum supply of <strong>21 million units</strong>, trading against <strong>sBTC</strong> for continuous liquidity and price discovery.</p>
+                  </div>
+                </div>
+              </div>
+            </section>
+
+            {/* Trading Section */}
+            <section className="docs-section">
               <div className="step-container-docs">
                 <div className="step-docs">
                   <div className="step-number-docs">1</div>
                   <div className="step-content-docs">
-                    <h3>Create Your Project</h3>
-                    <p>Use our platform to launch your project publicly on the blockchain.</p>
+                    <h3>How Trading Works</h3>
+                    <p>MAS Sats can be bought and sold on the infinite bonding curve. Whoever locks away the most MAS sats can withdraw revenue at any time, but cannot unlock tokens until the trading fee is paid back from trading.</p>
                   </div>
                 </div>
                 
-                <div className="step-docs">
-                  <div className="step-number-docs">2</div>
-                  <div className="step-content-docs">
-                    <h3>Grow Project Treasury Ownership</h3>
-                    <p>Each project has 21 million units of ownership anyone can buy<br/>(Trades made using <a href="https://www.stacks.co/faq/what-is-sbtc" target="_blank" rel="noopener noreferrer" className="sbtc-link">sBTC</a> on Stacks blockchain)</p>
+                {/* Choice Split */}
+                <div className="choice-section-docs">
+                  <div className="step-docs">
+                    <div className="step-number-docs">2</div>
+                    <div className="step-content-docs">
+                      <h3>Choose Your Strategy</h3>
+                    </div>
                   </div>
-                </div>
-                
-                <div className="step-docs">
-                  <div className="step-number-docs">3</div>
-                  <div className="step-content-docs">
-                    <h3>How To Profit</h3>
-                    <h4 className="choice-title-docs">Choose Your Strategy:</h4>
-                    
-                    <div className="choice-container-docs">
-                      <div className="choice-option-docs choice-a">
-                        <div className="choice-number-docs">A</div>
-                        <div className="choice-content-docs">
-                          <h5>Earn From Trading Fees</h5>
-                          <p>Whoever locks away the most ownership of the project can claim trading fee profit from every transaction.</p>
-                        </div>
+                  
+                  <h4 className="choice-title-docs">Two Paths to Profit:</h4>
+                  
+                  <div className="choice-container-docs">
+                    <div className="choice-option-docs choice-a">
+                      <div className="choice-number-docs">A</div>
+                      <div className="choice-content-docs">
+                        <h5>Accumulate & Lock Ownership</h5>
+                        <p>Accumulate MAS Sats and lock away ownership of your holdings in order to withdraw trading profit from every transaction.</p>
                       </div>
-                      
-                      <div className="choice-divider-docs">OR</div>
-                      
-                      <div className="choice-option-docs choice-b">
-                        <div className="choice-number-docs">B</div>
-                        <div className="choice-content-docs">
-                          <h5>Sell Ownership For Profit</h5>
-                          <p>Sell ownership of project treasury for profit, leaving trading fees for anyone else to claim.</p>
-                        </div>
+                    </div>
+                    
+                    <div className="choice-divider-docs">OR</div>
+                    
+                    <div className="choice-option-docs choice-b">
+                      <div className="choice-number-docs">B</div>
+                      <div className="choice-content-docs">
+                        <h5>Trade for Profit/Loss</h5>
+                        <p>Trade MAS Sats on the infinite bonding curve for a profit or loss based on market movements.</p>
                       </div>
                     </div>
                   </div>
@@ -165,44 +167,55 @@ export default function HowItWorksPage() {
               </div>
             </section>
 
-            <section id="generate-profit" className="docs-section">
-              <h2>📈 Generate Profit from Funding Projects</h2>
-              <p className="section-subtitle-docs">Buy ownership in project treasuries and compete to earn trading fees</p>
-              
+            {/* MAS Sats Deep Dive Section */}
+            <section className="docs-section">
+              <div className="intro-section-docs">
+                <h2>🎯 MAS Sats: The First Mainnet Implementation</h2>
+                <p className="intro-description-docs">
+                  MAS Sats represents the first mainnet implementation of the Teiko token standard, demonstrating how sustainable tokenomics work in practice.
+                </p>
+              </div>
+            </section>
+
+            <section className="docs-section">
               <div className="step-container-docs">
                 <div className="step-docs">
-                  <div className="step-number-docs">1</div>
                   <div className="step-content-docs">
-                    <h3>How Projects Make Money</h3>
-                    <p>Each project charges a 1.5% fee for every trade of its treasury<br/>(Max Treasury Supply: 21 Million)</p>
+                    <h3>Why MAS Sats is Different</h3>
+                    <p>
+                      Unlike traditional cryptocurrencies where "buying the dip" offers no guarantees, MAS Sats creates a unique incentive structure. 
+                      When everyone dumps, you actually get closer to claiming their trading fees, creating a system with constant growth incentives.
+                    </p>
                   </div>
                 </div>
-                
+
                 <div className="step-docs">
-                  <div className="step-number-docs">2</div>
                   <div className="step-content-docs">
-                    <h3>How To Profit</h3>
-                    <h4 className="choice-title-docs">Choose Your Strategy:</h4>
-                    
-                    <div className="choice-container-docs">
-                      <div className="choice-option-docs choice-a">
-                        <div className="choice-number-docs">A</div>
-                        <div className="choice-content-docs">
-                          <h5>Earn From Trading Fees</h5>
-                          <p>Whoever locks away the most ownership of the project can claim trading fee profit from every transaction.</p>
-                        </div>
-                      </div>
-                      
-                      <div className="choice-divider-docs">OR</div>
-                      
-                      <div className="choice-option-docs choice-b">
-                        <div className="choice-number-docs">B</div>
-                        <div className="choice-content-docs">
-                          <h5>Sell Ownership For Profit</h5>
-                          <p>Sell ownership of project treasury for profit, leaving trading fees for anyone else to claim.</p>
-                        </div>
-                      </div>
-                    </div>
+                    <h3>The Dump Paradox</h3>
+                    <p>
+                      In most crypto projects, when holders sell en masse, it creates a death spiral. With MAS Sats, the opposite happens. 
+                      Each sale generates trading fees that accumulate for the remaining holders, making the token more valuable to those who stay.
+                    </p>
+                  </div>
+                </div>
+
+                <div className="step-docs">
+                  <div className="step-content-docs">
+                    <h3>Constant Growth Incentives</h3>
+                    <p>
+                      The system is designed so that every transaction, whether buying or selling, contributes to the growth of the trading fee pool. 
+                      This creates a self-reinforcing cycle where increased activity benefits long-term holders.
+                    </p>
+                  </div>
+                </div>
+
+                <div className="step-docs">
+                  <div className="step-content-docs">
+                    <h3>Real Economic Value</h3>
+                    <p>
+                      MAS Sats doesn't rely on hype or promises. The value is backed by actual trading fee revenue locked in smart contracts. 
+                      This creates a transparent and verifiable source of value that grows with every transaction.
+                    </p>
                   </div>
                 </div>
               </div>

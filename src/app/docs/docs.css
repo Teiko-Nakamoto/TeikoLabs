@@ -2204,6 +2204,7 @@
   .table-container {
     margin: 20px -20px;
     border-radius: 0;
+    overflow-x: auto;
   }
   
   .feature-comparison-table {
@@ -2225,6 +2226,51 @@
   .platform-header {
     width: 130px;
     min-width: 130px;
+  }
+  
+  /* Additional mobile improvements */
+  .docs-content {
+    padding: 60px 16px 40px;
+  }
+  
+  .docs-header {
+    padding: 24px 0 24px;
+  }
+  
+  .docs-title {
+    font-size: 24px;
+  }
+  
+  .docs-description {
+    font-size: 16px;
+  }
+  
+  .docs-section {
+    margin-bottom: 32px;
+  }
+  
+  .docs-section h2 {
+    font-size: 20px;
+  }
+  
+  .docs-section h3 {
+    font-size: 18px;
+  }
+  
+  .benefit-card {
+    padding: 20px;
+  }
+  
+  .benefit-icon {
+    font-size: 36px;
+  }
+  
+  .problem-stats {
+    padding: 20px;
+  }
+  
+  .stat-item {
+    font-size: 14px;
   }
 }
 

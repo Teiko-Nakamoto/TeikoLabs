@@ -3,21 +3,25 @@
 import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { request } from '@stacks/connect';
-import { uintCV, Pc, postConditionToHex } from '@stacks/transactions';
+import { Cl } from '@stacks/transactions';
 import TransactionToast from './TransactionToast';
-import { getUserSatsBalance, getTokenUserBalance, calculateTokenEstimatedTokensForSats, calculateTokenEstimatedSatsForTokens, getTokenCurrentPrice, getTokenLiquidityBalance, getTokenTotalBalance, getTokenLockedBalance, getTokenStatsData, getTokenDexBalances } from '../utils/fetchTokenData';
+import { getUserSatsBalance, getTokenUserBalance, calculateTokenEstimatedTokensForSats, calculateTokenEstimatedSatsForTokens, getTokenLiquidityBalance, getTokenTotalBalance, getTokenLockedBalance, getTokenStatsData, getTokenDexBalances } from '../utils/fetchTokenData';
 
 import ProfitLoss from './ProfitLoss';
 import TokenStats from './TokenStats';
 import './BuySellBox.css';
 
 // Network health check function
-async function checkNetworkHealth() {
+async function checkNetworkHealth(network = 'testnet') {
   try {
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 5000);
     
-    const response = await fetch('https://api.testnet.hiro.so/v2/info', {
+    const apiUrl = network === 'mainnet' 
+      ? 'https://api.hiro.so/v2/info' 
+      : 'https://api.testnet.hiro.so/v2/info';
+    
+    const response = await fetch(apiUrl, {
       signal: controller.signal
     });
     
@@ -44,7 +48,9 @@ const TokenBuySellBox = React.memo(function TokenBuySellBox({
   liquidity, 
   remainingSupply,
   tokenData, // Required for token-specific trading
-  onCurrentPriceChange // Callback to pass current price to parent
+  onCurrentPriceChange, // Callback to pass current price to parent
+  network = 'testnet',
+  holdingsSats
 }) {
   // Restore tab selection from localStorage on component mount
   useEffect(() => {
@@ -126,8 +132,8 @@ const TokenBuySellBox = React.memo(function TokenBuySellBox({
           return;
         }
         
-        console.log('🔄 Fetching fresh price data...');
-        const price = await getTokenCurrentPrice(tokenData);
+        console.log('🔄 No AMM price calculation available...');
+        const price = 0; // No AMM price calculation
         
         // Only update state if price has actually changed (with small tolerance for floating point precision)
         const priceDifference = Math.abs(price - currentPrice);
@@ -177,78 +183,40 @@ const TokenBuySellBox = React.memo(function TokenBuySellBox({
       }
 
       // Use the actual DEX contract address from token data
-      const dexContractId = tokenData.dexInfo;
-      const apiUrl = 'https://api.testnet.hiro.so'; // Change to mainnet for production
-      
+      const dexContractId = tokenData.dexInfo; // e.g., SP...mas-sats-treasury
+
       console.log('🔍 Fetching recent transactions for DEX:', dexContractId);
-      
-      const response = await fetch(
-        `${apiUrl}/extended/v1/tx/?contract_id=${dexContractId}&limit=21&sort_by=block_height&order=desc`
-      );
-      
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
+
+      // If mainnet (SP/SM), use backend API with 15s caching; else fall back to testnet REST
+      if (/^(SP|SM)/.test(dexContractId)) {
+        const [address, name] = dexContractId.split('.');
+        const res = await fetch(`/api/mainnet-token-trades?address=${encodeURIComponent(address)}&name=${encodeURIComponent(name)}&limit=25`);
+        if (!res.ok) throw new Error(`Trades API error ${res.status}`);
+        const data = await res.json();
+
+        console.log('📊 Recent DEX Trades (mainnet):', {
+          count: data.trades?.length || 0,
+          cached: !!data.cached,
+          contractId: dexContractId,
+          trades: data.trades || [] // Grouped together instead of individual logs
+        });
+      } else {
+        // Testnet fallback (legacy behavior)
+        const apiUrl = 'https://api.testnet.hiro.so';
+        const response = await fetch(
+          `${apiUrl}/extended/v1/tx/?contract_id=${dexContractId}&limit=21&sort_by=block_height&order=desc`
+        );
+        if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+        const data = await response.json();
+
+        console.log('📊 Recent DEX Transactions (testnet):', {
+          total: data.total,
+          limit: data.limit,
+          offset: data.offset,
+          contractId: dexContractId,
+          results: data.results || [] // Grouped together instead of individual logs
+        });
       }
-      
-      const data = await response.json();
-      
-      console.log('📊 Recent DEX Transactions:', {
-        total: data.total,
-        limit: data.limit,
-        offset: data.offset,
-        contractId: dexContractId
-      });
-      
-             console.log('🔄 Transaction Details:');
-       data.results.forEach((tx, index) => {
-         console.log(`\n--- Transaction ${index + 1} ---`);
-         console.log('TX ID:', tx.tx_id);
-         console.log('Status:', tx.tx_status);
-         console.log('Block Height:', tx.block_height);
-         console.log('Block Time:', tx.block_time_iso);
-         console.log('Sender:', tx.sender_address);
-         console.log('Function Name:', tx.contract_call?.function_name || 'N/A');
-         console.log('Contract Called:', tx.contract_call?.contract_id || 'N/A');
-         
-         // Extract input amount from function arguments
-         if (tx.contract_call?.function_args && tx.contract_call.function_args.length > 0) {
-           const inputArg = tx.contract_call.function_args[0];
-           if (inputArg && inputArg.repr) {
-             const inputAmount = inputArg.repr.replace('u', ''); // Remove 'u' prefix
-             console.log('Input Amount (sats):', parseInt(inputAmount).toLocaleString());
-             
-             // Calculate estimated output based on function type
-             if (tx.contract_call.function_name === 'buy') {
-               console.log('Transaction Type: BUY (sats → tokens)');
-               console.log('Input:', parseInt(inputAmount).toLocaleString(), 'sats');
-               // Output would be tokens, but we need to calculate this
-             } else if (tx.contract_call.function_name === 'sell') {
-               console.log('Transaction Type: SELL (tokens → sats)');
-               console.log('Input:', parseInt(inputAmount).toLocaleString(), 'tokens (in micro units)');
-               console.log('Input (actual tokens):', (parseInt(inputAmount) / 1e8).toLocaleString(), 'tokens');
-             }
-           }
-         }
-         
-         console.log('Events Count:', tx.event_count);
-         
-         // Show events with more detail
-         if (tx.events && tx.events.length > 0) {
-           console.log('Events:');
-           tx.events.forEach((event, eventIndex) => {
-             console.log(`  Event ${eventIndex + 1}:`, {
-               type: event.event_type,
-               data: event.event_data
-             });
-           });
-         }
-         
-         if (tx.tx_result) {
-           console.log('Transaction Result:', tx.tx_result);
-         }
-       });
-      
-      console.log('\n✅ DEX transaction fetch completed');
       
     } catch (error) {
       console.error('❌ Error fetching DEX transactions:', error);
@@ -263,20 +231,16 @@ const TokenBuySellBox = React.memo(function TokenBuySellBox({
         getTokenLockedBalance(tokenData)
       ]);
       
-      // Calculate derived values
-      const virtualSbtc = 1500000; // 1.5M sats virtual liquidity
+      // Calculate derived values (without AMM price calculation)
       const availableTokens = dexBalances.tokenBalance; // Use actual DEX token balance
-      const calculatedPrice = (dexBalances.sbtcBalance + virtualSbtc) / availableTokens;
       
       setPriceSnapshot({
         sbtcBalance: dexBalances.sbtcBalance,
         totalTokens: dexBalances.tokenBalance, // Use DEX token balance as total
         lockedTokens,
-        virtualSbtc,
         availableTokensFormatted: availableTokens,
         totalTokensFormatted: dexBalances.tokenBalance,
         lockedTokensFormatted: lockedTokens,
-        calculatedPrice,
         timestamp: Date.now()
       });
     } catch (error) {
@@ -293,60 +257,119 @@ const TokenBuySellBox = React.memo(function TokenBuySellBox({
     setShowPriceModal(false);
   };
 
-  // Fetch user balance with intelligent caching
+  // Throttled user balance polling (max once per 15s), deduped and paused on hidden/blur
+  const balancePollMs = 15000;
+  const lastFetchAtRef = React.useRef(0);
+  const inFlightRef = React.useRef(false);
+  const lastValueRef = React.useRef(0);
+  const visibilityRef = React.useRef({ isVisible: true, isFocused: true });
+  const intervalRef = React.useRef(null);
+
   useEffect(() => {
-    const fetchBalance = async () => {
-      try {
-        const now = Date.now();
-        const cacheAge = now - balanceCache.lastFetch;
-        const cacheValid = cacheAge < 30000; // Cache valid for 30 seconds
-        
-        // Check if we can use cached balance data
-        if (cacheValid && 
-            balanceCache.lastTab === tab && 
-            balanceCache.lastTokenData === tokenData?.dexInfo && 
-            balanceCache.lastBalance > 0) {
-          console.log('✅ Using cached balance data (age:', Math.round(cacheAge / 1000), 's):', balanceCache.lastBalance);
-          setUserBalance(balanceCache.lastBalance);
-          return;
-        }
-        
-        console.log('🔄 Fetching fresh balance data...');
-        let newBalance = 0;
-        
-        if (tab === 'sell') {
-          newBalance = await getTokenUserBalance(tokenData);
-        } else {
-          newBalance = await getUserSatsBalance();
-        }
-        
-        // Only update if balance has changed significantly
-        const balanceDifference = Math.abs(newBalance - userBalance);
-        const tolerance = 0.00000001; // Small tolerance for floating point precision
-        
-        if (balanceDifference > tolerance) {
-          console.log('🔄 Balance updated:', { old: userBalance, new: newBalance, difference: balanceDifference });
-          setUserBalance(newBalance);
-        } else {
-          console.log('✅ Balance unchanged:', newBalance);
-        }
-        
-        // Update cache
-        setBalanceCache({
-          lastFetch: now,
-          lastBalance: newBalance,
-          lastTab: tab,
-          lastTokenData: tokenData?.dexInfo
-        });
-        
-      } catch (error) {
-        console.error('Error fetching balance:', error);
-        setUserBalance(0);
-      }
+    const onVisibilityChange = () => {
+      visibilityRef.current.isVisible = !document.hidden;
+    };
+    const onFocus = () => {
+      visibilityRef.current.isFocused = true;
+      // Trigger an immediate fetch on focus to refresh stale UI
+      maybeFetchBalance(true);
+    };
+    const onBlur = () => {
+      visibilityRef.current.isFocused = false;
     };
 
-    fetchBalance();
-  }, [tokenData, tab, balanceCache, userBalance]);
+    document.addEventListener('visibilitychange', onVisibilityChange);
+    window.addEventListener('focus', onFocus);
+    window.addEventListener('blur', onBlur);
+
+    return () => {
+      document.removeEventListener('visibilitychange', onVisibilityChange);
+      window.removeEventListener('focus', onFocus);
+      window.removeEventListener('blur', onBlur);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const maybeFetchBalance = async (force = false) => {
+    try {
+      // Skip if tab hidden or window not focused
+      if (!visibilityRef.current.isVisible || !visibilityRef.current.isFocused) return;
+
+      const now = Date.now();
+      if (!force && now - lastFetchAtRef.current < balancePollMs) return;
+      if (inFlightRef.current) return;
+
+      inFlightRef.current = true;
+
+      let raw = 0;
+      if (network === 'mainnet') {
+        if (tab === 'sell') {
+          raw = await getTokenUserBalance(tokenData);
+        } else {
+          // Prefer server API holdings if provided or available
+          if (typeof holdingsSats === 'number') {
+            raw = holdingsSats;
+            console.log('🔍 Using holdingsSats prop:', holdingsSats);
+          } else {
+            try {
+              const principal = localStorage.getItem('connectedAddress');
+              const res = await fetch(`/api/mainnet-user-sats-balance?principal=${encodeURIComponent(principal || '')}&lastTx=baseline`);
+              if (res.ok) {
+                const data = await res.json();
+                raw = typeof data.balance === 'number' ? data.balance : 0;
+              }
+            } catch {}
+          }
+        }
+      } else {
+        if (tab === 'sell') {
+          raw = await getTokenUserBalance(tokenData);
+        } else {
+          raw = await getUserSatsBalance();
+        }
+      }
+
+      const nextValue = Number(raw);
+      const safeValue = Number.isFinite(nextValue) ? nextValue : 0;
+
+      // Update only on meaningful change (tolerance for float jitter)
+      const tolerance = 1e-8;
+      if (Math.abs(safeValue - lastValueRef.current) > tolerance) {
+        setUserBalance(safeValue);
+        lastValueRef.current = safeValue;
+        // Reduced logging: only on real update
+        console.log('🔄 Balance updated →', safeValue);
+      }
+
+      lastFetchAtRef.current = now;
+    } catch (err) {
+      console.error('Error fetching balance:', err);
+      setUserBalance(0);
+    } finally {
+      inFlightRef.current = false;
+    }
+  };
+
+  useEffect(() => {
+    // Reset timing when data dependencies change
+    lastFetchAtRef.current = 0;
+    lastValueRef.current = userBalance || 0;
+
+    // Initial immediate fetch
+    maybeFetchBalance(true);
+
+    // Start interval poller
+    if (intervalRef.current) clearInterval(intervalRef.current);
+    intervalRef.current = setInterval(() => {
+      maybeFetchBalance(false);
+    }, balancePollMs);
+
+    return () => {
+      if (intervalRef.current) clearInterval(intervalRef.current);
+      intervalRef.current = null;
+    };
+    // Only reconfigure when these change
+  }, [tab, tokenData?.dexInfo, holdingsSats]);
 
   // Fetch recent DEX transactions (separate from balance fetching)
   useEffect(() => {
@@ -354,6 +377,13 @@ const TokenBuySellBox = React.memo(function TokenBuySellBox({
       fetchRecentDexTransactions();
     }
   }, [tokenData?.dexInfo]); // Only run when tokenData.dexInfo changes
+
+  // Debug: Log when holdingsSats prop changes
+  useEffect(() => {
+    console.log('🔍 holdingsSats prop changed:', holdingsSats);
+  }, [holdingsSats]);
+
+
 
   const calculateEstimates = async () => {
     if (!amount || isNaN(amount) || Number(amount) <= 0) {
@@ -404,15 +434,36 @@ const TokenBuySellBox = React.memo(function TokenBuySellBox({
   };
 
   const setAmountPercent = (percent) => {
+    console.log('🔍 setAmountPercent called with:', { percent, tab, userBalance, currentPrice });
+    
+    // Ensure userBalance is a valid number
+    const balance = Number(userBalance) || 0;
+    console.log('🔍 Using balance:', balance);
+    
     if (tab === 'buy') {
-      // For buy, use sats balance
-      const maxSats = userBalance * currentPrice;
-      const amount = (maxSats * percent) / 100;
-      setAmount(Math.floor(amount).toString());
+      // For buy, use sats balance directly (not multiplied by price)
+      // userBalance is already in sats for buy tab
+      const amount = (balance * percent) / 100;
+      console.log('🔍 Buy calculation:', { balance, percent, amount });
+      
+      // Ensure we don't set 0 if balance is available
+      if (balance > 0) {
+        setAmount(Math.floor(amount).toString());
+      } else {
+        console.log('⚠️ No balance available for buy');
+        setAmount('0');
+      }
     } else {
       // For sell, use token balance
-      const amount = (userBalance * percent) / 100;
-      setAmount(amount.toString());
+      const amount = (balance * percent) / 100;
+      console.log('🔍 Sell calculation:', { balance, percent, amount });
+      
+      if (balance > 0) {
+        setAmount(amount.toString());
+      } else {
+        console.log('⚠️ No balance available for sell');
+        setAmount('0');
+      }
     }
   };
 
@@ -437,6 +488,8 @@ const TokenBuySellBox = React.memo(function TokenBuySellBox({
   };
 
   const handleClick = async () => {
+    console.log('🔍 handleClick called!', { tab, amount, tokenData: !!tokenData });
+    
     // Remove commas before processing
     const cleanAmount = amount.replace(/,/g, '');
     
@@ -461,7 +514,7 @@ const TokenBuySellBox = React.memo(function TokenBuySellBox({
       setIsNetworkRetry(true);
       setError('Checking network connectivity...');
       
-      const isNetworkHealthy = await checkNetworkHealth();
+      const isNetworkHealthy = await checkNetworkHealth(network);
       
       if (!isNetworkHealthy) {
         setError('Network connectivity issues detected. Refreshing in 5 seconds...');
@@ -559,42 +612,18 @@ const TokenBuySellBox = React.memo(function TokenBuySellBox({
       // 🔧 Enhanced wallet readiness check before transaction
       console.log('🔍 Checking wallet readiness before transaction...');
       
-      // Check if Stacks Connect is available
-      if (typeof window === 'undefined' || !window.StacksProvider) {
-        setError('Please refresh the page and try again.');
-        return;
-      }
-
-      // Check if user is connected
-      const { isConnected, getLocalStorage } = await import('@stacks/connect');
-      const connected = await isConnected();
+      // Simple wallet connection check using localStorage
+      console.log('🔍 Checking wallet connection...');
+      const connectedAddress = localStorage.getItem('connectedAddress');
+      console.log('🔍 connectedAddress from localStorage:', connectedAddress);
       
-      if (!connected) {
+      if (!connectedAddress) {
+        console.log('❌ No wallet address found in localStorage');
         setError('Please connect your wallet to continue trading.');
         return;
       }
 
-      // Verify we have a valid address
-      const data = getLocalStorage();
-      const stxAddr = data?.addresses?.stx?.[0]?.address;
-      
-      if (!stxAddr) {
-        setError('Please reconnect your wallet to continue trading.');
-        return;
-      }
-
-      // Check if connection is recent (within last 5 minutes)
-      const lastConnectionTime = localStorage.getItem('lastConnectionTime');
-      if (lastConnectionTime) {
-        const timeSinceConnection = Date.now() - parseInt(lastConnectionTime);
-        if (timeSinceConnection > 5 * 60 * 1000) { // 5 minutes
-          console.log('⚠️ Connection may be stale, requesting reconnection...');
-          setError('Please reconnect your wallet to continue trading.');
-          return;
-        }
-      }
-
-      console.log('✅ Wallet ready for transaction:', stxAddr);
+      console.log('✅ Wallet ready for transaction:', connectedAddress);
 
       // Use token-specific contract addresses
       const dexContractAddress = tokenData.dexInfo.split('.')[0];
@@ -602,74 +631,16 @@ const TokenBuySellBox = React.memo(function TokenBuySellBox({
       
       const functionName = tab === 'buy' ? 'buy' : 'sell';
       const satsTraded = tab === 'buy' ? parseInt(cleanAmount) : Math.round(parseFloat(cleanAmount) * 1e8);
-      const functionArgs = [uintCV(satsTraded)];
-
-      // 🧪 CREATE POST CONDITIONS for slippage protection
-      let postConditions = [];
-      const postConditionMode = slippageEnabled && slippageProtectionParams ? 'deny' : 'allow';
-
-      if (slippageEnabled && slippageProtectionParams && slippageProtectionParams.userAddress && slippageProtectionParams.tolerance > 0) {
-        console.log('🛡️ Creating slippage protection post conditions...');
-        
-        if (tab === 'buy') {
-          // For BUY: User sends exact sats, should receive minimum tokens (accounting for slippage)
-          const slippagePercent = slippageProtectionParams.tolerance / 100;
-          const minExpectedTokens = Math.floor(estimatedOutput * (1 - slippagePercent));
-          
-          // 🛡️ CONDITION 1: User sends exact SBTC amount
-          const userSendsSbtcCondition = Pc.principal(slippageProtectionParams.userAddress)
-            .willSendEq(satsTraded)
-            .ft('ST1F7QA2MDF17S807EPA36TSS8AMEFY4KA9TVGWXT.sbtc-token', 'sbtc-token');
-          
-          // 🛡️ CONDITION 2: DEX contract sends at least minimum tokens to user (slippage protection!)
-          const contractSendsTokensCondition = Pc.principal(`${dexContractAddress}.${dexContractName}`)
-            .willSendGte(minExpectedTokens)
-            .ft(`${dexContractAddress}.${tokenData.symbol}`, tokenData.symbol);
-          
-          postConditions.push(
-            postConditionToHex(userSendsSbtcCondition),
-            postConditionToHex(contractSendsTokensCondition)
-          );
-          
-          console.log('🛡️ BUY post conditions:');
-          console.log('  1. User sends exactly', satsTraded, 'SBTC tokens');
-          console.log('  2. Contract sends at least', minExpectedTokens, 'tokens (with', slippageProtectionParams.tolerance + '% slippage protection)');
-          console.log('  3. UI estimated:', estimatedOutput, 'tokens, protected minimum:', minExpectedTokens, 'tokens');
-          
-        } else {
-          // SELL: User sends exact tokens, should receive minimum sats (accounting for slippage)
-          const slippagePercent = slippageProtectionParams.tolerance / 100;
-          const minExpectedSbtc = Math.floor(estimatedOutput * (1 - slippagePercent));
-          
-          // 🛡️ CONDITION 1: User sends exact tokens
-          const userSendsTokensCondition = Pc.principal(slippageProtectionParams.userAddress)
-            .willSendEq(satsTraded)
-            .ft(`${dexContractAddress}.${tokenData.symbol}`, tokenData.symbol);
-          
-          // 🛡️ CONDITION 2: DEX contract sends at least minimum SBTC to user (slippage protection!)
-          const contractSendsSbtcCondition = Pc.principal(`${dexContractAddress}.${dexContractName}`)
-            .willSendGte(minExpectedSbtc)
-            .ft('ST1F7QA2MDF17S807EPA36TSS8AMEFY4KA9TVGWXT.sbtc-token', 'sbtc-token');
-          
-          postConditions.push(
-            postConditionToHex(userSendsTokensCondition),
-            postConditionToHex(contractSendsSbtcCondition)
-          );
-          
-          console.log('🛡️ SELL post conditions:');
-          console.log('  1. User sends exactly', satsTraded, 'tokens (base units)');
-          console.log('  2. Contract sends at least', minExpectedSbtc, 'SBTC (with', slippageProtectionParams.tolerance + '% slippage protection)');
-          console.log('  3. UI estimated:', estimatedOutput, 'SBTC, protected minimum:', minExpectedSbtc, 'SBTC');
-        }
-      }
+      
+      // Use new Cl API for function arguments
+      const functionArgs = [Cl.uint(satsTraded)];
 
       console.log('🚀 About to send token-specific request with:', {
-        contract: `${dexContractAddress}.${dexContractName}`,
+        contractAddress: dexContractAddress,
+        contractName: dexContractName,
         functionName,
         functionArgs,
-        postConditionMode,
-        postConditions: postConditions.length,
-        network: 'testnet',
+        network,
         tokenSpecific: true,
         slippageEnabled: slippageEnabled
       });
@@ -682,20 +653,26 @@ const TokenBuySellBox = React.memo(function TokenBuySellBox({
       for (let attempt = 0; attempt <= maxRetries; attempt++) {
         try {
           console.log(`🚀 Submitting transaction (attempt ${attempt + 1}/${maxRetries + 1})...`);
+          const connectNetwork = network === 'mainnet' ? 'mainnet' : 'testnet';
+          console.log('🛰️ Connect network:', connectNetwork);
           
           // Add a small delay between retries
           if (attempt > 0) {
             await new Promise(resolve => setTimeout(resolve, 1000));
           }
           
-          response = await request('stx_callContract', {
+          // Use old API format since that's what the library expects
+          const transactionParams = {
             contract: `${dexContractAddress}.${dexContractName}`,
             functionName,
             functionArgs,
-            postConditionMode,
-            postConditions,
-            network: 'testnet',
-          });
+            postConditionMode: 'allow',
+            network: connectNetwork,
+          };
+          
+          console.log('🔍 Sending transaction with params:', transactionParams);
+          
+          response = await request('stx_callContract', transactionParams);
           
           console.log('✅ Transaction submitted successfully:', response);
           break; // Success, exit retry loop
@@ -724,8 +701,8 @@ const TokenBuySellBox = React.memo(function TokenBuySellBox({
       
       console.log('✅ Request completed, response:', response);
 
-      const { txid: txId } = response;
-      const formattedTxId = `0x${txId}`;
+      const { txId } = response;
+      const formattedTxId = txId;
 
       // Check for duplicate transaction
       const lastTx = localStorage.getItem('lastTx');
@@ -736,7 +713,11 @@ const TokenBuySellBox = React.memo(function TokenBuySellBox({
       }
       localStorage.setItem('lastTx', formattedTxId);
 
-      console.log('View transaction:', `https://explorer.hiro.so/txid/${formattedTxId}?chain=testnet`);
+      const explorerChain = network === 'mainnet' ? 'mainnet' : 'testnet';
+      const explorerUrl = network === 'mainnet' 
+        ? `https://explorer.stacks.co/txid/${formattedTxId}`
+        : `https://explorer.hiro.so/txid/${formattedTxId}?chain=${explorerChain}`;
+      console.log('View transaction:', explorerUrl);
 
       setToast({
         message: `🔄 ${tab.toUpperCase()} transaction submitted`,
@@ -746,7 +727,7 @@ const TokenBuySellBox = React.memo(function TokenBuySellBox({
       });
 
       // Wait for confirmation
-      const confirmedData = await waitForConfirmation(txId);
+      const confirmedData = await waitForConfirmation(formattedTxId);
 
       if (confirmedData.tx_status !== 'success') {
         console.log('❌ Transaction failed:', txId);
@@ -997,7 +978,7 @@ const TokenBuySellBox = React.memo(function TokenBuySellBox({
           {tab === 'sell' ? (
             <>
               <div style={{ marginBottom: '8px' }}>
-                {t('holdings')}: {Math.floor(userBalance).toLocaleString()}{" "}
+                Holding: {Math.floor(userBalance).toLocaleString()}{" "}
                 <img 
                   src="/icons/The Mas Network.svg" 
                   alt="MAS Sats" 
@@ -1043,8 +1024,7 @@ const TokenBuySellBox = React.memo(function TokenBuySellBox({
           ) : (
             <>
               <div style={{ marginBottom: '8px' }}>
-                {t('holdings')}:{" "}
-                {userBalance.toLocaleString()}{" "}
+                Holding: {typeof holdingsSats === 'number' ? holdingsSats.toLocaleString() : '0'}{" "}
                 <img 
                   src="/icons/sats1.svg" 
                   alt="SATS" 
@@ -1160,17 +1140,7 @@ const TokenBuySellBox = React.memo(function TokenBuySellBox({
           )}
         </div>
 
-        <div className="quick-buttons">
-          {[20, 50, 75, 100].map((percent) => (
-            <button
-              key={percent}
-              onClick={() => setAmountPercent(percent)}
-              className={`quick-button ${tab === 'sell' ? 'sell' : ''}`}
-            >
-              {percent}%
-            </button>
-          ))}
-        </div>
+
 
         {/* Slippage Protection Settings */}
         <div style={{ marginTop: '16px', marginBottom: '16px' }}>
@@ -1378,7 +1348,10 @@ const TokenBuySellBox = React.memo(function TokenBuySellBox({
         )}
 
         <button
-          onClick={handleClick}
+          onClick={() => {
+            console.log('🔍 Buy/Sell button clicked!', { tab, loading, amount });
+            handleClick();
+          }}
           disabled={loading}
           className={`buy-button ${tab === 'buy' ? 'buy' : 'sell'}`}
         >
@@ -1571,38 +1544,7 @@ const TokenBuySellBox = React.memo(function TokenBuySellBox({
                 </div>
               ) : (
                 <>
-                  <div style={{ 
-                    backgroundColor: '#f9fafb', 
-                    padding: '16px', 
-                    borderRadius: '8px',
-                    marginBottom: '16px',
-                    border: '1px solid #e5e7eb'
-                  }}>
-                    <h3 style={{ fontSize: '16px', fontWeight: '600', marginBottom: '12px', color: '#1f2937' }}>
-                      Current Calculation:
-                    </h3>
-                    <div style={{ 
-                      backgroundColor: '#ffffff',
-                      padding: '12px',
-                      borderRadius: '4px',
-                      fontSize: '14px',
-                      border: '1px solid #d1d5db',
-                      fontFamily: 'monospace'
-                    }}>
-                      <div style={{ marginBottom: '8px', color: '#6b7280' }}>
-                        Price = (SBTC Balance + Virtual SBTC) ÷ Available Tokens
-                      </div>
-                      <div style={{ marginBottom: '8px' }}>
-                        Price = ({priceSnapshot.sbtcBalance.toLocaleString()} + {priceSnapshot.virtualSbtc.toLocaleString()}) ÷ {Math.round(priceSnapshot.availableTokensFormatted).toLocaleString()}
-                      </div>
-                      <div style={{ marginBottom: '8px' }}>
-                        Price = {(priceSnapshot.sbtcBalance + priceSnapshot.virtualSbtc).toLocaleString()} ÷ {Math.round(priceSnapshot.availableTokensFormatted).toLocaleString()}
-                      </div>
-                      <div style={{ fontWeight: 'bold', color: '#059669' }}>
-                        Price = {priceSnapshot.calculatedPrice.toFixed(8)} sats per token
-                      </div>
-                    </div>
-                  </div>
+
                   
                   <div style={{ 
                     backgroundColor: '#f0f9ff', 
@@ -1619,10 +1561,7 @@ const TokenBuySellBox = React.memo(function TokenBuySellBox({
                         <strong>SBTC Balance:</strong><br/>
                         {priceSnapshot.sbtcBalance.toLocaleString()} sats
                       </div>
-                      <div>
-                        <strong>Virtual SBTC:</strong><br/>
-                        {priceSnapshot.virtualSbtc.toLocaleString()} sats
-                      </div>
+
                       <div>
                         <strong>Total Tokens:</strong><br/>
                         {Math.round(priceSnapshot.totalTokensFormatted).toLocaleString()}
@@ -1649,10 +1588,9 @@ const TokenBuySellBox = React.memo(function TokenBuySellBox({
                       <strong>How it works:</strong>
                     </div>
                     <ul style={{ margin: '0', paddingLeft: '16px' }}>
-                      <li>Virtual SBTC (1.5M sats) provides initial liquidity and price stability</li>
-                      <li>As trades occur, SBTC and token balances change</li>
-                      <li>Price automatically adjusts based on the new ratio</li>
-                      <li>More SBTC in pool = higher token price</li>
+                      <li>Pool data shows current SBTC and token balances</li>
+                      <li>Available tokens = Total tokens - Locked tokens</li>
+                      <li>This data is used for trading calculations</li>
                     </ul>
                   </div>
                 </>

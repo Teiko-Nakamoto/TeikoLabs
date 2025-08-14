@@ -71,11 +71,10 @@ export async function POST(request) {
           dex_contract_address: updatedToken.dex_contract_address
         });
         
-        // User-created projects will be stored with their network info but shown in "All Projects" tab
-        // We'll use a special tab_type to identify them for filtering
+        // User-created projects will be stored with their network info
         // Default to testnet if network is not set
         const networkValue = updatedToken.network || 'testnet';
-        const tabType = networkValue === 'mainnet' ? 'user_created_mainnet' : 'user_created_testnet';
+        const tabType = networkValue === 'mainnet' ? 'featured' : 'practice';
         console.log('🔍 Determined tab_type:', tabType, 'from network:', networkValue);
         
         // Create token card data - only essential info when minting is completed
@@ -83,7 +82,7 @@ export async function POST(request) {
           symbol: updatedToken.token_symbol,               // token initials [[memory:5517157]]
           token_info: updatedToken.token_contract_address,  // project address
           dex_info: updatedToken.dex_contract_address,      // project treasury address
-          tab_type: tabType, // for filtering in "All Projects" tab
+          tab_type: tabType, // for filtering in main tabs
           is_coming_soon: false // Project is active since minting is completed
         };
 

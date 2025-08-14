@@ -19,11 +19,105 @@ const TradeHistory = React.memo(function TradeHistory({ trades, pendingTransacti
   const [dexTransactions, setDexTransactions] = useState([]);
   const [loadingTransactions, setLoadingTransactions] = useState(false);
   
+  // Search and filter functionality
+  const [searchTerm, setSearchTerm] = useState('');
+  const [filterType, setFilterType] = useState('all'); // 'all', 'user', 'address'
+  const [connectedAddress, setConnectedAddress] = useState('');
+  
+  // Mobile touch sliding
+  const [isDragging, setIsDragging] = useState(false);
+  const [startX, setStartX] = useState(0);
+  const [currentX, setCurrentX] = useState(0);
+  const [dragOffset, setDragOffset] = useState(0);
+  
   // Caching and activity tracking
   const [lastFetchTime, setLastFetchTime] = useState(0);
   const [isUserActive, setIsUserActive] = useState(true);
   const [fetchInterval, setFetchInterval] = useState(null);
   const cacheTimeout = 15000; // 15 seconds cache (increased from 6 seconds)
+
+  // Get connected wallet address
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const address = localStorage.getItem('connectedAddress');
+      setConnectedAddress(address || '');
+    }
+  }, []);
+
+  // Filter transactions based on search and filter type
+  const getFilteredTransactions = () => {
+    let filtered = dexTransactions;
+    
+    // Filter out failed transactions (where received amounts are 0)
+    filtered = filtered.filter(tx => {
+      // Check if this is a failed transaction
+      const isFailed = (tx.sats_traded === 0 && tx.tokens_traded === 0) || 
+                      tx.status === 'abort_by_response' ||
+                      tx.status === 'abort_by_post_condition';
+      
+      if (isFailed) {
+        console.log('🚫 Filtering out failed transaction:', tx.transaction_id, 'Status:', tx.status);
+        return false;
+      }
+      
+      return true;
+    });
+    
+    // Filter by type
+    if (filterType === 'user' && connectedAddress) {
+      filtered = filtered.filter(tx => tx.sender === connectedAddress);
+    } else if (filterType === 'address' && searchTerm) {
+      filtered = filtered.filter(tx => 
+        tx.sender?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        tx.transaction_id?.toLowerCase().includes(searchTerm.toLowerCase())
+      );
+    }
+    
+    // Filter by search term
+    if (searchTerm && filterType !== 'user') {
+      filtered = filtered.filter(tx => 
+        tx.sender?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        tx.transaction_id?.toLowerCase().includes(searchTerm.toLowerCase())
+      );
+    }
+    
+    return filtered;
+  };
+
+  // Mobile touch sliding handlers
+  const handleTouchStart = (e) => {
+    const touch = e.touches[0];
+    setStartX(touch.clientX);
+    setCurrentX(touch.clientX);
+    setIsDragging(true);
+    setDragOffset(0);
+  };
+
+  const handleTouchMove = (e) => {
+    if (!isDragging) return;
+    e.preventDefault();
+    const touch = e.touches[0];
+    const deltaX = touch.clientX - startX;
+    setCurrentX(touch.clientX);
+    setDragOffset(deltaX);
+  };
+
+  const handleTouchEnd = () => {
+    if (!isDragging) return;
+    setIsDragging(false);
+    
+    const threshold = 100; // Minimum distance to trigger slide
+    if (Math.abs(dragOffset) > threshold) {
+      if (dragOffset > 0 && index > 0) {
+        // Swipe right - go to previous
+        setIndex(index - 1);
+      } else if (dragOffset < 0 && index < Math.ceil(getFilteredTransactions().length / 4) - 1) {
+        // Swipe left - go to next
+        setIndex(index + 1);
+      }
+    }
+    setDragOffset(0);
+  };
 
   // Fetch real DEX transactions with caching
   const fetchDexTransactions = async (forceRefresh = false) => {
@@ -32,14 +126,7 @@ const TradeHistory = React.memo(function TradeHistory({ trades, pendingTransacti
       return;
     }
 
-    // Check if wallet is connected (optional check for better UX)
-    if (typeof window !== 'undefined') {
-      const connectedAddress = localStorage.getItem('connectedAddress');
-      if (!connectedAddress) {
-        console.log('⚠️ No wallet connected, skipping transaction fetch');
-        return;
-      }
-    }
+    // Do not require a wallet for reading recent trades (read-only)
 
     // Check cache and user activity
     const now = Date.now();
@@ -61,9 +148,177 @@ const TradeHistory = React.memo(function TradeHistory({ trades, pendingTransacti
     }
     try {
       const dexContractId = tokenData.dexInfo;
-      const apiUrl = 'https://api.testnet.hiro.so'; // Change to mainnet for production
-      
       console.log('🔍 Fetching DEX transactions for trade history:', dexContractId);
+
+      // If mainnet (SP/SM), use backend API with 15s caching and transform to display trades
+      if (/^(SP|SM)/.test(dexContractId)) {
+        const [address, name] = dexContractId.split('.');
+        const url = `/api/mainnet-token-trades?address=${encodeURIComponent(address)}&name=${encodeURIComponent(name)}&limit=50`;
+        console.log('🔁 Mainnet trades API fetch:', url);
+        const res = await fetch(url);
+        if (!res.ok) {
+          const body = await res.text().catch(() => '');
+          throw new Error(`Mainnet trades API error ${res.status}: ${body}`);
+        }
+        const data = await res.json();
+        console.log('📊 Mainnet trades (count):', data.trades?.length || 0, 'cached:', !!data.cached);
+        // Full raw trades payload
+        if (Array.isArray(data.rawTrades)) {
+          console.log('🧾 Mainnet rawTrades:', data.rawTrades);
+
+          // Transform raw mainnet trades into display format
+          const transformedTrades = data.rawTrades
+            .filter(raw => raw?.contract_call?.function_name === 'buy' || raw?.contract_call?.function_name === 'sell')
+            .map(raw => {
+            const fn = raw?.contract_call?.function_name;
+            const status = raw?.tx_status;
+            const timeIso = raw?.block_time_iso || (raw?.burn_block_time ? new Date(raw.burn_block_time * 1000).toISOString() : null);
+
+            // Parse input amount from first function arg repr: "uXXXX"
+            let inputU = null;
+            const firstArgRepr = raw?.contract_call?.function_args?.[0]?.repr;
+            const mIn = firstArgRepr && firstArgRepr.match(/^u(\d+)$/);
+            if (mIn) inputU = parseInt(mIn[1], 10);
+
+            // Helpers to detect sBTC asset in events
+            const isSbtcAsset = (assetId) => typeof assetId === 'string' && assetId.endsWith('.sbtc-token');
+
+            let satsIn = null, satsOut = null, tokensInMicro = null, tokensOutMicro = null;
+
+            if (fn === 'buy') {
+              // User sends sats, receives tokens
+              satsIn = inputU ?? null;
+
+              // Prefer tx_result for tokens received
+              const repr = raw?.tx_result?.repr;
+              const m = repr && repr.match(/\(ok u(\d+)\)/);
+              if (m) tokensOutMicro = parseInt(m[1], 10);
+
+              // Fallback: ft_transfer_event to sender for tokens (exclude sBTC transfers)
+              if (tokensOutMicro == null && Array.isArray(raw.events)) {
+                for (const ev of raw.events) {
+                  if (ev?.event_type === 'ft_transfer_event' && ev.event_data?.recipient === raw.sender_address) {
+                    const assetId = ev.event_data?.asset_identifier;
+                    if (!isSbtcAsset(assetId)) {
+                      const amt = parseInt(ev.event_data.amount, 10);
+                      if (Number.isFinite(amt)) { tokensOutMicro = amt; break; }
+                    }
+                  }
+                }
+              }
+            } else if (fn === 'sell') {
+              // User sends tokens, receives sats
+              tokensInMicro = inputU ?? null;
+
+              // Prefer tx_result for sats received
+              const repr = raw?.tx_result?.repr;
+              const m = repr && repr.match(/\(ok u(\d+)\)/);
+              if (m) satsOut = parseInt(m[1], 10);
+
+              // Fallback: ft_transfer_event to sender for sBTC
+              if (satsOut == null && Array.isArray(raw.events)) {
+                for (const ev of raw.events) {
+                  if (ev?.event_type === 'ft_transfer_event' && ev.event_data?.recipient === raw.sender_address) {
+                    const assetId = ev.event_data?.asset_identifier;
+                    if (isSbtcAsset(assetId)) {
+                      const amt = parseInt(ev.event_data.amount, 10);
+                      if (Number.isFinite(amt)) { satsOut = amt; break; }
+                    }
+                  }
+                }
+              }
+            }
+
+              // Map to UI model similar to testnet path
+              const txid = raw.tx_id;
+              const sender = raw.sender_address;
+              const blockHeight = raw.block_height;
+              const sats_traded = fn === 'buy' ? (satsIn || 0) : (satsOut || 0);
+              const tokens_traded = fn === 'buy' ? (tokensOutMicro || 0) : (tokensInMicro || 0);
+              let price = 0;
+              if (sats_traded && tokens_traded) {
+                const tokens = Math.abs(tokens_traded) / 1e8;
+                if (tokens > 0) price = sats_traded / tokens;
+              }
+
+              return {
+                transaction_id: txid,
+                type: fn,
+                sats_traded,
+                tokens_traded,
+                created_at: timeIso,
+                price: price.toString(),
+                block_height: blockHeight,
+                sender,
+                status
+              };
+            })
+            .filter(trade => {
+              // Filter out failed transactions
+              const isFailed = (trade.sats_traded === 0 && trade.tokens_traded === 0) || 
+                             trade.status === 'abort_by_response' ||
+                             trade.status === 'abort_by_post_condition';
+              
+              if (isFailed) {
+                return false;
+              }
+              
+              return true;
+            });
+
+          // Group and log failed transactions
+          const failedTrades = (data.trades || []).filter(trade => {
+            const isFailed = (trade.sats_traded === 0 && trade.tokens_traded === 0) || 
+                           trade.status === 'abort_by_response' ||
+                           trade.status === 'abort_by_post_condition';
+            return isFailed;
+          });
+
+          if (failedTrades.length > 0) {
+            console.log('🚫 Excluding failed mainnet transactions from history:', failedTrades.map(trade => ({
+              txId: trade.transaction_id,
+              status: trade.status
+            })));
+          }
+
+          // Only update state if data has actually changed
+          const currentTxIds = dexTransactions.map(tx => tx.transaction_id).join(',');
+          const newTxIds = transformedTrades.map(tx => tx.transaction_id).join(',');
+          if (currentTxIds !== newTxIds) {
+            console.log('🔄 DEX transactions (mainnet) updated:', transformedTrades.length, 'trades');
+            setDexTransactions(transformedTrades);
+            if (onTradesUpdate) onTradesUpdate([...transformedTrades].reverse());
+            // Trigger holdings refresh only when a new user-initiated tx appears
+            try {
+              const principal = (typeof window !== 'undefined') ? localStorage.getItem('connectedAddress') : null;
+              if (principal && /^(SP|SM)/.test(principal)) {
+                const latestUserTx = transformedTrades.find(tx => tx.sender === principal && tx.status === 'success');
+                if (latestUserTx && latestUserTx.transaction_id !== holdingsCacheRef.current.lastUserTxId) {
+                  const url = `/api/mainnet-user-sats-balance?principal=${encodeURIComponent(principal)}&lastTx=${encodeURIComponent(latestUserTx.transaction_id)}`;
+                  console.log('🔁 Holdings refresh due to user trade:', { txid: latestUserTx.transaction_id, url });
+                  fetch(url).then(r => r.ok ? r.json() : null).then(data => {
+                    if (data && typeof data.balance === 'number') {
+                      holdingsCacheRef.current = { value: data.balance, fetchedAt: Date.now(), lastUserTxId: latestUserTx.transaction_id };
+                      setUserSats(data.balance);
+                    }
+                  }).catch((e) => console.warn('⚠️ Holdings refresh failed:', e?.message || String(e)));
+                }
+              }
+            } catch {}
+          } else {
+            console.log('✅ DEX transactions unchanged (mainnet), skipping state update');
+          }
+        }
+
+        console.log('🔄 DEX transactions (mainnet) updated:', (data.trades || []).length, 'trades - grouped data:', data.trades || []);
+        // Update cache timestamp even if we don't transform mainnet payload here
+        setLastFetchTime(now);
+        setLoadingTransactions(false);
+        return;
+      }
+
+      // Testnet fallback (legacy behavior)
+      const apiUrl = 'https://api.testnet.hiro.so';
       
       // Add timeout to prevent hanging
       const controller = new AbortController();
@@ -204,7 +459,34 @@ const TradeHistory = React.memo(function TradeHistory({ trades, pendingTransacti
               sender: tx.sender_address,
               status: tx.tx_status
             };
+          })
+          .filter(trade => {
+            // Filter out failed transactions
+            const isFailed = (trade.sats_traded === 0 && trade.tokens_traded === 0) || 
+                           trade.status === 'abort_by_response' ||
+                           trade.status === 'abort_by_post_condition';
+            
+            if (isFailed) {
+              return false;
+            }
+            
+            return true;
           });
+
+        // Group and log failed transactions
+        const failedTrades = data.results.filter(tx => {
+          const isFailed = (tx.tx_status === 'abort_by_response' || tx.tx_status === 'abort_by_post_condition') ||
+                         (tx.contract_call?.function_name === 'buy' || tx.contract_call?.function_name === 'sell') &&
+                         (!tx.tx_result || tx.tx_result.repr === '(ok u0)');
+          return isFailed;
+        });
+
+        if (failedTrades.length > 0) {
+          console.log('🚫 Excluding failed testnet transactions from history:', failedTrades.map(tx => ({
+            txId: tx.tx_id,
+            status: tx.tx_status
+          })));
+        }
       
              // Only update state if data has actually changed
              const currentTxIds = dexTransactions.map(tx => tx.transaction_id).join(',');
@@ -305,8 +587,8 @@ const TradeHistory = React.memo(function TradeHistory({ trades, pendingTransacti
 
      // Use DEX transactions if available, otherwise fall back to trades
    const displayTrades = dexTransactions.length > 0 ? dexTransactions : (trades || []);
-   const visibleCount = 3;
-   const maxIndex = Math.max(0, displayTrades.length - visibleCount);
+   const visibleCount = 4;
+   const maxIndex = Math.max(0, getFilteredTransactions().length - visibleCount);
 
   // Function to format large numbers with K and M
   const formatLargeNumber = (num, locale = (typeof navigator !== 'undefined' ? navigator.language : 'en-US')) => {
@@ -380,8 +662,34 @@ const TradeHistory = React.memo(function TradeHistory({ trades, pendingTransacti
     }
   };
 
+  const [userSats, setUserSats] = useState(null);
+  const holdingsCacheRef = useRef({ value: null, fetchedAt: 0, lastUserTxId: 'baseline' });
+  useEffect(() => {
+    // First-visit holdings fetch (24h TTL client-side gate)
+    const principal = (typeof window !== 'undefined') ? localStorage.getItem('connectedAddress') : null;
+    if (!principal || !/^(SP|SM)/.test(principal)) return;
+    const now = Date.now();
+    const oneDay = 86400000;
+    if (now - holdingsCacheRef.current.fetchedAt < oneDay && holdingsCacheRef.current.value != null) {
+      setUserSats(holdingsCacheRef.current.value);
+      return;
+    }
+    const url = `/api/mainnet-user-sats-balance?principal=${encodeURIComponent(principal)}&lastTx=${encodeURIComponent(holdingsCacheRef.current.lastUserTxId || 'baseline')}`;
+    console.log('🔁 Holdings fetch (first visit or stale):', url);
+    fetch(url).then(r => r.ok ? r.json() : null).then(data => {
+      if (data && typeof data.balance === 'number') {
+        holdingsCacheRef.current = { value: data.balance, fetchedAt: Date.now(), lastUserTxId: data.lastUserTxId || 'baseline' };
+        setUserSats(data.balance);
+      }
+    }).catch((e) => console.warn('⚠️ Holdings fetch failed:', e?.message || String(e)));
+  }, []);
+
   if (!trades || trades.length === 0) {
-    return <p className="no-trades-msg">{t('no_trades_msg')}</p>;
+    return (
+      <div>
+        <p className="no-trades-msg">{t('no_trades_msg')}</p>
+      </div>
+    );
   }
 
   return (
@@ -394,10 +702,120 @@ const TradeHistory = React.memo(function TradeHistory({ trades, pendingTransacti
     />
     {t('swap_history_title')}
   </h3> {/* 🔁 Title updated */}
+
+  {/* Filter Buttons - Always visible */}
+  <div style={{
+    display: 'flex',
+    gap: '8px',
+    flexWrap: 'wrap',
+    justifyContent: 'center',
+    marginBottom: '16px'
+  }}>
+    <button
+      onClick={() => setFilterType('all')}
+      style={{
+        padding: '6px 12px',
+        borderRadius: '6px',
+        border: '1px solid',
+        fontSize: '12px',
+        cursor: 'pointer',
+        background: filterType === 'all' ? '#3b82f6' : 'transparent',
+        color: filterType === 'all' ? '#ffffff' : '#9ca3af',
+        borderColor: filterType === 'all' ? '#3b82f6' : '#4b5563'
+      }}
+    >
+      All Trades
+    </button>
+    <button
+      onClick={() => setFilterType('user')}
+      disabled={!connectedAddress}
+      style={{
+        padding: '6px 12px',
+        borderRadius: '6px',
+        border: '1px solid',
+        fontSize: '12px',
+        cursor: connectedAddress ? 'pointer' : 'not-allowed',
+        background: filterType === 'user' ? '#10b981' : 'transparent',
+        color: filterType === 'user' ? '#ffffff' : connectedAddress ? '#9ca3af' : '#6b7280',
+        borderColor: filterType === 'user' ? '#10b981' : '#4b5563',
+        opacity: connectedAddress ? 1 : 0.5
+      }}
+    >
+      My Trades
+    </button>
+    <button
+      onClick={() => setFilterType('address')}
+      style={{
+        padding: '6px 12px',
+        borderRadius: '6px',
+        border: '1px solid',
+        fontSize: '12px',
+        cursor: 'pointer',
+        background: filterType === 'address' ? '#f59e0b' : 'transparent',
+        color: filterType === 'address' ? '#ffffff' : '#9ca3af',
+        borderColor: filterType === 'address' ? '#f59e0b' : '#4b5563'
+      }}
+    >
+      By Address
+    </button>
+  </div>
+
+  {/* Search Bar - Only show when "By Address" is selected */}
+  {filterType === 'address' && (
+    <div style={{
+      background: '#1f2937',
+      borderRadius: '8px',
+      padding: '12px',
+      marginBottom: '16px',
+      border: '1px solid #374151'
+    }}>
+      <div style={{
+        display: 'flex',
+        flexDirection: window.innerWidth <= 768 ? 'column' : 'row',
+        gap: '12px',
+        alignItems: 'center'
+      }}>
+        {/* Search Input */}
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <input
+            type="text"
+            placeholder="Search by wallet address or transaction ID..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            style={{
+              width: '100%',
+              padding: '8px 12px',
+              borderRadius: '6px',
+              border: '1px solid #4b5563',
+              background: '#374151',
+              color: '#ffffff',
+              fontSize: '14px'
+            }}
+          />
+        </div>
+      </div>
+
+      {/* Results Count */}
+      <div style={{
+        marginTop: '8px',
+        fontSize: '12px',
+        color: '#9ca3af',
+        textAlign: 'center'
+      }}>
+        Showing {getFilteredTransactions().length} of {dexTransactions.length} transactions
+      </div>
+    </div>
+  )}
   
 
 
-  <div className="block-container" style={{ position: 'relative' }}>
+  <div 
+    className="block-container" 
+    style={{ position: 'relative' }}
+    onTouchStart={handleTouchStart}
+    onTouchMove={handleTouchMove}
+    onTouchEnd={handleTouchEnd}
+  >
     {/* Awaiting block */}
     <div className="trade-block awaiting-block">
       <div className="face">
@@ -549,8 +967,8 @@ const TradeHistory = React.memo(function TradeHistory({ trades, pendingTransacti
     {/* Sliding container */}
     <div className="slide-window">
       <div className="slide-track" ref={sliderRef}>
-                 {displayTrades.map((trade, i) => {
-          const txUrl = `https://explorer.hiro.so/txid/${trade.transaction_id}?chain=testnet`;
+                 {getFilteredTransactions().map((trade, i) => {
+          const txUrl = `https://explorer.stacks.co/txid/${trade.transaction_id}`;
           const isCopied = copiedTxId === trade.transaction_id;
           // All past trades are blue boxes (completed trades)
           const typeClass = 'trade-block';
@@ -652,7 +1070,7 @@ const TradeHistory = React.memo(function TradeHistory({ trades, pendingTransacti
         <button onClick={() => setIndex(i => Math.max(0, i - 1))} disabled={index === 0}>
           {t('prev_button')}
         </button>
-                 <span>{t('trade_count', { count: index + 1, total: displayTrades.length })}</span>
+                 <span>{t('trade_count', { count: index + 1, total: Math.ceil(getFilteredTransactions().length / 4) })}</span>
         <button onClick={() => setIndex(i => Math.min(maxIndex, i + 1))} disabled={index >= maxIndex}>
           {t('next_button')}
         </button>
@@ -960,7 +1378,7 @@ const TradeHistory = React.memo(function TradeHistory({ trades, pendingTransacti
                     flexWrap: 'wrap'
                   }}>
                     <a
-                      href={`https://explorer.hiro.so/txid/${selectedTrade.transaction_id}?chain=testnet`}
+                      href={`https://explorer.stacks.co/txid/${selectedTrade.transaction_id}`}
                       target="_blank"
                       rel="noopener noreferrer"
                       style={{

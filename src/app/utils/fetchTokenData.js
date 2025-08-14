@@ -4,6 +4,16 @@ import { STACKS_TESTNET, STACKS_MAINNET } from '@stacks/network';
 import { fetchCallReadOnlyFunction, Cl, principalCV, cvToValue } from '@stacks/transactions';
 import { getLocalStorage } from '@stacks/connect';
 import { logCacheActivity, loggedBlockchainCall } from './cacheLogger';
+import { getCachedBlockchainData } from './hiro-config';
+
+// Custom JSON replacer to handle BigInt serialization
+function jsonReplacer(key, value) {
+  if (typeof value === 'bigint') {
+    return value.toString() + 'n'; // Convert BigInt to string with 'n' suffix
+  }
+  return value;
+}
+
 export const SATS_CONTRACT_ADDRESS = 'ST1F7QA2MDF17S807EPA36TSS8AMEFY4KA9TVGWXT';
 export const SATS_CONTRACT_NAME = 'sbtc-token';
 
@@ -15,21 +25,38 @@ export const TOKEN_CONTRACT_NAME = 'mas-sats';
 // Utility function to parse contract info from tokenData (source of truth)
 export function parseContractInfo(tokenData) {
   if (!tokenData) return null;
-  
-  // Determine network
-  let network = STACKS_TESTNET; // default
-  if (tokenData.network) {
-    network = tokenData.network === 'mainnet' ? STACKS_MAINNET : STACKS_TESTNET;
-  } else if (tokenData.tabType === 'featured' || tokenData.tabType === 'user_created_mainnet') {
-    network = STACKS_MAINNET;
-  } else if (tokenData.tabType === 'practice' || tokenData.tabType === 'user_created_testnet') {
-    network = STACKS_TESTNET;
-  }
-  
-  // Parse DEX contract info from dexInfo or dexContractAddress
+
+  // Parse DEX contract info from dexInfo or dexContractAddress FIRST
   const dexContract = tokenData.dexInfo || tokenData.dexContractAddress;
   if (dexContract && dexContract.includes('.')) {
     const [address, name] = dexContract.split('.');
+
+    // PRIORITY: Force network by address prefix when determinable
+    // SP/SM => mainnet, ST/SN => testnet
+    let network = STACKS_TESTNET; // default
+    if (address?.startsWith('SP') || address?.startsWith('SM')) {
+      network = STACKS_MAINNET;
+      console.log('🔍 Address prefix SP/SM detected, forcing mainnet for:', address);
+    } else if (address?.startsWith('ST') || address?.startsWith('SN')) {
+      network = STACKS_TESTNET;
+      console.log('🔍 Address prefix ST/SN detected, forcing testnet for:', address);
+    } else {
+      // Fallback to provided flags only if address prefix is not determinable
+      if (tokenData.network) {
+        network = tokenData.network === 'mainnet' ? STACKS_MAINNET : STACKS_TESTNET;
+      } else if (tokenData.tabType === 'featured') {
+        network = STACKS_MAINNET;
+      } else if (tokenData.tabType === 'practice') {
+        network = STACKS_TESTNET;
+      }
+    }
+
+    console.log('🔍 parseContractInfo result:', { 
+      address, 
+      name, 
+      network: network === STACKS_MAINNET ? 'mainnet' : 'testnet', 
+      tokenDataNetwork: tokenData.network 
+    });
     return {
       address,
       name,
@@ -37,7 +64,17 @@ export function parseContractInfo(tokenData) {
       tokenData
     };
   }
-  
+
+  // Fallback logic for when no valid contract info is found
+  let network = STACKS_TESTNET; // default
+  if (tokenData.network) {
+    network = tokenData.network === 'mainnet' ? STACKS_MAINNET : STACKS_TESTNET;
+  } else if (tokenData.tabType === 'featured') {
+    network = STACKS_MAINNET;
+  } else if (tokenData.tabType === 'practice') {
+    network = STACKS_TESTNET;
+  }
+
   // Fallback to defaults if no valid contract info
   console.warn('⚠️ No valid contract info found in tokenData, using defaults:', tokenData);
   return {
@@ -48,17 +85,31 @@ export function parseContractInfo(tokenData) {
   };
 }
 
-// Fetch SBTC fee pool (revenue) using read-only function
-export async function getRevenueBalance() {
+// Fetch SBTC fee pool (revenue) using read-only function with caching
+export async function getRevenueBalance(contractInfo = null) {
   try {
-    const result = await fetchCallReadOnlyFunction({
-      contractAddress: DEX_CONTRACT_ADDRESS,
-      contractName: DEX_CONTRACT_NAME,
-      functionName: 'get-sbtc-fee-pool',
-      functionArgs: [],
-      network: STACKS_TESTNET,
-      senderAddress: DEX_CONTRACT_ADDRESS,
-    });
+    // Use provided contract info or fall back to defaults
+    const contractAddress = contractInfo?.address || DEX_CONTRACT_ADDRESS;
+    const contractName = contractInfo?.name || DEX_CONTRACT_NAME;
+    const network = contractInfo?.network || STACKS_TESTNET;
+    
+    console.log('🔍 getRevenueBalance using contract:', { contractAddress, contractName, network: network.name || 'testnet' });
+    
+    // Use logged blockchain call with 15-second cache
+    const result = await loggedBlockchainCall(
+      'get-sbtc-fee-pool', 
+      async () => {
+        return await fetchCallReadOnlyFunction({
+          contractAddress,
+          contractName,
+          functionName: 'get-sbtc-fee-pool',
+          functionArgs: [],
+          network,
+          senderAddress: contractAddress,
+        });
+      },
+      15000 // 15 seconds cache duration
+    );
     
     const rawValue = result?.value?.value || result?.value || null;
     console.log('🔍 Raw revenue value:', rawValue, typeof rawValue);
@@ -81,7 +132,7 @@ export async function getRevenueBalance() {
   }
 }
 
-// Fetch SBTC liquidity balance using read-only function
+// Fetch SBTC liquidity balance using read-only function with caching
 export async function getLiquidityBalance(contractInfo = null) {
   try {
     // Use provided contract info or fall back to defaults
@@ -91,7 +142,7 @@ export async function getLiquidityBalance(contractInfo = null) {
     
     console.log('🔍 getLiquidityBalance using contract:', { contractAddress, contractName, network: network.name || 'testnet' });
     
-    // Use logged blockchain call with 15-second cache (as per API Statistics)
+    // Use logged blockchain call with 15-second cache
     const result = await loggedBlockchainCall(
       'get-sbtc-balance', 
       async () => {
@@ -128,18 +179,32 @@ export async function getLiquidityBalance(contractInfo = null) {
   }
 }
 
-// Fetch token symbol (e.g., DCY)
-export async function getTokenSymbol() {
+// Fetch token symbol (e.g., DCY) with caching
+export async function getTokenSymbol(contractInfo = null) {
   try {
-    console.log('🔍 Fetching token symbol from contract...');
-    const result = await fetchCallReadOnlyFunction({
-      contractAddress: DEX_CONTRACT_ADDRESS,
-      contractName: TOKEN_CONTRACT_NAME,
-      functionName: 'get-symbol',
-      functionArgs: [],
-      network: STACKS_TESTNET,
-      senderAddress: DEX_CONTRACT_ADDRESS,
-    });
+    // Use provided contract info or fall back to defaults
+    const contractAddress = contractInfo?.address || DEX_CONTRACT_ADDRESS;
+    const contractName = contractInfo?.name || TOKEN_CONTRACT_NAME;
+    const network = contractInfo?.network || STACKS_TESTNET;
+    
+    console.log('🔍 getTokenSymbol using contract:', { contractAddress, contractName, network: network.name || 'testnet' });
+    
+    // Use logged blockchain call with 15-second cache
+    const result = await loggedBlockchainCall(
+      'get-symbol', 
+      async () => {
+        return await fetchCallReadOnlyFunction({
+          contractAddress,
+          contractName,
+          functionName: 'get-symbol',
+          functionArgs: [],
+          network,
+          senderAddress: contractAddress,
+        });
+      },
+      15000 // 15 seconds cache duration
+    );
+    
     const symbolValue = result?.value?.value;
     console.log('🔍 Raw token symbol result:', result);
     console.log('🔍 Token symbol value:', symbolValue);
@@ -152,17 +217,32 @@ export async function getTokenSymbol() {
   }
 }
 
-// Fetch token name (e.g., "teiko")
-export async function getTokenName() {
+// Fetch token name (e.g., "teiko") with caching
+export async function getTokenName(contractInfo = null) {
   try {
-    const result = await fetchCallReadOnlyFunction({
-      contractAddress: DEX_CONTRACT_ADDRESS,
-      contractName: TOKEN_CONTRACT_NAME,
-      functionName: 'get-name',
-      functionArgs: [],
-      network: STACKS_TESTNET,
-      senderAddress: DEX_CONTRACT_ADDRESS,
-    });
+    // Use provided contract info or fall back to defaults
+    const contractAddress = contractInfo?.address || DEX_CONTRACT_ADDRESS;
+    const contractName = contractInfo?.name || TOKEN_CONTRACT_NAME;
+    const network = contractInfo?.network || STACKS_TESTNET;
+    
+    console.log('🔍 getTokenName using contract:', { contractAddress, contractName, network: network.name || 'testnet' });
+    
+    // Use logged blockchain call with 15-second cache
+    const result = await loggedBlockchainCall(
+      'get-name', 
+      async () => {
+        return await fetchCallReadOnlyFunction({
+          contractAddress,
+          contractName,
+          functionName: 'get-name',
+          functionArgs: [],
+          network,
+          senderAddress: contractAddress,
+        });
+      },
+      15000 // 15 seconds cache duration
+    );
+    
     const name = result?.value?.value || result?.value?.data || '';
     return name;
   } catch (err) {
@@ -171,9 +251,8 @@ export async function getTokenName() {
   }
 }
 
-// Fetch current user's token balance
-// Fetch current user's token balance (rounded up to nearest whole number)
-export async function getUserTokenBalance() {
+// Fetch current user's token balance with caching
+export async function getUserTokenBalance(contractInfo = null) {
   try {
     console.log('🔍 getUserTokenBalance: Starting...');
     const data = getLocalStorage();
@@ -184,18 +263,50 @@ export async function getUserTokenBalance() {
       return 0;
     }
 
-    const result = await fetchCallReadOnlyFunction({
-      contractAddress: DEX_CONTRACT_ADDRESS,
-      contractName: TOKEN_CONTRACT_NAME,
-      functionName: 'get-balance',
-      functionArgs: [principalCV(userAddress)],
-      network: STACKS_TESTNET,
-      senderAddress: userAddress,
+    // Use provided contract info or fall back to defaults
+    const contractAddress = contractInfo?.address || DEX_CONTRACT_ADDRESS;
+    const contractName = contractInfo?.name || TOKEN_CONTRACT_NAME;
+    const network = contractInfo?.network || STACKS_TESTNET;
+    
+    console.log('🔍 getUserTokenBalance using contract:', { 
+      contractAddress, 
+      contractName, 
+      network: network.name || 'testnet',
+      userAddress: userAddress
     });
 
-    console.log('🔍 getUserTokenBalance: Raw result =', result);
+    // Use logged blockchain call with 15-second cache
+    const result = await loggedBlockchainCall(
+      'get-user-token-balance', 
+      async () => {
+        console.log('🚀 Making blockchain call for getUserTokenBalance with:', {
+          contractAddress,
+          contractName,
+          functionName: 'get-balance',
+          functionArgs: [principalCV(userAddress)],
+          network: network.name || 'testnet',
+          senderAddress: userAddress,
+        });
+        
+        return await fetchCallReadOnlyFunction({
+          contractAddress,
+          contractName,
+          functionName: 'get-balance',
+          functionArgs: [principalCV(userAddress)],
+          network,
+          senderAddress: userAddress,
+        });
+      },
+      15000 // 15 seconds cache duration
+    );
+
+    console.log('🔍 getUserTokenBalance: Raw result - FULL:', JSON.stringify(result, jsonReplacer, 2));
+    console.log('🔍 getUserTokenBalance: Raw result - TYPE:', typeof result);
+    console.log('🔍 getUserTokenBalance: Raw result - CONSTRUCTOR:', result?.constructor?.name);
+    console.log('🔍 getUserTokenBalance: Raw result - KEYS:', Object.keys(result || {}));
+    
     const raw = result?.value?.value || result?.value || null;
-    console.log('🔍 getUserTokenBalance: Raw value =', raw);
+    console.log('🔍 getUserTokenBalance: Raw value =', raw, 'Type:', typeof raw);
     if (!raw) {
       console.log('🔍 getUserTokenBalance: No raw value found');
       return 0;
@@ -205,12 +316,18 @@ export async function getUserTokenBalance() {
     let rawValue = 0;
     if (typeof raw === 'bigint') {
       rawValue = Number(raw);
+      console.log('🔍 getUserTokenBalance: Converted bigint to number:', rawValue);
     } else {
       rawValue = parseInt(raw);
+      console.log('🔍 getUserTokenBalance: Parsed string to integer:', rawValue);
     }
     const tokensInWholeUnits = rawValue / 100000000;
     
-    console.log('🔍 getUserTokenBalance: Raw value =', rawValue, 'Whole tokens =', tokensInWholeUnits);
+    console.log('🔍 getUserTokenBalance: CONVERSION DETAILS:', {
+      rawValue: rawValue,
+      tokensInWholeUnits: tokensInWholeUnits,
+      finalResult: Math.floor(tokensInWholeUnits)
+    });
     
     // Check if the result is reasonable (should be less than 100 million tokens)
     if (tokensInWholeUnits > 100000000) {
@@ -220,14 +337,19 @@ export async function getUserTokenBalance() {
       console.log('✅ User token balance looks reasonable:', tokensInWholeUnits);
     }
     
-    return Math.floor(tokensInWholeUnits); // Round down to nearest whole number
+    const finalResult = Math.floor(tokensInWholeUnits); // Round down to nearest whole number
+    console.log('🎯 getUserTokenBalance: FINAL RESULT =', finalResult);
+    
+    return finalResult;
   } catch (err) {
-    console.error('❌ Failed to fetch user token balance:', err);
+    console.error('❌ Failed to fetch user token balance - FULL:', err);
+    console.error('❌ Failed to fetch user token balance - MESSAGE:', err.message);
+    console.error('❌ Failed to fetch user token balance - STACK:', err.stack);
     return 0;
   }
 }
 
-// Fetch total token balance (all tokens in the contract)
+// Fetch total token balance (all tokens in the contract) with caching
 export async function getTotalTokenBalance(contractInfo = null) {
   try {
     // Use provided contract info or fall back to defaults
@@ -237,14 +359,22 @@ export async function getTotalTokenBalance(contractInfo = null) {
     
     console.log('🔍 getTotalTokenBalance using contract:', { contractAddress, contractName, network: network.name || 'testnet' });
     
-    const result = await fetchCallReadOnlyFunction({
-      contractAddress,
-      contractName,
-      functionName: 'get-token-balance',
-      functionArgs: [],
-      network,
-      senderAddress: contractAddress,
-    });
+    // Use logged blockchain call with 15-second cache
+    const result = await loggedBlockchainCall(
+      'get-token-balance', 
+      async () => {
+        return await fetchCallReadOnlyFunction({
+          contractAddress,
+          contractName,
+          functionName: 'get-token-balance',
+          functionArgs: [],
+          network,
+          senderAddress: contractAddress,
+        });
+      },
+      15000 // 15 seconds cache duration
+    );
+    
     console.log('🔍 getTotalTokenBalance: Raw result =', result);
     
     // Use cvToValue to properly convert the Clarity value
@@ -272,7 +402,7 @@ export async function getTotalTokenBalance(contractInfo = null) {
   }
 }
 
-// Fetch total locked tokens in the contract
+// Fetch total locked tokens in the contract with caching
 export async function getTotalLockedTokens(contractInfo = null) {
   try {
     // Use provided contract info or fall back to defaults
@@ -282,14 +412,22 @@ export async function getTotalLockedTokens(contractInfo = null) {
     
     console.log('🔍 getTotalLockedTokens using contract:', { contractAddress, contractName, network: network.name || 'testnet' });
     
-    const result = await fetchCallReadOnlyFunction({
-      contractAddress,
-      contractName,
-      functionName: 'get-total-locked',
-      functionArgs: [],
-      network,
-      senderAddress: contractAddress,
-    });
+    // Use logged blockchain call with 15-second cache
+    const result = await loggedBlockchainCall(
+      'get-total-locked', 
+      async () => {
+        return await fetchCallReadOnlyFunction({
+          contractAddress,
+          contractName,
+          functionName: 'get-total-locked',
+          functionArgs: [],
+          network,
+          senderAddress: contractAddress,
+        });
+      },
+      15000 // 15 seconds cache duration
+    );
+    
     console.log('🔍 getTotalLockedTokens: Raw result =', result);
     
     // Use cvToValue to properly convert the Clarity value
@@ -317,7 +455,7 @@ export async function getTotalLockedTokens(contractInfo = null) {
   }
 }
 
-// Fetch SBTC balance
+// Fetch SBTC balance with caching
 export async function getSbtcBalance(contractInfo = null) {
   try {
     // Use provided contract info or fall back to defaults
@@ -327,14 +465,22 @@ export async function getSbtcBalance(contractInfo = null) {
     
     console.log('🔍 getSbtcBalance using contract:', { contractAddress, contractName, network: network.name || 'testnet' });
     
-    const result = await fetchCallReadOnlyFunction({
-      contractAddress,
-      contractName,
-      functionName: 'get-sbtc-balance',
-      functionArgs: [],
-      network,
-      senderAddress: contractAddress,
-    });
+    // Use logged blockchain call with 15-second cache
+    const result = await loggedBlockchainCall(
+      'get-sbtc-balance', 
+      async () => {
+        return await fetchCallReadOnlyFunction({
+          contractAddress,
+          contractName,
+          functionName: 'get-sbtc-balance',
+          functionArgs: [],
+          network,
+          senderAddress: contractAddress,
+        });
+      },
+      15000 // 15 seconds cache duration
+    );
+    
     console.log('🔍 getSbtcBalance: Raw result =', result);
     
     // Use cvToValue to properly convert the Clarity value
@@ -359,92 +505,38 @@ export async function getSbtcBalance(contractInfo = null) {
   }
 }
 
-// Calculate current price (SBTC / available token balance)
-export async function getCurrentPrice(contractInfo = null) {
-  try {
-    console.log('🔍 getCurrentPrice: Starting price calculation...');
-    console.log('🔍 getCurrentPrice using contract:', contractInfo ? { address: contractInfo.address, name: contractInfo.name, network: contractInfo.network?.name || 'testnet' } : 'defaults');
-    
-    // Get total token balance
-    const totalTokenBalance = await getTotalTokenBalance(contractInfo);
-    console.log('🔍 getCurrentPrice: totalTokenBalance =', totalTokenBalance);
 
-    // Get total locked tokens
-    const totalLockedTokens = await getTotalLockedTokens(contractInfo);
-    console.log('🔍 getCurrentPrice: totalLockedTokens =', totalLockedTokens);
 
-    // Calculate available token balance for trading
-    const availableTokenBalance = totalTokenBalance - totalLockedTokens;
-    console.log('🔍 getCurrentPrice: availableTokenBalance =', availableTokenBalance);
-
-    // Get SBTC balance
-    const sbtcBalance = await getSbtcBalance(contractInfo);
-    console.log('🔍 getCurrentPrice: sbtcBalance =', sbtcBalance);
-
-    // Check if we have valid data
-    if (totalTokenBalance === 0 || sbtcBalance === 0) {
-      console.log('🔍 getCurrentPrice: Invalid data - totalTokenBalance:', totalTokenBalance, 'sbtcBalance:', sbtcBalance);
-      throw new Error('Invalid blockchain data for price calculation');
-    }
-    
-    // Check if token balance is reasonable (should be around 21 million)
-    if (totalTokenBalance > 50000000) { // More than 50 million tokens
-      console.error('❌ Token balance is unreasonably large:', totalTokenBalance);
-      console.log('🔍 Expected around 21 million tokens, but got:', totalTokenBalance);
-      throw new Error(`Token balance too large: ${totalTokenBalance} (expected ~21 million)`);
-    }
-
-    // Calculate price per token using AMM formula with virtual SBTC
-    const virtualSbtc = 1500000; // INITIAL_VIRTUAL_SBTC constant (0.015 sBTC)
-    const pricePerToken = (sbtcBalance + virtualSbtc) / availableTokenBalance;
-
-    console.log("🔍 Price calculation debug:", {
-      sbtcBalance,
-      virtualSbtc,
-      availableTokenBalance,
-      pricePerToken,
-      isFinite: isFinite(pricePerToken),
-      isNaN: isNaN(pricePerToken),
-      formula: `(${sbtcBalance} + ${virtualSbtc}) / ${availableTokenBalance} = ${pricePerToken}`
-    });
-    
-    // Add safety check for unreasonable prices
-    if (pricePerToken < 0.000001 || pricePerToken > 1000000 || !isFinite(pricePerToken)) {
-      console.error('❌ Unreasonable price calculated:', pricePerToken);
-      throw new Error(`Invalid price calculated: ${pricePerToken}`);
-    }
-    
-    // Additional check for division by zero or very small numbers
-    if (availableTokenBalance <= 0) {
-      console.error('❌ No available tokens for trading:', availableTokenBalance);
-      throw new Error(`No available tokens for trading: ${availableTokenBalance}`);
-    }
-    
-    console.log('🔍 getCurrentPrice: Final calculated price =', pricePerToken);
-    return pricePerToken;
-  } catch (err) {
-    console.error('❌ Error calculating current price:', err);
-    throw err; // Re-throw the error so we can see what's actually wrong
-  }
-}
-
-// Calculate estimated sats to receive for a given token amount
-export async function getEstimatedSatsForTokens(tokenAmount) {
+// Calculate estimated sats to receive for a given token amount with caching
+export async function getEstimatedSatsForTokens(tokenAmount, contractInfo = null) {
   try {
     if (!tokenAmount) return 0;
     
     // Convert token amount to base units (1e8)
     const tokensInBaseUnits = Math.floor(parseFloat(tokenAmount) * 1e8);
     
-    // Use the contract's sell estimation function
-    const result = await fetchCallReadOnlyFunction({
-      contractAddress: DEX_CONTRACT_ADDRESS,
-      contractName: DEX_CONTRACT_NAME,
-      functionName: 'get-sellable-sbtc',
-      functionArgs: [Cl.uint(tokensInBaseUnits)],
-      network: STACKS_TESTNET,
-      senderAddress: DEX_CONTRACT_ADDRESS,
-    });
+    // Use provided contract info or fall back to defaults
+    const contractAddress = contractInfo?.address || DEX_CONTRACT_ADDRESS;
+    const contractName = contractInfo?.name || DEX_CONTRACT_NAME;
+    const network = contractInfo?.network || STACKS_TESTNET;
+    
+    console.log('🔍 getEstimatedSatsForTokens using contract:', { contractAddress, contractName, network: network.name || 'testnet' });
+    
+    // Use logged blockchain call with 15-second cache
+    const result = await loggedBlockchainCall(
+      'get-sellable-sbtc', 
+      async () => {
+        return await fetchCallReadOnlyFunction({
+          contractAddress,
+          contractName,
+          functionName: 'get-sellable-sbtc',
+          functionArgs: [Cl.uint(tokensInBaseUnits)],
+          network,
+          senderAddress: contractAddress,
+        });
+      },
+      15000 // 15 seconds cache duration
+    );
     
     if (result && result.value) {
       const sellData = result.value;
@@ -484,20 +576,28 @@ export async function getEstimatedSatsForTokens(tokenAmount) {
   }
 }
 
+// Fetch user SATS balance with caching
 export async function getUserSatsBalance() {
   try {
     const data = getLocalStorage();
     const userAddress = data?.addresses?.stx?.[0]?.address;
     if (!userAddress) return 0;
 
-    const result = await fetchCallReadOnlyFunction({
-      contractAddress: SATS_CONTRACT_ADDRESS,
-      contractName: SATS_CONTRACT_NAME,
-      functionName: 'get-balance',
-      functionArgs: [principalCV(userAddress)],
-      network: STACKS_TESTNET,
-      senderAddress: userAddress,
-    });
+    // Use logged blockchain call with 15-second cache
+    const result = await loggedBlockchainCall(
+      'get-user-sats-balance', 
+      async () => {
+        return await fetchCallReadOnlyFunction({
+          contractAddress: SATS_CONTRACT_ADDRESS,
+          contractName: SATS_CONTRACT_NAME,
+          functionName: 'get-balance',
+          functionArgs: [principalCV(userAddress)],
+          network: STACKS_TESTNET,
+          senderAddress: userAddress,
+        });
+      },
+      15000 // 15 seconds cache duration
+    );
 
     const raw = result?.value?.value || result?.value || null;
     return raw ? parseInt(raw) : 0;
@@ -576,29 +676,49 @@ export function calculateEstimatedSatsForTokens(tokenAmount, currentPrice) {
   }
 }
 
-// Helper function to get current balances for calculations
-export async function getCurrentBalancesForCalculation() {
+// Helper function to get current balances for calculations with caching
+export async function getCurrentBalancesForCalculation(contractInfo = null) {
   try {
-    console.log('🔍 Fetching token balance...');
-    const tokenBalanceResult = await fetchCallReadOnlyFunction({
-      contractAddress: DEX_CONTRACT_ADDRESS,
-      contractName: DEX_CONTRACT_NAME,
-      functionName: 'get-token-balance',
-      functionArgs: [],
-      network: STACKS_TESTNET,
-      senderAddress: DEX_CONTRACT_ADDRESS,
-    });
+    // Use provided contract info or fall back to defaults
+    const contractAddress = contractInfo?.address || DEX_CONTRACT_ADDRESS;
+    const contractName = contractInfo?.name || DEX_CONTRACT_NAME;
+    const network = contractInfo?.network || STACKS_TESTNET;
+    
+    console.log('🔍 getCurrentBalancesForCalculation using contract:', { contractAddress, contractName, network: network.name || 'testnet' });
+    
+    // Use logged blockchain calls with 15-second cache
+    const [tokenBalanceResult, sbtcBalanceResult] = await Promise.all([
+      loggedBlockchainCall(
+        'get-token-balance', 
+        async () => {
+          return await fetchCallReadOnlyFunction({
+            contractAddress,
+            contractName,
+            functionName: 'get-token-balance',
+            functionArgs: [],
+            network,
+            senderAddress: contractAddress,
+          });
+        },
+        15000 // 15 seconds cache duration
+      ),
+      loggedBlockchainCall(
+        'get-sbtc-balance', 
+        async () => {
+          return await fetchCallReadOnlyFunction({
+            contractAddress,
+            contractName,
+            functionName: 'get-sbtc-balance',
+            functionArgs: [],
+            network,
+            senderAddress: contractAddress,
+          });
+        },
+        15000 // 15 seconds cache duration
+      )
+    ]);
+    
     console.log('🔍 Token balance result:', tokenBalanceResult);
-
-    console.log('🔍 Fetching SBTC balance...');
-    const sbtcBalanceResult = await fetchCallReadOnlyFunction({
-      contractAddress: DEX_CONTRACT_ADDRESS,
-      contractName: DEX_CONTRACT_NAME,
-      functionName: 'get-sbtc-balance',
-      functionArgs: [],
-      network: STACKS_TESTNET,
-      senderAddress: DEX_CONTRACT_ADDRESS,
-    });
     console.log('🔍 SBTC balance result:', sbtcBalanceResult);
 
     const tokenBalance = tokenBalanceResult?.value || 0;
@@ -623,19 +743,32 @@ export async function getCurrentBalancesForCalculation() {
 // DYNAMIC TOKEN PAGE FUNCTIONS - Uses token-specific contract addresses
 // ============================================================================
 
-// Fetch token-specific revenue balance using read-only function
+// Fetch token-specific revenue balance using read-only function with caching
 export async function getTokenRevenueBalance(tokenData) {
   try {
-    // Use the hardcoded DEX contract address for all tokens
-    // This ensures we get the actual accumulated fees from the DEX contract
-    const result = await fetchCallReadOnlyFunction({
-      contractAddress: DEX_CONTRACT_ADDRESS,
-      contractName: DEX_CONTRACT_NAME,
-      functionName: 'get-sbtc-fee-pool',
-      functionArgs: [],
-      network: STACKS_TESTNET,
-      senderAddress: DEX_CONTRACT_ADDRESS,
-    });
+    // Parse contract info from tokenData
+    const contractInfo = parseContractInfo(tokenData);
+    const contractAddress = contractInfo?.address || DEX_CONTRACT_ADDRESS;
+    const contractName = contractInfo?.name || DEX_CONTRACT_NAME;
+    const network = contractInfo?.network || STACKS_TESTNET;
+    
+    console.log('🔍 getTokenRevenueBalance using contract:', { contractAddress, contractName, network: network.name || 'testnet' });
+    
+    // Use logged blockchain call with 15-second cache
+    const result = await loggedBlockchainCall(
+      'get-sbtc-fee-pool', 
+      async () => {
+        return await fetchCallReadOnlyFunction({
+          contractAddress,
+          contractName,
+          functionName: 'get-sbtc-fee-pool',
+          functionArgs: [],
+          network,
+          senderAddress: contractAddress,
+        });
+      },
+      15000 // 15 seconds cache duration
+    );
     
     const rawValue = result?.value?.value || result?.value || null;
     console.log('🔍 Raw token revenue value:', rawValue, typeof rawValue);
@@ -658,19 +791,32 @@ export async function getTokenRevenueBalance(tokenData) {
   }
 }
 
-// Fetch token-specific liquidity balance using read-only function
+// Fetch token-specific liquidity balance using read-only function with caching
 export async function getTokenLiquidityBalance(tokenData) {
   try {
-    // Use the hardcoded DEX contract address for all tokens
-    // This ensures we get the actual liquidity from the DEX contract
-    const result = await fetchCallReadOnlyFunction({
-      contractAddress: DEX_CONTRACT_ADDRESS,
-      contractName: DEX_CONTRACT_NAME,
-      functionName: 'get-sbtc-balance',
-      functionArgs: [],
-      network: STACKS_TESTNET,
-      senderAddress: DEX_CONTRACT_ADDRESS,
-    });
+    // Parse contract info from tokenData
+    const contractInfo = parseContractInfo(tokenData);
+    const contractAddress = contractInfo?.address || DEX_CONTRACT_ADDRESS;
+    const contractName = contractInfo?.name || DEX_CONTRACT_NAME;
+    const network = contractInfo?.network || STACKS_TESTNET;
+    
+    console.log('🔍 getTokenLiquidityBalance using contract:', { contractAddress, contractName, network: network.name || 'testnet' });
+    
+    // Use logged blockchain call with 15-second cache
+    const result = await loggedBlockchainCall(
+      'get-sbtc-balance', 
+      async () => {
+        return await fetchCallReadOnlyFunction({
+          contractAddress,
+          contractName,
+          functionName: 'get-sbtc-balance',
+          functionArgs: [],
+          network,
+          senderAddress: contractAddress,
+        });
+      },
+      15000 // 15 seconds cache duration
+    );
     
     const rawValue = result?.value?.value || result?.value || null;
     console.log('🔍 Raw token liquidity value:', rawValue, typeof rawValue);
@@ -693,19 +839,32 @@ export async function getTokenLiquidityBalance(tokenData) {
   }
 }
 
-// Fetch token-specific total token balance
+// Fetch token-specific total token balance with caching
 export async function getTokenTotalBalance(tokenData) {
   try {
-    // Use the hardcoded DEX contract address for all tokens
-    // This ensures we get the actual total supply from the DEX contract
-    const result = await fetchCallReadOnlyFunction({
-      contractAddress: DEX_CONTRACT_ADDRESS,
-      contractName: DEX_CONTRACT_NAME,
-      functionName: 'get-total-supply',
-      functionArgs: [],
-      network: STACKS_TESTNET,
-      senderAddress: DEX_CONTRACT_ADDRESS,
-    });
+    // Parse contract info from tokenData
+    const contractInfo = parseContractInfo(tokenData);
+    const contractAddress = contractInfo?.address || DEX_CONTRACT_ADDRESS;
+    const contractName = contractInfo?.name || DEX_CONTRACT_NAME;
+    const network = contractInfo?.network || STACKS_TESTNET;
+    
+    console.log('🔍 getTokenTotalBalance using contract:', { contractAddress, contractName, network: network.name || 'testnet' });
+    
+    // Use logged blockchain call with 15-second cache
+    const result = await loggedBlockchainCall(
+      'get-total-supply', 
+      async () => {
+        return await fetchCallReadOnlyFunction({
+          contractAddress,
+          contractName,
+          functionName: 'get-total-supply',
+          functionArgs: [],
+          network,
+          senderAddress: contractAddress,
+        });
+      },
+      15000 // 15 seconds cache duration
+    );
     
     const rawValue = result?.value?.value || result?.value || null;
     console.log('🔍 Raw token total supply value:', rawValue, typeof rawValue);
@@ -730,7 +889,7 @@ export async function getTokenTotalBalance(tokenData) {
   }
 }
 
-// Fetch token-specific DEX balances (both token and SBTC)
+// Fetch token-specific DEX balances (both token and SBTC) with caching
 export async function getTokenDexBalances(tokenData) {
   try {
     // Parse contract info from tokenData (source of truth)
@@ -742,63 +901,89 @@ export async function getTokenDexBalances(tokenData) {
     }
     
     const { address, name, network } = contractInfo;
-    console.log('🔍 Fetching DEX balances from contract:', { address, name, network: network.name || 'testnet' });
+    console.log('🔍 getTokenDexBalances using contract:', { address, name, network: network === STACKS_MAINNET ? 'mainnet' : 'testnet' });
+    console.log('🔍 Actual network being used for blockchain calls:', network === STACKS_MAINNET ? 'mainnet' : 'testnet');
     
-    // Add timeout to prevent hanging
-    const timeoutPromise = new Promise((_, reject) => 
-      setTimeout(() => reject(new Error('Blockchain request timeout')), 8000)
-    );
-    
-    // Get token balance from the DEX contract
-    const tokenBalancePromise = fetchCallReadOnlyFunction({
-      contractAddress: address,
-      contractName: name,
-      functionName: 'get-token-balance',
-      functionArgs: [],
-      network,
-      senderAddress: address,
-    });
-    
-    // Get SBTC balance from the DEX contract
-    const sbtcBalancePromise = fetchCallReadOnlyFunction({
-      contractAddress: address,
-      contractName: name,
-      functionName: 'get-sbtc-balance',
-      functionArgs: [],
-      network,
-      senderAddress: address,
-    });
-    
-    // Execute both calls with timeout
-    const [tokenBalanceResult, sbtcBalanceResult] = await Promise.race([
-      Promise.all([tokenBalancePromise, sbtcBalancePromise]),
-      timeoutPromise
+    // Use logged blockchain calls with 15-second cache
+    const [tokenBalanceResult, sbtcBalanceResult] = await Promise.all([
+      loggedBlockchainCall(
+        'get-token-balance', 
+        async () => {
+          console.log('🔍 Making blockchain call with network:', network === STACKS_MAINNET ? 'mainnet' : 'testnet');
+          return await fetchCallReadOnlyFunction({
+            contractAddress: address,
+            contractName: name,
+            functionName: 'get-token-balance',
+            functionArgs: [],
+            network,
+            senderAddress: address,
+          });
+        },
+        15000, // 15 seconds cache duration
+        network === STACKS_MAINNET ? 'mainnet' : 'testnet'
+      ),
+      loggedBlockchainCall(
+        'get-sbtc-balance', 
+        async () => {
+          console.log('🔍 Making blockchain call with network:', network === STACKS_MAINNET ? 'mainnet' : 'testnet');
+          return await fetchCallReadOnlyFunction({
+            contractAddress: address,
+            contractName: name,
+            functionName: 'get-sbtc-balance',
+            functionArgs: [],
+            network,
+            senderAddress: address,
+          });
+        },
+        15000, // 15 seconds cache duration
+        network === STACKS_MAINNET ? 'mainnet' : 'testnet'
+      )
     ]);
 
     console.log('🔍 Raw token balance result:', tokenBalanceResult);
     console.log('🔍 Raw SBTC balance result:', sbtcBalanceResult);
 
-    // Handle token balance conversion
-    const rawTokenBalance = tokenBalanceResult?.value?.value || tokenBalanceResult?.value || 0;
-    let tokenBalance = 0;
-    if (rawTokenBalance) {
-      if (typeof rawTokenBalance === 'string') {
-        tokenBalance = parseInt(rawTokenBalance);
-      } else {
-        tokenBalance = Number(rawTokenBalance);
+    // Helper function to extract numeric value from blockchain response
+    const extractNumericValue = (result) => {
+      if (!result) return 0;
+      
+      // Handle different response structures
+      let value = null;
+      
+      // Structure 1: { type: 'ok', value: { type: 'uint', value: 3357 } }
+      if (result.type === 'ok' && result.value && result.value.type === 'uint') {
+        value = result.value.value;
       }
-    }
+      // Structure 2: { value: { value: 3357 } }
+      else if (result.value && result.value.value !== undefined) {
+        value = result.value.value;
+      }
+      // Structure 3: { value: 3357 }
+      else if (result.value !== undefined) {
+        value = result.value;
+      }
+      // Structure 4: Direct value
+      else if (typeof result === 'number') {
+        value = result;
+      }
+      
+      // Convert to number
+      if (value !== null && value !== undefined) {
+        if (typeof value === 'string') {
+          return parseInt(value);
+        } else {
+          return Number(value);
+        }
+      }
+      
+      return 0;
+    };
+
+    // Handle token balance conversion
+    const tokenBalance = extractNumericValue(tokenBalanceResult);
     
     // Handle SBTC balance conversion
-    const rawSbtcBalance = sbtcBalanceResult?.value?.value || sbtcBalanceResult?.value || 0;
-    let sbtcBalance = 0;
-    if (rawSbtcBalance) {
-      if (typeof rawSbtcBalance === 'string') {
-        sbtcBalance = parseInt(rawSbtcBalance);
-      } else {
-        sbtcBalance = Number(rawSbtcBalance);
-      }
-    }
+    const sbtcBalance = extractNumericValue(sbtcBalanceResult);
     
     console.log('🔍 Extracted DEX balances:', { tokenBalance, sbtcBalance });
     
@@ -815,29 +1000,33 @@ export async function getTokenDexBalances(tokenData) {
   }
 }
 
-// Fetch token-specific locked tokens
+// Fetch token-specific locked tokens with caching
 export async function getTokenLockedBalance(tokenData) {
   try {
-    // Use the hardcoded DEX contract address for all tokens
-    // This ensures we get the actual locked tokens from the DEX contract
-    console.log('🔍 Fetching locked tokens from DEX contract:', DEX_CONTRACT_ADDRESS, DEX_CONTRACT_NAME);
+    // Parse contract info from tokenData
+    const contractInfo = parseContractInfo(tokenData);
+    const contractAddress = contractInfo?.address || DEX_CONTRACT_ADDRESS;
+    const contractName = contractInfo?.name || DEX_CONTRACT_NAME;
+    const network = contractInfo?.network || STACKS_TESTNET;
     
-    // Add timeout to prevent hanging
-    const timeoutPromise = new Promise((_, reject) => 
-      setTimeout(() => reject(new Error('Blockchain request timeout')), 8000)
+    console.log('🔍 getTokenLockedBalance using contract:', { contractAddress, contractName, network: network === STACKS_MAINNET ? 'mainnet' : 'testnet' });
+    
+    // Use logged blockchain call with 15-second cache
+    const result = await loggedBlockchainCall(
+      'get-total-locked', 
+      async () => {
+        return await fetchCallReadOnlyFunction({
+          contractAddress,
+          contractName,
+          functionName: 'get-total-locked',
+          functionArgs: [],
+          network,
+          senderAddress: contractAddress,
+        });
+      },
+      15000, // 15 seconds cache duration
+      network === STACKS_MAINNET ? 'mainnet' : 'testnet'
     );
-    
-    // Get locked tokens from the DEX contract (same structure as original)
-    const blockchainPromise = fetchCallReadOnlyFunction({
-      contractAddress: DEX_CONTRACT_ADDRESS,
-      contractName: DEX_CONTRACT_NAME,
-      functionName: 'get-total-locked',
-      functionArgs: [],
-      network: STACKS_TESTNET,
-      senderAddress: DEX_CONTRACT_ADDRESS,
-    });
-    
-    const result = await Promise.race([blockchainPromise, timeoutPromise]);
     
     const rawValue = result?.value?.value || result?.value || null;
     console.log('🔍 Raw token locked value:', rawValue, typeof rawValue);
@@ -863,109 +1052,105 @@ export async function getTokenLockedBalance(tokenData) {
   }
 }
 
-// Fetch token-specific current price
-export async function getTokenCurrentPrice(tokenData) {
-  try {
-    if (!tokenData || !tokenData.dexInfo) {
-      console.error('❌ Token data or dexInfo not available');
-      return 0;
-    }
 
-    // Get DEX balances (same as modal calculation)
-    const dexBalances = await getTokenDexBalances(tokenData);
-    
-    console.log('🔍 Token price calculation inputs:', {
-      sbtcBalance: dexBalances.sbtcBalance,
-      tokenBalance: dexBalances.tokenBalance
-    });
-    
-    // Use actual DEX token balance as available tokens
-    const availableTokens = dexBalances.tokenBalance;
-    
-    if (availableTokens <= 0) {
-      console.error('❌ No available tokens for trading');
-      return 0;
-    }
-    
-    // Virtual SBTC for price stability (same as original)
-    const virtualSbtc = 1500000;
-    
-    // Calculate price using AMM formula (same as modal)
-    const pricePerToken = (dexBalances.sbtcBalance + virtualSbtc) / availableTokens;
-    
-    console.log('🔍 Token price calculation:', {
-      sbtcBalance: dexBalances.sbtcBalance,
-      virtualSbtc,
-      availableTokens,
-      pricePerToken,
-      isFinite: isFinite(pricePerToken),
-      isNaN: isNaN(pricePerToken)
-    });
-    
-    if (!isFinite(pricePerToken) || isNaN(pricePerToken)) {
-      console.error('❌ Invalid price calculation result');
-      return 0;
-    }
-    
-    console.log('🔍 getTokenCurrentPrice: Final calculated price =', pricePerToken);
-    return pricePerToken;
-  } catch (err) {
-    console.error('❌ Failed to fetch token current price:', err);
-    return 0;
-  }
-}
 
 // Fetch token-specific user balance
 export async function getTokenUserBalance(tokenData) {
   try {
+    console.log('🔍 getTokenUserBalance: Starting with tokenData:', tokenData);
+    
     if (!tokenData || !tokenData.tokenInfo) {
       console.error('❌ Token data or tokenInfo not available');
       return 0;
     }
 
     const connectedAddress = localStorage.getItem('connectedAddress');
+    console.log('🔍 getTokenUserBalance: connectedAddress =', connectedAddress);
+    
     if (!connectedAddress) {
       console.log('🔍 No connected address found');
       return 0;
     }
 
     const [contractAddress, contractName] = tokenData.tokenInfo.split('.');
-    
-    // Add timeout to prevent hanging
-    const timeoutPromise = new Promise((_, reject) => 
-      setTimeout(() => reject(new Error('Blockchain request timeout')), 8000)
-    );
-    
-    const blockchainPromise = fetchCallReadOnlyFunction({
-      contractAddress: contractAddress,
-      contractName: contractName,
-      functionName: 'get-balance',
-      functionArgs: [principalCV(connectedAddress)],
-      network: STACKS_TESTNET,
-      senderAddress: connectedAddress,
+    console.log('🔍 getTokenUserBalance: Parsed contract info:', {
+      contractAddress,
+      contractName,
+      fullTokenInfo: tokenData.tokenInfo
     });
     
-    const result = await Promise.race([blockchainPromise, timeoutPromise]);
+    // Pick network by principal prefix (SP/SM => mainnet, ST/SN => testnet)
+    const isMainnet = /^SP|^SM/.test(contractAddress) || /^SP|^SM/.test(connectedAddress);
+    const network = isMainnet ? STACKS_MAINNET : STACKS_TESTNET;
+    
+    console.log('🔍 getTokenUserBalance: Network detection:', {
+      contractAddress,
+      connectedAddress,
+      isMainnet,
+      network: network.name || 'testnet'
+    });
+
+    // Use logged blockchain call with 15-second cache
+    const result = await loggedBlockchainCall(
+      'get-token-user-balance', 
+      async () => {
+        console.log('🚀 Making blockchain call for getTokenUserBalance with:', {
+          contractAddress,
+          contractName,
+          functionName: 'get-balance',
+          functionArgs: [principalCV(connectedAddress)],
+          network: network.name || 'testnet',
+          senderAddress: connectedAddress,
+        });
+        
+        return await fetchCallReadOnlyFunction({
+          contractAddress: contractAddress,
+          contractName: contractName,
+          functionName: 'get-balance',
+          functionArgs: [principalCV(connectedAddress)],
+          network,
+          senderAddress: connectedAddress,
+        });
+      },
+      15000 // 15 seconds cache duration
+    );
+    
+    console.log('🔍 getTokenUserBalance: Raw result - FULL:', JSON.stringify(result, jsonReplacer, 2));
+    console.log('🔍 getTokenUserBalance: Raw result - TYPE:', typeof result);
+    console.log('🔍 getTokenUserBalance: Raw result - CONSTRUCTOR:', result?.constructor?.name);
     
     const rawValue = result?.value?.value || result?.value || null;
-    console.log('🔍 Raw token user balance value:', rawValue, typeof rawValue);
+    console.log('🔍 getTokenUserBalance: Raw value extracted:', rawValue, 'Type:', typeof rawValue);
     
     // Handle string or number conversion
     let tokenValue = 0;
     if (rawValue) {
       if (typeof rawValue === 'string') {
         tokenValue = parseInt(rawValue);
+        console.log('🔍 getTokenUserBalance: Parsed string to integer:', tokenValue);
       } else {
         tokenValue = Number(rawValue);
+        console.log('🔍 getTokenUserBalance: Converted to number:', tokenValue);
       }
+    } else {
+      console.log('🔍 getTokenUserBalance: No raw value found');
     }
     
     // Convert from micro units to actual tokens (assuming 8 decimals like the original)
     const actualTokens = tokenValue / 100000000;
-    console.log('🔍 Token user balance (final):', actualTokens);
+    console.log('🔍 getTokenUserBalance: CONVERSION DETAILS:', {
+      rawValue: rawValue,
+      tokenValue: tokenValue,
+      actualTokens: actualTokens,
+      finalResult: actualTokens
+    });
+    
+    console.log('🎯 getTokenUserBalance: FINAL RESULT =', actualTokens);
     return actualTokens;
   } catch (err) {
-    console.error('❌ Failed to fetch token user balance:', err);
+    console.error('❌ Failed to fetch token user balance - FULL:', err);
+    console.error('❌ Failed to fetch token user balance - MESSAGE:', err.message);
+    console.error('❌ Failed to fetch token user balance - STACK:', err.stack);
     return 0;
   }
 }
@@ -978,16 +1163,10 @@ export async function calculateTokenEstimatedTokensForSats(satsAmount, tokenData
       return 0;
     }
 
-    const currentPrice = await getTokenCurrentPrice(tokenData);
-    if (currentPrice <= 0) {
-      console.error('❌ Invalid current price for calculation');
-      return 0;
-    }
-    
-    const estimatedTokens = satsAmount / currentPrice;
+    // No AMM price calculation available
+    const estimatedTokens = 0;
     console.log('🔍 Token estimated tokens calculation:', {
       satsAmount,
-      currentPrice,
       estimatedTokens,
       isFinite: isFinite(estimatedTokens)
     });
@@ -1012,16 +1191,10 @@ export async function calculateTokenEstimatedSatsForTokens(tokenAmount, tokenDat
       return 0;
     }
 
-    const currentPrice = await getTokenCurrentPrice(tokenData);
-    if (currentPrice <= 0) {
-      console.error('❌ Invalid current price for calculation');
-      return 0;
-    }
-    
-    const estimatedSats = tokenAmount * currentPrice;
+    // No AMM price calculation available
+    const estimatedSats = 0;
     console.log('🔍 Token estimated sats calculation:', {
       tokenAmount,
-      currentPrice,
       estimatedSats,
       isFinite: isFinite(estimatedSats)
     });
@@ -1100,75 +1273,101 @@ export async function getTokenStatsData(tokenData) {
     // Import blockchain functions
     const { fetchCallReadOnlyFunction } = await import('@stacks/transactions');
 
-    // Fetch real data from blockchain with timeout
-    const blockchainPromise = Promise.all([
-      // Try different revenue functions
-      fetchCallReadOnlyFunction({
-        contractAddress: dexAddress,
-        contractName: dexName,
-        functionName: 'get-sbtc-fee-pool',
-        functionArgs: [],
-        network: network,
-        senderAddress: dexAddress,
-      }).catch(() => 
-        fetchCallReadOnlyFunction({
-          contractAddress: dexAddress,
-          contractName: dexName,
-          functionName: 'get-fee-pool',
-          functionArgs: [],
-          network: network,
-          senderAddress: dexAddress,
-        })
+    // Fetch real data from blockchain with caching
+    const [revenueResult, liquidityResult, totalSupplyResult, lockedTokensResult] = await Promise.all([
+      // Try different revenue functions with caching
+      loggedBlockchainCall(
+        'get-sbtc-fee-pool', 
+        async () => {
+          return await fetchCallReadOnlyFunction({
+            contractAddress: dexAddress,
+            contractName: dexName,
+            functionName: 'get-sbtc-fee-pool',
+            functionArgs: [],
+            network: network,
+            senderAddress: dexAddress,
+          });
+        },
+        15000 // 15 seconds cache duration
       ).catch(() => 
-        fetchCallReadOnlyFunction({
-          contractAddress: dexAddress,
-          contractName: dexName,
-          functionName: 'get-revenue',
-          functionArgs: [],
-          network: network,
-          senderAddress: dexAddress,
-        })
+        loggedBlockchainCall(
+          'get-fee-pool', 
+          async () => {
+            return await fetchCallReadOnlyFunction({
+              contractAddress: dexAddress,
+              contractName: dexName,
+              functionName: 'get-fee-pool',
+              functionArgs: [],
+              network: network,
+              senderAddress: dexAddress,
+            });
+          },
+          15000 // 15 seconds cache duration
+        )
+      ).catch(() => 
+        loggedBlockchainCall(
+          'get-revenue', 
+          async () => {
+            return await fetchCallReadOnlyFunction({
+              contractAddress: dexAddress,
+              contractName: dexName,
+              functionName: 'get-revenue',
+              functionArgs: [],
+              network: network,
+              senderAddress: dexAddress,
+            });
+          },
+          15000 // 15 seconds cache duration
+        )
       ).catch(() => ({ value: 0 })),
 
-      // Get liquidity (SBTC balance)
-      fetchCallReadOnlyFunction({
-        contractAddress: dexAddress,
-        contractName: dexName,
-        functionName: 'get-sbtc-balance',
-        functionArgs: [],
-        network: network,
-        senderAddress: dexAddress,
-      }).catch(() => ({ value: 0 })),
+      // Get liquidity (SBTC balance) with caching
+      loggedBlockchainCall(
+        'get-sbtc-balance', 
+        async () => {
+          return await fetchCallReadOnlyFunction({
+            contractAddress: dexAddress,
+            contractName: dexName,
+            functionName: 'get-sbtc-balance',
+            functionArgs: [],
+            network: network,
+            senderAddress: dexAddress,
+          });
+        },
+        15000 // 15 seconds cache duration
+      ).catch(() => ({ value: 0 })),
 
-      // Get total token supply
-      fetchCallReadOnlyFunction({
-        contractAddress: dexAddress,
-        contractName: dexName,
-        functionName: 'get-token-balance',
-        functionArgs: [],
-        network: network,
-        senderAddress: dexAddress,
-      }).catch(() => ({ value: 0 })),
+      // Get total token supply with caching
+      loggedBlockchainCall(
+        'get-token-balance', 
+        async () => {
+          return await fetchCallReadOnlyFunction({
+            contractAddress: dexAddress,
+            contractName: dexName,
+            functionName: 'get-token-balance',
+            functionArgs: [],
+            network: network,
+            senderAddress: dexAddress,
+          });
+        },
+        15000 // 15 seconds cache duration
+      ).catch(() => ({ value: 0 })),
 
-      // Get locked tokens
-      fetchCallReadOnlyFunction({
-        contractAddress: dexAddress,
-        contractName: dexName,
-        functionName: 'get-total-locked',
-        functionArgs: [],
-        network: network,
-        senderAddress: dexAddress,
-      }).catch(() => ({ value: 0 }))
-    ]);
-
-    // Add timeout to prevent hanging
-    const timeoutPromise = new Promise((_, reject) => 
-      setTimeout(() => reject(new Error('Blockchain request timeout')), 8000)
-    );
-
-    const [revenueResult, liquidityResult, totalSupplyResult, lockedTokensResult] = await Promise.race([
-      blockchainPromise,
-      timeoutPromise
+      // Get locked tokens with caching
+      loggedBlockchainCall(
+        'get-total-locked', 
+        async () => {
+          return await fetchCallReadOnlyFunction({
+            contractAddress: dexAddress,
+            contractName: dexName,
+            functionName: 'get-total-locked',
+            functionArgs: [],
+            network: network,
+            senderAddress: dexAddress,
+          });
+        },
+        15000 // 15 seconds cache duration
+      ).catch(() => ({ value: 0 }))
     ]);
 
     // Extract values

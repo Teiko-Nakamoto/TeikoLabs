@@ -4,7 +4,6 @@
   "claimRevenue": true,
   "tokenTrading": {
     "featured": false,
-    "practice": false,
-    "allProjects": false
+    "practice": false
   }
 }

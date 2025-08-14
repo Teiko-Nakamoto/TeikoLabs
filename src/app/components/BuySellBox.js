@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { handleTransaction } from '../utils/swapLogic';
 import TransactionToast from './TransactionToast';
-import { getUserTokenBalance, getUserSatsBalance, calculateEstimatedTokensForSats, calculateEstimatedSatsForTokens, getCurrentPrice, getSbtcBalance, getTotalTokenBalance, getTotalLockedTokens, parseContractInfo } from '../utils/fetchTokenData';
+import { getUserTokenBalance, getUserSatsBalance, calculateEstimatedTokensForSats, calculateEstimatedSatsForTokens, getSbtcBalance, getTotalTokenBalance, getTotalLockedTokens, parseContractInfo } from '../utils/fetchTokenData';
 import ProfitLoss from './ProfitLoss';
 import TokenStats from './TokenStats';
 import './BuySellBox.css';

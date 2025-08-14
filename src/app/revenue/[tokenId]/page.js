@@ -273,9 +273,7 @@ export default function RevenuePage() {
       const isMajority = userLockedTokens > majorityThreshold;
       setIsMajorityHolder(isMajority);
       
-      // Fetch current price data which includes volume information
-      const priceResponse = await fetch('/api/current-price');
-      const priceData = await priceResponse.json();
+
       
       // Fetch actual accumulated fees from smart contract
       let totalRevenue = 0;
@@ -295,7 +293,7 @@ export default function RevenuePage() {
       } catch (error) {
         console.error('Error fetching fees from smart contract:', error);
         // Fallback calculation if smart contract call fails
-        const tradingVolume = priceData.volume || 1000000;
+        const tradingVolume = 1000000; // Default volume
         const feeRate = 0.003;
         totalRevenue = Math.floor(tradingVolume * feeRate);
         console.log('💰 Using fallback calculation:', totalRevenue);
@@ -1175,17 +1173,33 @@ export default function RevenuePage() {
                 textTransform: 'uppercase'
               }}>
                 {(() => {
-                  // Determine network from tokenData
+                  // Determine network from contract address prefix
                   if (tokenData?.network) {
                     return tokenData.network;
                   }
-                  if (tokenData?.tabType === 'practice' || tokenData?.tabType === 'user_created_testnet') {
+                  
+                  // Check DEX contract address first, then token contract address
+                  const dexAddress = tokenData?.dexInfo?.split('.')?.[0] || tokenData?.dexContractAddress?.split('.')?.[0];
+                  const tokenAddress = tokenData?.tokenInfo?.split('.')?.[0] || tokenData?.tokenContractAddress?.split('.')?.[0];
+                  const contractAddress = dexAddress || tokenAddress;
+                  
+                  if (contractAddress) {
+                    if (contractAddress.startsWith('ST')) {
+                      return 'testnet';
+                    } else if (contractAddress.startsWith('SP')) {
+                      return 'mainnet';
+                    }
+                  }
+                  
+                  // Fallback to tabType if no contract address available
+                  if (tokenData?.tabType === 'practice') {
                     return 'testnet';
                   }
-                  if (tokenData?.tabType === 'featured' || tokenData?.tabType === 'user_created_mainnet') {
+                  if (tokenData?.tabType === 'featured') {
                     return 'mainnet';
                   }
-                  return 'testnet'; // default
+                  
+                  return 'testnet'; // default fallback
                 })()}
               </div>
             </div>

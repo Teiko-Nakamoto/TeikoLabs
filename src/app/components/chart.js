@@ -5,7 +5,7 @@ import { createChart, CandlestickSeries } from 'lightweight-charts';
 import { useTranslation } from 'react-i18next';
 import './token-chart.css';
 
-export default function Chart({ trades, tradesPerCandle, setTradesPerCandle, tradeLimit, setTradeLimit, currentPrice }) {
+export default function Chart({ trades, tradesPerCandle, setTradesPerCandle, tradeLimit, setTradeLimit, currentPrice, isHeaderVisible, setIsHeaderVisible }) {
   const { t } = useTranslation();
   const chartRef = useRef(null);
   const chartInstanceRef = useRef(null);
@@ -22,6 +22,8 @@ export default function Chart({ trades, tradesPerCandle, setTradesPerCandle, tra
   // Animation state
   const [isAnimating, setIsAnimating] = useState(false);
   const [animationDirection, setAnimationDirection] = useState(1); // 1 for up, -1 for down
+  
+
 
   // Function to create bouncing animation
   const startBouncingAnimation = (currentPrice, lastExecutedPrice) => {
@@ -339,6 +341,34 @@ export default function Chart({ trades, tradesPerCandle, setTradesPerCandle, tra
               <option value={5}>5 Trades</option>
             </select>
           </div>
+
+          {/* Hide Header Button */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+            <label style={{
+              fontSize: 'clamp(10px, 2vw, 12px)',
+              color: '#ccc',
+              fontWeight: '500'
+            }}>
+              Header
+            </label>
+            <button
+              onClick={() => setIsHeaderVisible(!isHeaderVisible)}
+              style={{ 
+                background: '#222', 
+                color: '#fff', 
+                border: '1px solid #444', 
+                padding: '4px 8px',
+                borderRadius: '4px',
+                fontSize: 'clamp(12px, 2.5vw, 14px)',
+                minWidth: '80px',
+                cursor: 'pointer',
+                flex: '0 0 auto'
+              }}
+            >
+              {isHeaderVisible ? 'Hide' : 'Show'}
+            </button>
+          </div>
+
         </div>
         </div>
 
