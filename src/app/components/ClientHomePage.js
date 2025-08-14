@@ -39,6 +39,38 @@ export default function ClientHomePage() {
   });
   const [showTradingUpdatePopup, setShowTradingUpdatePopup] = useState(false);
 
+  // State for mainnet totals
+  const [mainnetTotals, setMainnetTotals] = useState({
+    totalProfitGenerated: 0,
+    totalValueLocked: 0
+  });
+
+  // Calculate mainnet totals from token data
+  const calculateMainnetTotals = () => {
+    const mainnetCards = tokenCards.filter(card => card.tabType === 'featured' && !card.isComingSoon);
+    
+    let totalProfitGenerated = 0;
+    let totalValueLocked = 0;
+    
+    mainnetCards.forEach(card => {
+      const cardData = tokenData[card.id];
+      if (cardData) {
+        totalProfitGenerated += cardData.revenue || 0;
+        totalValueLocked += cardData.liquidity || 0;
+      }
+    });
+    
+    setMainnetTotals({
+      totalProfitGenerated,
+      totalValueLocked
+    });
+  };
+
+  // Recalculate mainnet totals when token data changes
+  useEffect(() => {
+    calculateMainnetTotals();
+  }, [tokenData, tokenCards]);
+
   // Load access settings from server
   useEffect(() => {
     const loadAccessSettings = async () => {
@@ -382,8 +414,7 @@ export default function ClientHomePage() {
               fontFamily: 'Arial, sans-serif'
             }}>
               <p style={{
-                color: '#fbbf24',
-                fontSize: '1.5rem',
+                textAlign: 'center',
                 marginBottom: '16px',
                 fontWeight: 'bold',
                 display: 'flex',
@@ -391,8 +422,7 @@ export default function ClientHomePage() {
                 justifyContent: 'center',
                 gap: '12px'
               }}>
-                Total Profit Generated
-                593
+                Total Profit Generated {mainnetTotals.totalProfitGenerated.toLocaleString()}
                 <img src="/icons/sats1.svg" alt="sats" style={{ width: '20px', height: '20px', verticalAlign: 'middle' }} />
                 <img src="/icons/Vector.svg" alt="lightning" style={{ width: '20px', height: '20px', verticalAlign: 'middle' }} />
               </p>
@@ -406,8 +436,7 @@ export default function ClientHomePage() {
                 justifyContent: 'center',
                 gap: '12px'
               }}>
-                Total Value Locked
-                3,676
+                Total Value Locked {mainnetTotals.totalValueLocked.toLocaleString()}
                 <img src="/icons/sats1.svg" alt="sats" style={{ width: '20px', height: '20px', verticalAlign: 'middle' }} />
                 <img src="/icons/Vector.svg" alt="lightning" style={{ width: '20px', height: '20px', verticalAlign: 'middle' }} />
               </p>
