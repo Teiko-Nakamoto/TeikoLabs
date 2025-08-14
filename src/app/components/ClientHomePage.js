@@ -414,7 +414,8 @@ export default function ClientHomePage() {
               fontFamily: 'Arial, sans-serif'
             }}>
               <p style={{
-                textAlign: 'center',
+                color: '#fbbf24',
+                fontSize: '1.5rem',
                 marginBottom: '16px',
                 fontWeight: 'bold',
                 display: 'flex',
