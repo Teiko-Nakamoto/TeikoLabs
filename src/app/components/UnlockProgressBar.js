@@ -885,24 +885,11 @@ const UnlockProgressBar = React.memo(function UnlockProgressBar({
       }
 
       try {
-        // Try to get threshold from smart contract
-        if (dexInfo && tokenInfo) {
-          const dexContractAddress = dexInfo.split('.')[0];
-          const dexContractName = dexInfo.split('.')[1];
+        // Try to get threshold from smart contract (same as whale access bar)
+        if (dexInfo) {
+          console.log('🔍 Fetching threshold with dexInfo:', dexInfo);
           
-          console.log('🔍 Fetching threshold from contract:', `${dexContractAddress}.${dexContractName}`);
-          console.log('🔍 Making API call to get-threshold...');
-          
-          const response = await fetch('/api/read-contract', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              contractAddress: dexContractAddress,
-              contractName: dexContractName,
-              functionName: 'get-threshold',
-              functionArgs: []
-            })
-          });
+          const response = await fetch(`/api/get-threshold?dexInfo=${encodeURIComponent(dexInfo)}`);
 
           console.log('🔍 API response status:', response.status);
           
@@ -910,38 +897,13 @@ const UnlockProgressBar = React.memo(function UnlockProgressBar({
             const data = await response.json();
             console.log('🔍 API response data:', JSON.stringify(data, null, 2));
             
-            if (data.success && data.result !== undefined && data.result !== null) {
-              console.log('✅ Contract threshold response received:', data.result);
-              
-              // Handle different result formats
-              let thresholdValue = data.result;
-              
-              if (typeof data.result === 'object' && data.result.value !== undefined) {
-                // Handle Clarity value object format
-                thresholdValue = data.result.value;
-                console.log('🔍 Extracted value from Clarity object:', thresholdValue);
-              } else if (typeof data.result === 'string' && data.result.startsWith('ok u')) {
-                // Handle "ok u1500" format
-                const numberPart = data.result.substring(4);
-                thresholdValue = parseInt(numberPart);
-                console.log('🔍 Extracted from "ok u" format:', numberPart, '->', thresholdValue);
-              } else if (typeof data.result === 'string' && data.result.startsWith('ok ')) {
-                // Handle "ok 1500" format
-                const numberPart = data.result.substring(3);
-                thresholdValue = parseInt(numberPart);
-                console.log('🔍 Extracted from "ok " format:', numberPart, '->', thresholdValue);
-              }
-              
-              if (thresholdValue > 0) {
-                console.log('✅ Setting contract threshold to:', thresholdValue);
-                setContractThreshold(thresholdValue);
-                setLoadingThreshold(false);
-                return;
-              } else {
-                console.log('⚠️ Contract threshold is 0 or invalid, using fallback');
-              }
+            if (data.threshold !== undefined && data.threshold >= 0) {
+              console.log('✅ Contract threshold response received:', data.threshold);
+              setContractThreshold(data.threshold);
+              setLoadingThreshold(false);
+              return;
             } else {
-              console.log('❌ API call failed or returned no result:', data.error || 'No result');
+              console.log('⚠️ Contract threshold is 0 or invalid, using fallback');
             }
           } else {
             console.log('❌ API call failed with status:', response.status);
@@ -953,7 +915,7 @@ const UnlockProgressBar = React.memo(function UnlockProgressBar({
         console.error('❌ Failed to fetch contract threshold:', error);
       }
       
-      // Fallback to calculated threshold
+      // Fallback to calculated threshold (same as whale access bar)
       const currentLiquidity = typeof liquidity === 'string' 
         ? parseFloat(liquidity.replace(/,/g, '')) || 0 
         : liquidity || 0;
