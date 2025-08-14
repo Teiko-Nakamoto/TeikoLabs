@@ -57,7 +57,7 @@ const ApiStatistics = ({ onClose }) => {
           cacheTime: "10 seconds"
         }
       ]
-
+    },
     {
       page: "Revenue Page",
       functions: [

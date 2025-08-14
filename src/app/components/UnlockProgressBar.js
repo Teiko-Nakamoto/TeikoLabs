@@ -900,10 +900,10 @@ const UnlockProgressBar = React.memo(function UnlockProgressBar({
             if (data.threshold !== undefined && data.threshold >= 0) {
               console.log('✅ Contract threshold response received:', data.threshold);
               setContractThreshold(data.threshold);
-              setLoadingThreshold(false);
-              return;
-            } else {
-              console.log('⚠️ Contract threshold is 0 or invalid, using fallback');
+                setLoadingThreshold(false);
+                return;
+              } else {
+                console.log('⚠️ Contract threshold is 0 or invalid, using fallback');
             }
           } else {
             console.log('❌ API call failed with status:', response.status);
@@ -1156,7 +1156,7 @@ const UnlockProgressBar = React.memo(function UnlockProgressBar({
                 }}>
                             {userTokenBalance >= lockRequirement ? (
                     <>
-                                <div style={{ fontSize: window.innerWidth <= 768 ? '10px' : '12px', fontWeight: 'bold' }}>Maintain:</div>
+                      <div style={{ fontSize: window.innerWidth <= 768 ? '10px' : '12px', fontWeight: 'bold' }}>Maintain:</div>
                       <div style={{
                         display: 'flex',
                         alignItems: 'center',
@@ -1165,7 +1165,7 @@ const UnlockProgressBar = React.memo(function UnlockProgressBar({
                         fontWeight: 'bold',
                         justifyContent: 'center'
                       }}>
-                                  {loadingMajorityHolder ? 'Loading...' : majorityHolderBalance.toLocaleString()}
+                                  {loadingMajorityHolder ? 'Loading...' : (majorityHolderBalance || 1500).toLocaleString()}
                                   <img 
                                     src="/icons/The Mas Network.svg" 
                                     alt="MAS Sats" 
@@ -1178,7 +1178,7 @@ const UnlockProgressBar = React.memo(function UnlockProgressBar({
                     </>
                   ) : (
                     <>
-                                <div style={{ fontSize: window.innerWidth <= 768 ? '10px' : '12px', fontWeight: 'bold' }}>Min Needed:</div>
+                      <div style={{ fontSize: window.innerWidth <= 768 ? '10px' : '12px', fontWeight: 'bold' }}>Min Needed:</div>
                       <div style={{
                         display: 'flex',
                         alignItems: 'center',
@@ -1188,17 +1188,17 @@ const UnlockProgressBar = React.memo(function UnlockProgressBar({
                         justifyContent: 'center'
                       }}>
                                   {loadingThreshold ? 'Loading...' : lockRequirement.toLocaleString()}
-                                  <img 
-                                    src="/icons/sats1.svg" 
-                                    alt="Sats" 
+                        <img 
+                          src="/icons/sats1.svg" 
+                          alt="Sats" 
                           style={{ 
                             width: window.innerWidth <= 768 ? '12px' : '14px', 
                             height: window.innerWidth <= 768 ? '12px' : '14px'
                           }} 
                         />
-                                  <img 
-                                    src="/icons/Vector.svg" 
-                                    alt="Vector" 
+                        <img 
+                          src="/icons/Vector.svg" 
+                          alt="Vector" 
                           style={{ 
                             width: window.innerWidth <= 768 ? '12px' : '14px', 
                             height: window.innerWidth <= 768 ? '12px' : '14px'
@@ -1551,7 +1551,7 @@ const UnlockProgressBar = React.memo(function UnlockProgressBar({
                 textAlign: window.innerWidth <= 768 ? 'center' : 'left'
               }}>
                 <span style={{ whiteSpace: window.innerWidth <= 768 ? 'normal' : 'nowrap' }}>
-                  Your sBTC Balance: {parseInt(holdingsSats || 0).toLocaleString()}
+                  Your sBTC Balance: {parseInt(holdingsSats || 1500).toLocaleString()}
                 </span>
                 <img 
                   src="/icons/sats1.svg" 
@@ -2659,7 +2659,7 @@ const UnlockProgressBar = React.memo(function UnlockProgressBar({
                                  fontWeight: 'bold',
                                  justifyContent: 'center'
                                }}>
-                                 {loadingThreshold ? 'Loading...' : minimumRevenueThreshold.toLocaleString()}
+                                 {loadingThreshold ? 'Loading...' : (minimumRevenueThreshold || 1500).toLocaleString()}
                                  <img 
                                    src="/icons/sats1.svg" 
                                    alt="Sats" 

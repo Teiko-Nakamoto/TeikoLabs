@@ -672,7 +672,7 @@ export default function BuySellBox({
             <>
               <div style={{ marginBottom: '8px' }}>
                 {t('holdings')}:{" "}
-                {userBalance.toLocaleString()}{" "}
+                {(userBalance || 1500).toLocaleString()}{" "}
                 <img 
                   src="/icons/sats1.svg" 
                   alt="SATS" 

@@ -193,7 +193,7 @@ const WhaleAccessProgressBar = React.memo(function WhaleAccessProgressBar({
                   fontWeight: 'bold',
                   justifyContent: 'center'
                 }}>
-                  {loadingThreshold ? 'Loading...' : minimumRevenueThreshold.toLocaleString()}
+                  {loadingThreshold ? 'Loading...' : (minimumRevenueThreshold || 1500).toLocaleString()}
                   <img 
                     src="/icons/sats1.svg" 
                     alt="Sats" 
