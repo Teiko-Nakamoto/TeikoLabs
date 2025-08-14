@@ -27,7 +27,6 @@ export default function DocsPage() {
           ] : []
         },
         { title: 'How It Works', id: 'how-it-works', href: '/docs/how-it-works' },
-        { title: 'Create Project', id: 'create-project', href: '/docs/create-project' },
         { title: 'Trading', id: 'trading', href: '/docs/trading' },
         { title: 'Claim Profit', id: 'claim-profit', href: '/docs/claim-profit' },
         { title: 'Fees', id: 'fees', href: '/docs/fees' },
