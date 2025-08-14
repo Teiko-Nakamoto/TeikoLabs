@@ -15,8 +15,9 @@ export default function ClaimProfitPage() {
       title: 'Documentation',
       items: [
         { title: 'Overview', id: 'overview', href: '/docs' },
+        { title: 'Roadmap', id: 'roadmap', href: '/docs#roadmap' },
         { title: 'How It Works', id: 'how-it-works', href: '/docs/how-it-works' },
-        { title: 'Create Project', id: 'create-project', href: '/docs/create-project' },
+
         { title: 'Trading', id: 'trading', href: '/docs/trading' },
         { 
           title: 'Claim Profit', 
@@ -60,10 +61,12 @@ export default function ClaimProfitPage() {
             <Link href="/" className="docs-logo-link">
               <img src="/logo.png" alt="Teiko Labs Logo" className="docs-logo" />
             </Link>
-                      <div className="docs-title-section">
-            <div className="docs-site-name">Teikolabs.com</div>
-            <h2 className="docs-sidebar-title">Documentation</h2>
-          </div>
+                                  <div className="docs-title-section">
+              <Link href="/" className="docs-site-name-link">
+                <div className="docs-site-name">Teikolabs.com</div>
+              </Link>
+              <h2 className="docs-sidebar-title">Documentation</h2>
+            </div>
         </div>
         </div>
 

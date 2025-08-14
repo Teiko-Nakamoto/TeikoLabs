@@ -1,4 +1,13 @@
-// API Route: Get Mainnet Recent Trades (Server-side with API key + 15s caching)
+/**
+ * API Route: Get Mainnet Recent Trades
+ * 
+ * PURPOSE: Fetches recent transactions for a specific token contract on mainnet
+ * USES: Hiro API with your API key for rate limit access (900 requests/min)
+ * CACHE: 15-second caching to reduce API calls
+ * 
+ * This endpoint is used by the trading interface to show recent token activity
+ * and transaction history for mainnet tokens like MAS Sats.
+ */
 import { NextResponse } from 'next/server';
 import { rateLimitMiddleware, addRateLimitHeaders } from '../../utils/rateLimiter';
 import { withCors } from '../../utils/corsMiddleware';
@@ -74,7 +83,7 @@ async function handler(request) {
       const contractId = `${contractAddress}.${contractName}`;
       const url = `${baseUrl}/extended/v1/tx?contract_id=${encodeURIComponent(contractId)}&limit=${limit}&sort_by=block_height&order=desc`;
       const res = await fetch(url, {
-        headers: apiKey && apiKey !== 'your-api-key-here' ? { 'X-Token': apiKey } : {}
+        headers: apiKey && apiKey !== 'your-api-key-here' ? { 'x-api-key': apiKey } : {}
       });
       if (!res.ok) {
         const body = await res.text();

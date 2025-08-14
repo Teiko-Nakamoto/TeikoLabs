@@ -45,7 +45,7 @@ export function getHiroNetworkServerSide(networkType = 'testnet') {
           headers: {
             ...init.headers,
             'Content-Type': 'application/json',
-            'X-API-Key': serverApiKey
+            'x-api-key': serverApiKey
           }
         });
       }

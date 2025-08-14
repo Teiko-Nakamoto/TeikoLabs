@@ -15,13 +15,14 @@ export default function HowItWorksPage() {
       title: 'Documentation',
       items: [
         { title: 'Overview', id: 'overview', href: '/docs' },
+        { title: 'Roadmap', id: 'roadmap', href: '/docs#roadmap' },
         { 
           title: 'How It Works', 
           id: 'how-it-works', 
           href: '/docs/how-it-works',
           isActive: pathname === '/docs/how-it-works'
         },
-        { title: 'Create Project', id: 'create-project', href: '/docs/create-project' },
+
         { title: 'Trading', id: 'trading', href: '/docs/trading' },
         { title: 'Claim Profit', id: 'claim-profit', href: '/docs/claim-profit' },
         { title: 'Fees', id: 'fees', href: '/docs/fees' },
@@ -54,7 +55,9 @@ export default function HowItWorksPage() {
               <img src="/logo.png" alt="Teiko Labs Logo" className="docs-logo" />
             </Link>
             <div className="docs-title-section">
-              <div className="docs-site-name">Teikolabs.com</div>
+              <Link href="/" className="docs-site-name-link">
+                <div className="docs-site-name">Teikolabs.com</div>
+              </Link>
               <h2 className="docs-sidebar-title">Documentation</h2>
             </div>
           </div>
@@ -110,18 +113,6 @@ export default function HowItWorksPage() {
               </div>
             </section>
 
-            {/* MAS Sats Features */}
-            <section className="docs-section">
-              <div className="step-container-docs">
-                <div className="step-docs">
-                  <div className="step-content-docs">
-                    <h3>Key Features</h3>
-                    <p>MAS Sats operates on an <strong>infinite bonding curve</strong> with a maximum supply of <strong>21 million units</strong>, trading against <strong>sBTC</strong> for continuous liquidity and price discovery.</p>
-                  </div>
-                </div>
-              </div>
-            </section>
-
             {/* Trading Section */}
             <section className="docs-section">
               <div className="step-container-docs">
@@ -129,7 +120,7 @@ export default function HowItWorksPage() {
                   <div className="step-number-docs">1</div>
                   <div className="step-content-docs">
                     <h3>How Trading Works</h3>
-                    <p>MAS Sats can be bought and sold on the infinite bonding curve. Whoever locks away the most MAS sats can withdraw revenue at any time, but cannot unlock tokens until the trading fee is paid back from trading.</p>
+                    <p>MAS Sats operates on an <strong>infinite bonding curve</strong> with 21 million max supply, trading against <strong>sBTC</strong>. The largest holder can withdraw revenue anytime but must wait for trading fees to be paid back before unlocking tokens.</p>
                   </div>
                 </div>
                 

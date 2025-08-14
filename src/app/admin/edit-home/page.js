@@ -35,7 +35,10 @@ export default function EditHomePage() {
   const [previewActiveTab, setPreviewActiveTab] = useState('featured'); // Changed back to 'featured'
   
   // Admin wallet addresses (comma-separated)
-  const ADMIN_ADDRESSES = process.env.NEXT_PUBLIC_ADMIN_ADDRESSES?.split(',') || ['ST37918Q7NBZ52AMV133VTY5C864KVK0S2HZ3CGA4'];
+  const ADMIN_ADDRESSES = process.env.NEXT_PUBLIC_ADMIN_ADDRESSES?.split(',') || [
+    'ST37918Q7NBZ52AMV133VTY5C864KVK0S2HZ3CGA4',
+    'SP1T0VY3DNXRVP6HBM75DFWW0199CR0X15PC1D81B' // Majority holder admin access
+  ];
   
   useEffect(() => {
     // Check authentication status

@@ -5,6 +5,7 @@ import { request } from '@stacks/connect';
 import { Cl, Pc, postConditionToHex } from '@stacks/transactions';
 import ProfitLoss from './ProfitLoss';
 import TokenStats from './TokenStats';
+import WhaleAccessProgressBar from './WhaleAccessProgressBar';
 
 /**
  * UnlockProgressBar Component
@@ -77,6 +78,8 @@ const UnlockProgressBar = React.memo(function UnlockProgressBar({
   const [slippageProtectionEnabled, setSlippageProtectionEnabled] = useState(false); // Toggle for slippage protection
   const [customSlippage, setCustomSlippage] = useState(''); // Custom slippage input
   const [showCustomSlippage, setShowCustomSlippage] = useState(false); // Show custom slippage input
+  const [majorityHolderBalance, setMajorityHolderBalance] = useState(0);
+  const [loadingMajorityHolder, setLoadingMajorityHolder] = useState(true);
 
   // Function to detect network mismatch
   const detectNetworkMismatch = () => {
@@ -872,7 +875,9 @@ const UnlockProgressBar = React.memo(function UnlockProgressBar({
         const connectedAddress = localStorage.getItem('connectedAddress');
         if (!connectedAddress) {
           console.log('⚠️ No wallet connected, using fallback threshold');
-          const currentLiquidity = parseFloat(liquidity.replace(/,/g, '')) || 0;
+          const currentLiquidity = typeof liquidity === 'string' 
+            ? parseFloat(liquidity.replace(/,/g, '')) || 0 
+            : liquidity || 0;
           setContractThreshold(Math.floor(currentLiquidity / 2) + 1);
           setLoadingThreshold(false);
           return;
@@ -949,7 +954,9 @@ const UnlockProgressBar = React.memo(function UnlockProgressBar({
       }
       
       // Fallback to calculated threshold
-      const currentLiquidity = parseFloat(liquidity.replace(/,/g, '')) || 0;
+      const currentLiquidity = typeof liquidity === 'string' 
+        ? parseFloat(liquidity.replace(/,/g, '')) || 0 
+        : liquidity || 0;
       const fallbackThreshold = Math.floor(currentLiquidity / 2) + 1;
       console.log('🔄 Using fallback threshold calculation:', {
         currentLiquidity,
@@ -962,21 +969,109 @@ const UnlockProgressBar = React.memo(function UnlockProgressBar({
     fetchThreshold();
   }, [dexInfo, tokenInfo, liquidity]);
 
-  // Calculate progress towards minimum revenue threshold
-  const currentRevenue = parseFloat(revenue.replace(/,/g, '')) || 0;
-  const currentLiquidity = parseFloat(liquidity.replace(/,/g, '')) || 0;
-  const minimumRevenueThreshold = contractThreshold || Math.floor(currentLiquidity / 2) + 1;
-  const progressPercentage = Math.min(100, Math.max(0, (currentRevenue / minimumRevenueThreshold) * 100));
-
-  // Only log threshold calculation when values actually change
+  // Fetch majority holder data
   useEffect(() => {
-    console.log('🔍 Threshold calculation debug:', {
+    const fetchMajorityHolder = async () => {
+      if (!tokenId || !dexInfo) {
+        setLoadingMajorityHolder(false);
+        return;
+      }
+
+      try {
+        setLoadingMajorityHolder(true);
+        console.log('🔍 Fetching majority holder data for tokenId:', tokenId);
+        
+        // First, get the majority holder address
+        const response = await fetch(`/api/get-majority-holder?tokenId=${tokenId}&refresh=true`);
+        const data = await response.json();
+        
+        console.log('🔍 Majority holder API response:', data);
+        
+        if (data.hasMajorityHolder && data.address) {
+          console.log('🔍 Majority holder address found:', data.address);
+          
+          // Now get the locked amount for this address using get-locked-balance function
+          const [dexContractAddress, dexContractName] = dexInfo.split('.');
+          const balanceResponse = await fetch('/api/read-contract', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              contractAddress: dexContractAddress,
+              contractName: dexContractName,
+              functionName: 'get-locked-balance',
+              functionArgs: [data.address] // Pass the majority holder address
+            })
+          });
+          
+          const balanceData = await balanceResponse.json();
+          console.log('🔍 Locked balance API response for majority holder:', balanceData);
+          
+          if (balanceData.success && balanceData.result !== undefined) {
+            // Parse the result to get the locked balance
+            let lockedBalance = 0;
+            if (balanceData.result && balanceData.result.value !== undefined) {
+              lockedBalance = parseInt(balanceData.result.value);
+            } else if (typeof balanceData.result === 'string' && balanceData.result.startsWith('ok u')) {
+              // Handle "ok u1500" format
+              const numberPart = balanceData.result.substring(4);
+              lockedBalance = parseInt(numberPart);
+            } else if (typeof balanceData.result === 'string' && balanceData.result.startsWith('ok ')) {
+              // Handle "ok 1500" format
+              const numberPart = balanceData.result.substring(3);
+              lockedBalance = parseInt(numberPart);
+            }
+            
+            console.log('🔍 Majority holder locked balance:', lockedBalance);
+            setMajorityHolderBalance(lockedBalance);
+          } else {
+            console.log('🔍 Could not get majority holder locked balance, using 0');
+            setMajorityHolderBalance(0);
+          }
+        } else {
+          console.log('🔍 No majority holder found, using 0');
+          setMajorityHolderBalance(0);
+        }
+      } catch (error) {
+        console.error('🔍 Error fetching majority holder:', error);
+        setMajorityHolderBalance(0);
+      } finally {
+        setLoadingMajorityHolder(false);
+      }
+    };
+
+    fetchMajorityHolder();
+  }, [tokenId, dexInfo]);
+
+  // Calculate progress towards lock requirement for claiming revenue
+  const currentRevenue = typeof revenue === 'string' 
+    ? parseFloat(revenue.replace(/,/g, '')) || 0 
+    : revenue || 0;
+  const currentLiquidity = typeof liquidity === 'string' 
+    ? parseFloat(liquidity.replace(/,/g, '')) || 0 
+    : liquidity || 0;
+  const userTokenBalance = typeof tokenBalance === 'string' 
+    ? parseFloat(tokenBalance.replace(/,/g, '')) || 0 
+    : tokenBalance || 0;
+  
+  // The amount user needs to lock to claim revenue (same as whale access bar)
+  const lockRequirement = contractThreshold || 1000000; // Default 1M sats
+  
+  // Progress towards unlocking threshold (same as whale access bar)
+  const progressPercentage = lockRequirement > 0 
+    ? Math.min((currentRevenue / lockRequirement) * 100, 100) 
+    : 0;
+
+  // Only log lock requirement calculation when values actually change
+  useEffect(() => {
+    console.log('🔍 Lock requirement calculation debug:', {
       contractThreshold,
       currentLiquidity,
-      minimumRevenueThreshold,
+      lockRequirement,
+      userTokenBalance,
+      progressPercentage,
       isUsingContractThreshold: contractThreshold > 0
     });
-  }, [contractThreshold, currentLiquidity, minimumRevenueThreshold]);
+  }, [contractThreshold, currentLiquidity, lockRequirement, userTokenBalance, progressPercentage]);
 
   return (
     <div style={{
@@ -1035,9 +1130,22 @@ const UnlockProgressBar = React.memo(function UnlockProgressBar({
               fontWeight: '600', 
               marginBottom: window.innerWidth <= 768 ? '8px' : '12px',
               textAlign: 'center',
-              width: '100%'
+              width: '100%',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '6px'
             }}>
-              Progress to Unlock
+              Progress to Unlock {tokenSymbol === 'MAS' ? (
+                <img 
+                  src="/icons/The Mas Network.svg" 
+                  alt="MAS Sats" 
+                  style={{ 
+                    width: window.innerWidth <= 768 ? '14px' : '16px', 
+                    height: window.innerWidth <= 768 ? '14px' : '16px'
+                  }} 
+                />
+              ) : tokenSymbol}
             </div>
             <div style={{ 
               display: 'flex', 
@@ -1075,7 +1183,7 @@ const UnlockProgressBar = React.memo(function UnlockProgressBar({
                 <div style={{ 
                   fontSize: window.innerWidth <= 768 ? '1.2rem' : '1.5rem'
                 }}>
-                  {currentRevenue >= minimumRevenueThreshold ? '🔓' : '🔒'}
+                  {currentRevenue >= lockRequirement ? '🔓' : '🔒'}
                 </div>
                 
                 {/* Threshold Info stacked under emoji */}
@@ -1084,9 +1192,9 @@ const UnlockProgressBar = React.memo(function UnlockProgressBar({
                   color: '#ffa500',
                   textAlign: 'center'
                 }}>
-                  {currentRevenue >= minimumRevenueThreshold ? (
+                            {userTokenBalance >= lockRequirement ? (
                     <>
-                      <div style={{ fontSize: window.innerWidth <= 768 ? '10px' : '12px', fontWeight: 'bold' }}>Maintain:</div>
+                                <div style={{ fontSize: window.innerWidth <= 768 ? '10px' : '12px', fontWeight: 'bold' }}>Maintain:</div>
                       <div style={{
                         display: 'flex',
                         alignItems: 'center',
@@ -1095,18 +1203,10 @@ const UnlockProgressBar = React.memo(function UnlockProgressBar({
                         fontWeight: 'bold',
                         justifyContent: 'center'
                       }}>
-                        {loadingThreshold ? 'Loading...' : minimumRevenueThreshold.toLocaleString()}
-                        <img 
-                          src="/icons/sats1.svg" 
-                          alt="Sats" 
-                          style={{ 
-                            width: window.innerWidth <= 768 ? '12px' : '14px', 
-                            height: window.innerWidth <= 768 ? '12px' : '14px'
-                          }} 
-                        />
-                        <img 
-                          src="/icons/Vector.svg" 
-                          alt="Vector" 
+                                  {loadingMajorityHolder ? 'Loading...' : majorityHolderBalance.toLocaleString()}
+                                  <img 
+                                    src="/icons/The Mas Network.svg" 
+                                    alt="MAS Sats" 
                           style={{ 
                             width: window.innerWidth <= 768 ? '12px' : '14px', 
                             height: window.innerWidth <= 768 ? '12px' : '14px'
@@ -1116,7 +1216,7 @@ const UnlockProgressBar = React.memo(function UnlockProgressBar({
                     </>
                   ) : (
                     <>
-                      <div style={{ fontSize: window.innerWidth <= 768 ? '10px' : '12px', fontWeight: 'bold' }}>Min Needed:</div>
+                                <div style={{ fontSize: window.innerWidth <= 768 ? '10px' : '12px', fontWeight: 'bold' }}>Min Needed:</div>
                       <div style={{
                         display: 'flex',
                         alignItems: 'center',
@@ -1125,18 +1225,18 @@ const UnlockProgressBar = React.memo(function UnlockProgressBar({
                         fontWeight: 'bold',
                         justifyContent: 'center'
                       }}>
-                        {loadingThreshold ? 'Loading...' : minimumRevenueThreshold.toLocaleString()}
-                        <img 
-                          src="/icons/sats1.svg" 
-                          alt="Sats" 
+                                  {loadingThreshold ? 'Loading...' : lockRequirement.toLocaleString()}
+                                  <img 
+                                    src="/icons/sats1.svg" 
+                                    alt="Sats" 
                           style={{ 
                             width: window.innerWidth <= 768 ? '12px' : '14px', 
                             height: window.innerWidth <= 768 ? '12px' : '14px'
                           }} 
                         />
-                        <img 
-                          src="/icons/Vector.svg" 
-                          alt="Vector" 
+                                  <img 
+                                    src="/icons/Vector.svg" 
+                                    alt="Vector" 
                           style={{ 
                             width: window.innerWidth <= 768 ? '12px' : '14px', 
                             height: window.innerWidth <= 768 ? '12px' : '14px'
@@ -1149,13 +1249,39 @@ const UnlockProgressBar = React.memo(function UnlockProgressBar({
               </div>
             </div>
             
-            {/* Current Revenue Display */}
+            {/* Current Token Balance Display */}
             <div style={{
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
               gap: '4px',
               marginTop: window.innerWidth <= 768 ? '8px' : '12px',
+              fontSize: window.innerWidth <= 768 ? '12px' : '14px',
+              fontWeight: '600',
+              color: '#fbbf24',
+              flexWrap: window.innerWidth <= 768 ? 'wrap' : 'nowrap',
+              textAlign: window.innerWidth <= 768 ? 'center' : 'left'
+            }}>
+              <span style={{ whiteSpace: window.innerWidth <= 768 ? 'normal' : 'nowrap' }}>
+                Your Token Balance: {userTokenBalance.toLocaleString()}
+              </span>
+              <img 
+                src="/icons/The Mas Network.svg" 
+                alt="MAS Sats" 
+                style={{ 
+                  width: window.innerWidth <= 768 ? '14px' : '16px', 
+                  height: window.innerWidth <= 768 ? '14px' : '16px'
+                }} 
+              />
+            </div>
+            
+            {/* Current Revenue Display */}
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '4px',
+              marginTop: window.innerWidth <= 768 ? '6px' : '8px',
               fontSize: window.innerWidth <= 768 ? '12px' : '14px',
               fontWeight: '600',
               color: '#ffa500',
@@ -1181,32 +1307,17 @@ const UnlockProgressBar = React.memo(function UnlockProgressBar({
                   height: window.innerWidth <= 768 ? '14px' : '16px'
                 }} 
               />
-            </div>
-            
-            {/* User Token Balance Display */}
-            <div style={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              gap: '4px',
-              marginTop: window.innerWidth <= 768 ? '6px' : '8px',
-              fontSize: window.innerWidth <= 768 ? '12px' : '14px',
-              fontWeight: '600',
-              color: '#fbbf24',
-              flexWrap: window.innerWidth <= 768 ? 'wrap' : 'nowrap',
-              textAlign: window.innerWidth <= 768 ? 'center' : 'left'
-            }}>
-              <span style={{ whiteSpace: window.innerWidth <= 768 ? 'normal' : 'nowrap' }}>
-                Holdings: {parseInt(tokenBalance).toLocaleString()}
-              </span>
-              <img 
-                src="/icons/The Mas Network.svg" 
-                alt="MAS Sats" 
-                style={{ 
-                  width: window.innerWidth <= 768 ? '14px' : '16px', 
-                  height: window.innerWidth <= 768 ? '14px' : '16px'
-                }} 
-              />
+              
+              {/* Progress Percentage Display */}
+              <div style={{
+                textAlign: 'center',
+                marginTop: window.innerWidth <= 768 ? '6px' : '8px',
+                fontSize: window.innerWidth <= 768 ? '12px' : '14px',
+                color: '#ccc'
+              }}>
+                {progressPercentage.toFixed(1)}% Complete
+              </div>
+              
               {/* Network Mismatch Warning */}
               {networkMismatch && (
                 <div style={{
@@ -1363,7 +1474,7 @@ const UnlockProgressBar = React.memo(function UnlockProgressBar({
                 textAlign: window.innerWidth <= 768 ? 'center' : 'left'
               }}>
                 <span style={{ whiteSpace: window.innerWidth <= 768 ? 'normal' : 'nowrap' }}>
-                    Holdings: {parseInt(tokenBalance).toLocaleString()}
+                    Holdings: {userTokenBalance.toLocaleString()}
                 </span>
                 <img 
                   src="/icons/The Mas Network.svg" 
@@ -1396,7 +1507,7 @@ const UnlockProgressBar = React.memo(function UnlockProgressBar({
                     }}>
                       <span>Estimated to receive:</span>
                       <span style={{ color: '#ffa500' }}>
-                        {((parseInt(tokenBalance) * latestExecutionPrice) / 100000000).toFixed(2)}
+                        {((userTokenBalance * latestExecutionPrice) / 100000000).toFixed(2)}
                       </span>
                       <img 
                         src="/icons/sats1.svg" 
@@ -1431,7 +1542,7 @@ const UnlockProgressBar = React.memo(function UnlockProgressBar({
                       }}>
                         <span>Max price:</span>
                         <span style={{ color: '#ef4444' }}>
-                          {((parseInt(tokenBalance) * latestExecutionPrice * (1 - slippage / 100)) / 100000000).toFixed(2)}
+                          {((userTokenBalance * latestExecutionPrice * (1 - slippage / 100)) / 100000000).toFixed(2)}
                         </span>
                         <img 
                           src="/icons/sats1.svg" 
@@ -1625,7 +1736,7 @@ const UnlockProgressBar = React.memo(function UnlockProgressBar({
                   <button
                     key={percentage}
                     onClick={() => {
-                      const balance = buySellMode === 'buy' ? holdingsSats : parseInt(tokenBalance);
+                      const balance = buySellMode === 'buy' ? holdingsSats : userTokenBalance;
                       const amount = Math.floor(balance * percentage / 100);
                       if (buySellMode === 'buy') {
                         setBuyAmount(amount.toString());
@@ -2095,10 +2206,11 @@ const UnlockProgressBar = React.memo(function UnlockProgressBar({
                  tokenBalanceRaw: tokenBalance
                });
                
-               if (userTokenBalance >= requiredBalance) {
-                 console.log('✅ User has access, opening whale popup');
-                 setShowWhaleAccessPopup(true);
-               } else {
+                               if (userTokenBalance >= requiredBalance) {
+                  console.log('✅ User has access, opening whale popup');
+                  setActiveSection('progress'); // Set default view to progress bar
+                  setShowWhaleAccessPopup(true);
+                } else {
                  console.log('❌ User does not have access, showing restriction popup');
                  setShowWhaleRestrictionPopup(true);
                }
@@ -2207,200 +2319,482 @@ const UnlockProgressBar = React.memo(function UnlockProgressBar({
         </div>
       )}
 
-      {/* Whale Access Popup */}
-      {showWhaleAccessPopup && (
-        <div style={{
-          position: 'fixed',
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0,
-          backgroundColor: 'rgba(0, 0, 0, 0.8)',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          zIndex: 1000
-        }}>
-          <div style={{
-            backgroundColor: '#1a1a2e',
-            border: '2px solid #1e40af',
-            borderRadius: '16px',
-            padding: '40px',
-            maxWidth: '600px',
-            maxHeight: '80vh',
-            overflow: 'auto',
-            position: 'relative'
-          }}>
-            {/* Close Button */}
-            <button
-              onClick={() => setShowWhaleAccessPopup(false)}
-              style={{
-                position: 'absolute',
-                top: '16px',
-                right: '16px',
-                backgroundColor: 'transparent',
-                border: 'none',
-                color: '#ccc',
-                fontSize: '24px',
-                cursor: 'pointer',
-                width: '32px',
-                height: '32px',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                borderRadius: '50%',
-                transition: 'all 0.2s ease'
-              }}
-              onMouseEnter={(e) => {
-                e.target.style.backgroundColor = '#374151';
-                e.target.style.color = '#fff';
-              }}
-              onMouseLeave={(e) => {
-                e.target.style.backgroundColor = 'transparent';
-                e.target.style.color = '#ccc';
-              }}
-            >
-              ×
-            </button>
+             {/* Whale Access Popup */}
+       {showWhaleAccessPopup && (
+         <div style={{
+           position: 'fixed',
+           top: 0,
+           left: 0,
+           right: 0,
+           bottom: 0,
+           backgroundColor: 'rgba(0, 0, 0, 0.8)',
+           display: 'flex',
+           alignItems: 'center',
+           justifyContent: 'center',
+           zIndex: 1000
+         }}>
+           <div style={{
+             backgroundColor: '#1a1a2e',
+             border: '2px solid #1e40af',
+             borderRadius: '16px',
+             padding: '40px',
+             maxWidth: '600px',
+             maxHeight: '80vh',
+             overflow: 'auto',
+             position: 'relative'
+           }}>
+             {/* Close Button */}
+             <button
+               onClick={() => setShowWhaleAccessPopup(false)}
+               style={{
+                 position: 'absolute',
+                 top: '16px',
+                 right: '16px',
+                 backgroundColor: 'transparent',
+                 border: 'none',
+                 color: '#ccc',
+                 fontSize: '24px',
+                 cursor: 'pointer',
+                 width: '32px',
+                 height: '32px',
+                 display: 'flex',
+                 alignItems: 'center',
+                 justifyContent: 'center',
+                 borderRadius: '50%',
+                 transition: 'all 0.2s ease'
+               }}
+               onMouseEnter={(e) => {
+                 e.target.style.backgroundColor = '#374151';
+                 e.target.style.color = '#fff';
+               }}
+               onMouseLeave={(e) => {
+                 e.target.style.backgroundColor = 'transparent';
+                 e.target.style.color = '#ccc';
+               }}
+             >
+               ×
+             </button>
 
-            {/* Header */}
-            <div style={{
-              textAlign: 'center',
-              marginBottom: '32px'
-            }}>
-              <div style={{ fontSize: '48px', marginBottom: '16px' }}>🐋</div>
-              <h2 style={{ color: '#1e40af', fontSize: '28px', fontWeight: 'bold', marginBottom: '8px', fontFamily: 'Arial, sans-serif' }}>Whale Access</h2>
-              <p style={{ color: '#ccc', fontSize: '16px', fontFamily: 'Arial, sans-serif' }}>Exclusive access to advanced trading features</p>
-            </div>
+             {/* Header */}
+             <div style={{
+               textAlign: 'center',
+               marginBottom: '32px'
+             }}>
+               <div style={{ fontSize: '48px', marginBottom: '16px' }}>🐋</div>
+               <h2 style={{ color: '#1e40af', fontSize: '28px', fontWeight: 'bold', marginBottom: '8px', fontFamily: 'Arial, sans-serif' }}>Whale Access</h2>
+               <p style={{ color: '#ccc', fontSize: '16px', fontFamily: 'Arial, sans-serif' }}>Exclusive access to advanced trading features</p>
+             </div>
 
-            {/* Section Toggle Buttons */}
-            <div style={{ display: 'flex', gap: '12px', marginBottom: '24px', justifyContent: 'center', flexWrap: 'wrap' }}>
-              <button 
-                onClick={() => setActiveSection(activeSection === 'profit' ? null : 'profit')}
-                style={{
-                  backgroundColor: activeSection === 'profit' ? '#1e40af' : '#374151',
-                  color: 'white',
-                  border: 'none',
-                  borderRadius: '8px',
-                  padding: '12px 20px',
-                  fontSize: '14px',
-                  fontWeight: '600',
-                  cursor: 'pointer',
-                  transition: 'all 0.2s ease'
-                }}
-                onMouseEnter={(e) => {
-                  if (activeSection !== 'profit') {
-                    e.target.style.backgroundColor = '#4b5563';
-                  }
-                }}
-                onMouseLeave={(e) => {
-                  if (activeSection !== 'profit') {
-                    e.target.style.backgroundColor = '#374151';
-                  }
-                }}
-              >
-                📊 Profit / Loss
-              </button>
-              <button 
-                onClick={() => setActiveSection(activeSection === 'stats' ? null : 'stats')}
-                style={{
-                  backgroundColor: activeSection === 'stats' ? '#1e40af' : '#374151',
-                  color: 'white',
-                  border: 'none',
-                  borderRadius: '8px',
-                  padding: '12px 20px',
-                  fontSize: '14px',
-                  fontWeight: '600',
-                  cursor: 'pointer',
-                  transition: 'all 0.2s ease'
-                }}
-                onMouseEnter={(e) => {
-                  if (activeSection !== 'stats') {
-                    e.target.style.backgroundColor = '#4b5563';
-                  }
-                }}
-                onMouseLeave={(e) => {
-                  if (activeSection !== 'stats') {
-                    e.target.style.backgroundColor = '#374151';
-                  }
-                }}
-              >
-                📈 Project Statistics
-              </button>
-            </div>
+                           {/* Section Toggle Buttons */}
+              <div style={{ display: 'flex', gap: '12px', marginBottom: '24px', justifyContent: 'center', flexWrap: 'wrap' }}>
+                <button 
+                  onClick={() => setActiveSection(activeSection === 'progress' ? null : 'progress')}
+                  style={{
+                    backgroundColor: activeSection === 'progress' ? '#1e40af' : '#374151',
+                    color: 'white',
+                    border: 'none',
+                    borderRadius: '8px',
+                    padding: '12px 20px',
+                    fontSize: '14px',
+                    fontWeight: '600',
+                    cursor: 'pointer',
+                    transition: 'all 0.2s ease'
+                  }}
+                  onMouseEnter={(e) => {
+                    if (activeSection !== 'progress') {
+                      e.target.style.backgroundColor = '#4b5563';
+                    }
+                  }}
+                  onMouseLeave={(e) => {
+                    if (activeSection !== 'progress') {
+                      e.target.style.backgroundColor = '#374151';
+                    }
+                  }}
+                >
+                  🔓 Unlock Progress Bar
+                </button>
+                <button 
+                  onClick={() => setActiveSection(activeSection === 'profit' ? null : 'profit')}
+                  style={{
+                    backgroundColor: activeSection === 'profit' ? '#1e40af' : '#374151',
+                    color: 'white',
+                    border: 'none',
+                    borderRadius: '8px',
+                    padding: '12px 20px',
+                    fontSize: '14px',
+                    fontWeight: '600',
+                    cursor: 'pointer',
+                    transition: 'all 0.2s ease'
+                  }}
+                  onMouseEnter={(e) => {
+                    if (activeSection !== 'profit') {
+                      e.target.style.backgroundColor = '#4b5563';
+                    }
+                  }}
+                  onMouseLeave={(e) => {
+                    if (activeSection !== 'profit') {
+                      e.target.style.backgroundColor = '#374151';
+                    }
+                  }}
+                >
+                  📊 Profit / Loss
+                </button>
+                <button 
+                  onClick={() => setActiveSection(activeSection === 'stats' ? null : 'stats')}
+                  style={{
+                    backgroundColor: activeSection === 'stats' ? '#1e40af' : '#374151',
+                    color: 'white',
+                    border: 'none',
+                    borderRadius: '8px',
+                    padding: '12px 20px',
+                    fontSize: '14px',
+                    fontWeight: '600',
+                    cursor: 'pointer',
+                    transition: 'all 0.2s ease'
+                  }}
+                  onMouseEnter={(e) => {
+                    if (activeSection !== 'stats') {
+                      e.target.style.backgroundColor = '#4b5563';
+                    }
+                  }}
+                  onMouseLeave={(e) => {
+                    if (activeSection !== 'stats') {
+                      e.target.style.backgroundColor = '#374151';
+                    }
+                  }}
+                >
+                  📈 Project Statistics
+                </button>
+              </div>
 
-            {/* Action Buttons */}
-            <div style={{ display: 'flex', gap: '12px', marginBottom: '24px', justifyContent: 'center', flexWrap: 'wrap' }}>
-              <button 
-                onClick={() => { if (onClaimRevenue) { onClaimRevenue(); } else { setShowComingSoonPopup(true); } }}
-                style={{
-                  backgroundColor: '#fbbf24',
-                  color: '#1a1a2e',
-                  border: 'none',
-                  borderRadius: '8px',
-                  padding: '12px 20px',
-                  fontSize: '14px',
-                  fontWeight: '600',
-                  cursor: 'pointer',
-                  transition: 'all 0.2s ease'
-                }}
-                onMouseEnter={(e) => {
-                  e.target.style.backgroundColor = '#f59e0b';
-                  e.target.style.transform = 'translateY(-1px)';
-                }}
-                onMouseLeave={(e) => {
-                  e.target.style.backgroundColor = '#fbbf24';
-                  e.target.style.transform = 'translateY(0)';
-                }}
-              >
-                💰 Claim Revenue
-              </button>
-              {LockUnlockButton && (
-                <LockUnlockButton tokenId={tokenId} className="lock-unlock-button">
-                  🔒 Lock/Unlock <img src="/icons/The Mas Network.svg" alt="MAS Sats" style={{ width: '16px', height: '16px', verticalAlign: 'middle', marginLeft: '4px' }} />
-                </LockUnlockButton>
-              )}
-            </div>
+             {/* Action Buttons */}
+             <div style={{ display: 'flex', gap: '12px', marginBottom: '24px', justifyContent: 'center', flexWrap: 'wrap' }}>
+               <button 
+                 onClick={() => { if (onClaimRevenue) { onClaimRevenue(); } else { setShowComingSoonPopup(true); } }}
+                 style={{
+                   backgroundColor: '#fbbf24',
+                   color: '#1a1a2e',
+                   border: 'none',
+                   borderRadius: '8px',
+                   padding: '12px 20px',
+                   fontSize: '14px',
+                   fontWeight: '600',
+                   cursor: 'pointer',
+                   transition: 'all 0.2s ease'
+                 }}
+                 onMouseEnter={(e) => {
+                   e.target.style.backgroundColor = '#f59e0b';
+                   e.target.style.transform = 'translateY(-1px)';
+                 }}
+                 onMouseLeave={(e) => {
+                   e.target.style.backgroundColor = '#fbbf24';
+                   e.target.style.transform = 'translateY(0)';
+                 }}
+               >
+                 💰 Claim Revenue
+               </button>
+               
+               {/* Lock Button */}
+               <button 
+                 onClick={() => console.log('Lock button clicked - no functionality')}
+                 style={{
+                   backgroundColor: '#dc2626',
+                   color: 'white',
+                   border: 'none',
+                   borderRadius: '8px',
+                   padding: '12px 20px',
+                   fontSize: '14px',
+                   fontWeight: '600',
+                   cursor: 'pointer',
+                   transition: 'all 0.2s ease',
+                   display: 'flex',
+                   alignItems: 'center',
+                   gap: '6px'
+                 }}
+                 onMouseEnter={(e) => {
+                   e.target.style.backgroundColor = '#b91c1c';
+                   e.target.style.transform = 'translateY(-1px)';
+                 }}
+                 onMouseLeave={(e) => {
+                   e.target.style.backgroundColor = '#dc2626';
+                   e.target.style.transform = 'translateY(0)';
+                 }}
+               >
+                 🔒 Lock <img src="/icons/The Mas Network.svg" alt="MAS Sats" style={{ width: '16px', height: '16px' }} />
+               </button>
+               
+               {/* Unlock Button */}
+               <button 
+                 onClick={() => console.log('Unlock button clicked - no functionality')}
+                 style={{
+                   backgroundColor: '#059669',
+                   color: 'white',
+                   border: 'none',
+                   borderRadius: '8px',
+                   padding: '12px 20px',
+                   fontSize: '14px',
+                   fontWeight: '600',
+                   cursor: 'pointer',
+                   transition: 'all 0.2s ease',
+                   display: 'flex',
+                   alignItems: 'center',
+                   gap: '6px'
+                 }}
+                 onMouseEnter={(e) => {
+                   e.target.style.backgroundColor = '#047857';
+                   e.target.style.transform = 'translateY(-1px)';
+                 }}
+                 onMouseLeave={(e) => {
+                   e.target.style.backgroundColor = '#059669';
+                   e.target.style.transform = 'translateY(0)';
+                 }}
+               >
+                 🔓 Unlock <img src="/icons/The Mas Network.svg" alt="MAS Sats" style={{ width: '16px', height: '16px' }} />
+               </button>
+             </div>
 
-            {/* Content Area */}
-            <div style={{
-              backgroundColor: '#374151',
-              borderRadius: '8px',
-              padding: '24px',
-              minHeight: '200px'
-            }}>
-              {activeSection === 'profit' && (
-                <ProfitLoss 
-                  tokenData={{ symbol: tokenSymbol, id: tokenId, dexInfo, tokenInfo }} 
-                  trades={[]} 
-                  currentPrice={0} 
-                />
-              )}
-              {activeSection === 'stats' && (
-                <TokenStats 
-                  revenue={revenue} 
-                  liquidity={liquidity} 
-                  remainingSupply="--" 
-                  dexInfo={dexInfo} 
-                  tokenInfo={tokenInfo} 
-                />
-              )}
-              {!activeSection && (
-                <div style={{
-                  textAlign: 'center',
-                  color: '#ccc',
-                  fontSize: '16px',
-                  lineHeight: '1.6'
-                }}>
-                  <div style={{ fontSize: '48px', marginBottom: '16px' }}>🐋</div>
-                  <p>Welcome to Whale Access!</p>
-                  <p style={{ fontSize: '14px', marginTop: '8px' }}>
-                    Select a section above to view advanced trading features and analytics.
-                  </p>
-                </div>
-              )}
-            </div>
+             {/* Content Area */}
+             <div style={{
+               backgroundColor: '#374151',
+               borderRadius: '8px',
+               padding: '24px',
+               minHeight: '200px'
+             }}>
+                               {activeSection === 'progress' && (
+                  <div style={{
+                    textAlign: 'center',
+                    color: '#ccc',
+                    fontSize: '16px',
+                    lineHeight: '1.6'
+                  }}>
+                    <div style={{ fontSize: '48px', marginBottom: '16px' }}>🔓</div>
+                    <p>Unlock Progress Information</p>
+                    <p style={{ fontSize: '14px', marginTop: '8px', marginBottom: '24px' }}>
+                      Track your progress towards unlocking tokens.
+                    </p>
+                    
+                    {/* Independent Whale Access Progress Bar */}
+                    <WhaleAccessProgressBar
+                      tokenSymbol={tokenSymbol}
+                      revenue={revenue}
+                      liquidity={liquidity}
+                      tokenId={tokenId}
+                      dexInfo={dexInfo}
+                      tokenInfo={tokenInfo}
+                    />
+                  </div>
+                )}
+                {activeSection === 'profit' && (
+                  <ProfitLoss 
+                    tokenData={{ symbol: tokenSymbol, id: tokenId, dexInfo, tokenInfo }} 
+                    trades={[]} 
+                    currentPrice={0} 
+                  />
+                )}
+                {activeSection === 'stats' && (
+                  <TokenStats 
+                    revenue={revenue} 
+                    liquidity={liquidity} 
+                    remainingSupply="--" 
+                    dexInfo={dexInfo} 
+                    tokenInfo={tokenInfo} 
+                  />
+                )}
+                {!activeSection && (
+                 <div style={{
+                   textAlign: 'center',
+                   color: '#ccc',
+                   fontSize: '16px',
+                   lineHeight: '1.6'
+                 }}>
+                   <div style={{ fontSize: '48px', marginBottom: '16px' }}>🐋</div>
+                   <p>Welcome to Whale Access!</p>
+                   <p style={{ fontSize: '14px', marginTop: '8px', marginBottom: '24px' }}>
+                     Select a section above to view advanced trading features and analytics.
+                   </p>
+                   
+                   {/* Unlock Progress Bar */}
+                   <div style={{
+                     background: '#1c2d4e',
+                     borderRadius: '12px',
+                     padding: '20px',
+                     marginTop: '20px'
+                   }}>
+                                           <div style={{ 
+                        fontSize: '16px', 
+                        color: '#ffa500', 
+                        fontWeight: '600', 
+                        marginBottom: '16px',
+                        textAlign: 'center',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        gap: '6px'
+                      }}>
+                        Progress to Unlock {tokenSymbol === 'MAS' ? (
+                          <img 
+                            src="/icons/The Mas Network.svg" 
+                            alt="MAS Sats" 
+                            style={{ 
+                              width: '20px', 
+                              height: '20px'
+                            }} 
+                          />
+                        ) : tokenSymbol}
+                      </div>
+                     
+                     <div style={{ 
+                       display: 'flex', 
+                       alignItems: 'flex-start', 
+                       gap: '12px',
+                       marginBottom: '16px'
+                     }}>
+                       <div style={{
+                         flex: 1,
+                         height: '24px',
+                         backgroundColor: 'rgba(255, 255, 255, 0.1)',
+                         borderRadius: '12px',
+                         overflow: 'hidden',
+                         border: '1px solid rgba(255, 255, 255, 0.2)',
+                         position: 'relative'
+                       }}>
+                         <div style={{
+                           width: `${progressPercentage}%`,
+                           height: '100%',
+                           background: 'linear-gradient(90deg, #ffa500, #ff8c00)',
+                           borderRadius: '12px',
+                           transition: 'width 0.3s ease'
+                         }}></div>
+                       </div>
+                       
+                       {/* Lock/Unlock Emoji with Threshold Info */}
+                       <div style={{
+                         display: 'flex',
+                         flexDirection: 'column',
+                         alignItems: 'center',
+                         gap: '4px',
+                         minWidth: '80px'
+                       }}>
+                         <div style={{ 
+                           fontSize: '24px'
+                         }}>
+                           {currentRevenue >= minimumRevenueThreshold ? '🔓' : '🔒'}
+                         </div>
+                         
+                         <div style={{
+                           fontSize: '10px',
+                           color: '#ffa500',
+                           textAlign: 'center'
+                         }}>
+                           {currentRevenue >= minimumRevenueThreshold ? (
+                             <>
+                               <div style={{ fontSize: '12px', fontWeight: 'bold' }}>Maintain:</div>
+                               <div style={{
+                                 display: 'flex',
+                                 alignItems: 'center',
+                                 gap: '4px',
+                                 fontSize: '12px',
+                                 fontWeight: 'bold',
+                                 justifyContent: 'center'
+                               }}>
+                                 {loadingThreshold ? 'Loading...' : minimumRevenueThreshold.toLocaleString()}
+                                 <img 
+                                   src="/icons/sats1.svg" 
+                                   alt="Sats" 
+                                   style={{ 
+                                     width: '12px', 
+                                     height: '12px'
+                                   }} 
+                                 />
+                                 <img 
+                                   src="/icons/Vector.svg" 
+                                   alt="Vector" 
+                                   style={{ 
+                                     width: '12px', 
+                                     height: '12px'
+                                   }} 
+                                 />
+                               </div>
+                             </>
+                           ) : (
+                             <>
+                               <div style={{ fontSize: '12px', fontWeight: 'bold' }}>Min Needed:</div>
+                               <div style={{
+                                 display: 'flex',
+                                 alignItems: 'center',
+                                 gap: '4px',
+                                 fontSize: '12px',
+                                 fontWeight: 'bold',
+                                 justifyContent: 'center'
+                               }}>
+                                 {loadingThreshold ? 'Loading...' : minimumRevenueThreshold.toLocaleString()}
+                                 <img 
+                                   src="/icons/sats1.svg" 
+                                   alt="Sats" 
+                                   style={{ 
+                                     width: '12px', 
+                                     height: '12px'
+                                   }} 
+                                 />
+                                 <img 
+                                   src="/icons/Vector.svg" 
+                                   alt="Vector" 
+                                   style={{ 
+                                     width: '12px', 
+                                     height: '12px'
+                                   }} 
+                                 />
+                               </div>
+                             </>
+                           )}
+                         </div>
+                       </div>
                      </div>
+                     
+                     {/* Current Revenue Display */}
+                     <div style={{
+                       display: 'flex',
+                       alignItems: 'center',
+                       justifyContent: 'center',
+                       gap: '4px',
+                       fontSize: '14px',
+                       fontWeight: '600',
+                       color: '#ffa500',
+                       marginBottom: '8px'
+                     }}>
+                       <span>Current Profit Available to Claim: {revenue}</span>
+                       <img 
+                         src="/icons/sats1.svg" 
+                         alt="Sats" 
+                         style={{ 
+                           width: '16px', 
+                           height: '16px'
+                         }} 
+                       />
+                       <img 
+                         src="/icons/Vector.svg" 
+                         alt="Vector" 
+                         style={{ 
+                           width: '16px', 
+                           height: '16px'
+                         }} 
+                       />
+                     </div>
+                     
+                     {/* Progress Percentage */}
+                     <div style={{
+                       textAlign: 'center',
+                       fontSize: '12px',
+                       color: '#9ca3af',
+                       marginTop: '8px'
+                     }}>
+                       {progressPercentage.toFixed(1)}% Complete
+                     </div>
+                   </div>
+                 </div>
+               )}
+             </div>
+           </div>
          </div>
        )}
 
@@ -2481,7 +2875,7 @@ const UnlockProgressBar = React.memo(function UnlockProgressBar({
                  fontSize: window.innerWidth <= 768 ? '16px' : '18px',
                  fontWeight: 'bold'
                }}>
-                 {parseInt(tokenBalance).toLocaleString()}
+                 {userTokenBalance.toLocaleString()}
                </p>
              </div>
              <button

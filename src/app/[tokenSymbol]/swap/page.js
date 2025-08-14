@@ -7,7 +7,7 @@ import Header from '../../components/header';
 
 import TradeHistory from '../../components/tradehistory';
 import Chart from '../../components/chart';
-import LockUnlockButton from '../../components/LockUnlockButton';
+
 import UnlockProgressBar from '../../components/UnlockProgressBar';
 import ProfitLoss from '../../components/ProfitLoss';
 import TokenStats from '../../components/TokenStats';
@@ -80,15 +80,53 @@ export default function SwapPage() {
   // Check if wallet is connected
   const connectedAddress = typeof window !== 'undefined' ? localStorage.getItem('connectedAddress') : null;
 
+
+
   // Add polling ref to track if component is still mounted
   const pollIntervalRef = useRef(null);
 
-  // Redirect to home if no wallet connected (must be before any conditional returns)
+  // Load token data based on token symbol
   useEffect(() => {
-    if (!connectedAddress) {
-      window.location.href = '/';
-    }
-  }, [connectedAddress]);
+    const loadTokenData = async () => {
+      if (!tokenSymbol) {
+        console.error('❌ No token symbol provided');
+        setLoading(false);
+        return;
+      }
+
+      try {
+        console.log('🔍 Loading token data for symbol:', tokenSymbol);
+        
+        // Fetch token cards to find the matching token
+        const response = await fetch('/api/get-token-cards');
+        const data = await response.json();
+        
+        if (data.tokenCards && Array.isArray(data.tokenCards)) {
+          // Find the token that matches the symbol
+          const matchingToken = data.tokenCards.find(token => 
+            token.symbol && token.symbol.toLowerCase() === tokenSymbol.toLowerCase()
+          );
+          
+          if (matchingToken) {
+            console.log('✅ Found matching token:', matchingToken);
+            setTokenData(matchingToken);
+            setLoading(false);
+          } else {
+            console.error('❌ No token found for symbol:', tokenSymbol);
+            setLoading(false);
+          }
+        } else {
+          console.error('❌ Failed to fetch token cards:', data.error || 'No tokenCards array found');
+          setLoading(false);
+        }
+      } catch (error) {
+        console.error('❌ Error loading token data:', error);
+        setLoading(false);
+      }
+    };
+
+    loadTokenData();
+  }, [tokenSymbol]);
 
   // Read token balance when wallet address or token data changes
   useEffect(() => {
@@ -397,9 +435,9 @@ export default function SwapPage() {
   };
 
   // Fetch user sBTC balance for mainnet (using same logic as TradeHistory component)
-  const fetchUserSatsBalance = async () => {
+  const fetchUserSatsBalance = async (retryCount = 0) => {
     try {
-      console.log('🔍 fetchUserSatsBalance called');
+      console.log('🔍 fetchUserSatsBalance called', retryCount > 0 ? `(retry ${retryCount})` : '');
       const connectedAddress = localStorage.getItem('connectedAddress');
       console.log('🔍 connectedAddress:', connectedAddress);
       
@@ -411,7 +449,7 @@ export default function SwapPage() {
 
       // Only fetch for mainnet tokens (SP/SM addresses)
       const isMainnet = /^(SP|SM)/.test(connectedAddress);
-      console.log('🔍 isMainnet check:', isMainnet);
+      console.log('🔍 isMainnet check:', isMainnet, 'address:', connectedAddress);
 
       if (!isMainnet) {
         console.log('🔍 Not mainnet address, setting balance to 0');
@@ -424,26 +462,48 @@ export default function SwapPage() {
       console.log('🔍 Making API call to:', url);
       
       const response = await fetch(url);
-        console.log('🔍 API response status:', response.status);
+      console.log('🔍 API response status:', response.status);
       
-        if (response.ok) {
-          const data = await response.json();
-          console.log('🔍 API response data:', data);
+      if (response.ok) {
+        const data = await response.json();
+        console.log('🔍 API response data:', data);
         
         if (data && typeof data.balance === 'number') {
           setUserSatsBalance(data.balance);
-          console.log('🔍 User sBTC balance updated:', data.balance);
+          console.log('✅ User sBTC balance updated:', data.balance);
         } else {
-          console.log('🔍 Invalid balance data, setting to 0');
+          console.log('❌ Invalid balance data, setting to 0. Data:', data);
           setUserSatsBalance(0);
         }
       } else {
         const errorText = await response.text();
-        console.log('🔍 API call failed with error:', errorText);
+        console.error('❌ API call failed with error:', errorText);
+        console.error('❌ Response status:', response.status);
+        
+        // Retry logic for network errors
+        if (retryCount < 2 && (response.status >= 500 || response.status === 0)) {
+          console.log(`🔄 Retrying sBTC balance fetch (attempt ${retryCount + 1})...`);
+          setTimeout(() => fetchUserSatsBalance(retryCount + 1), 2000 * (retryCount + 1));
+          return;
+        }
+        
         setUserSatsBalance(0);
       }
     } catch (error) {
-      console.error('Error fetching user sBTC balance:', error);
+      console.error('❌ Error fetching user sBTC balance:', error);
+      console.error('❌ Error details:', {
+        message: error.message,
+        stack: error.stack,
+        name: error.name
+      });
+      
+      // Retry logic for network errors
+      if (retryCount < 2 && (error.message.includes('fetch') || error.message.includes('network'))) {
+        console.log(`🔄 Retrying sBTC balance fetch due to network error (attempt ${retryCount + 1})...`);
+        setTimeout(() => fetchUserSatsBalance(retryCount + 1), 2000 * (retryCount + 1));
+        return;
+      }
+      
       setUserSatsBalance(0);
     }
   };
@@ -600,8 +660,8 @@ export default function SwapPage() {
           
           // If trading is disabled, redirect to homepage
           if (isTradingDisabled) {
-            console.log('🚫 Trading disabled for this token category, redirecting to homepage...');
-            router.push('/');
+            console.log('🚫 Trading disabled for this token category, but not redirecting to prevent kick-out...');
+            // router.push('/'); // Temporarily disabled to prevent kick-out
           }
         }
       } catch (error) {
@@ -628,18 +688,28 @@ export default function SwapPage() {
     };
   }, [tokenData, loading, router]);
 
-  // Fetch user sBTC balance when tokenData changes and it's a mainnet token
+  // Fetch user sBTC balance when tokenData changes
   useEffect(() => {
     console.log('🔍 useEffect triggered for fetchUserSatsBalance, tokenData:', tokenData);
-    console.log('🔍 tokenData?.tabType:', tokenData?.tabType);
-    console.log('🔍 tokenData?.network:', tokenData?.network);
-    console.log('🔍 connectedAddress from localStorage:', typeof window !== 'undefined' ? localStorage.getItem('connectedAddress') : 'server-side');
+    
     if (tokenData) {
       console.log('🔍 Calling fetchUserSatsBalance...');
       fetchUserSatsBalance();
     } else {
       console.log('🔍 No tokenData, skipping fetchUserSatsBalance');
     }
+  }, [tokenData]);
+
+  // Periodic refresh of sBTC balance (every 30 seconds)
+  useEffect(() => {
+    if (!tokenData) return;
+    
+    const interval = setInterval(() => {
+      console.log('🔄 Periodic sBTC balance refresh...');
+      fetchUserSatsBalance();
+    }, 30000); // 30 seconds
+    
+    return () => clearInterval(interval);
   }, [tokenData]);
 
   if (loading) {
@@ -671,6 +741,63 @@ export default function SwapPage() {
         <main className="token-page">
           <div style={{ textAlign: 'center', padding: '3rem', color: 'white' }}>
             <p>Token not found</p>
+          </div>
+        </main>
+      </>
+    );
+  }
+
+  // Show loading state while token data is being fetched
+  if (loading) {
+    return (
+      <>
+        <Header />
+        <main className="token-page">
+          <div style={{
+            display: 'flex',
+            justifyContent: 'center',
+            alignItems: 'center',
+            minHeight: '50vh',
+            color: '#fff'
+          }}>
+            <div style={{ textAlign: 'center' }}>
+              <div style={{
+                width: '40px',
+                height: '40px',
+                border: '3px solid rgba(255, 255, 255, 0.1)',
+                borderTop: '3px solid #667eea',
+                borderRadius: '50%',
+                animation: 'spin 1s linear infinite',
+                margin: '0 auto 20px'
+              }}></div>
+              Loading token data...
+            </div>
+          </div>
+        </main>
+      </>
+    );
+  }
+
+  // Show error state if no token data found
+  if (!tokenData) {
+    return (
+      <>
+        <Header />
+        <main className="token-page">
+          <div style={{
+            display: 'flex',
+            justifyContent: 'center',
+            alignItems: 'center',
+            minHeight: '50vh',
+            color: '#fff'
+          }}>
+            <div style={{ textAlign: 'center' }}>
+              <div style={{ fontSize: '24px', marginBottom: '16px' }}>❌</div>
+              <div style={{ fontSize: '18px', marginBottom: '8px' }}>Token Not Found</div>
+              <div style={{ fontSize: '14px', opacity: 0.7 }}>
+                Token "{tokenSymbol}" could not be found.
+              </div>
+            </div>
           </div>
         </main>
       </>
@@ -721,7 +848,7 @@ export default function SwapPage() {
               onShowContracts={() => setShowContracts(true)}
               onClaimRevenue={handleClaimRevenue}
               tokenId={tokenData.id}
-              LockUnlockButton={LockUnlockButton}
+      
               dexInfo={tokenData?.dexInfo}
               tokenInfo={tokenData?.tokenInfo}
               tokenBalance={userTokenBalance || '0'}

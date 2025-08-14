@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
 import Header from '../../components/header';
-import LockUnlockButton from '../../components/LockUnlockButton';
+
 import SmartContractButton from '../../components/SmartContractButton';
 import LockedWalletDisplay from '../../components/LockedWalletDisplay';
 import './revenue-page.css';
@@ -771,17 +771,7 @@ export default function RevenuePage() {
                         <p>You are the majority holder and can claim the available revenue.</p>
                         <p><strong>Your locked tokens: {revenueData.userLockedTokens} tokens</strong></p>
                         
-                        {/* Optional Lock/Unlock Tokens Section */}
-                        <div className="optional-lock-section">
-                          <h5>🔒 Optional: Manage Your Locked Tokens</h5>
-                          <p>You can lock or unlock additional tokens to maintain your majority status. This is completely optional - you can proceed to claim revenue now.</p>
-                          <LockUnlockButton 
-                            tokenId={tokenId}
-                            className="lock-unlock-button"
-                          >
-                            🔒 Lock/Unlock Tokens
-                          </LockUnlockButton>
-                        </div>
+
                       </div>
                     </div>
                   ) : (
@@ -805,21 +795,7 @@ export default function RevenuePage() {
                                 <p style={{ color: 'white', fontSize: '16px', marginBottom: '16px' }}>
                                   Lock any amount and then Claim majority holder status
                                 </p>
-                                <div className="lock-section">
-                                  <LockUnlockButton 
-                                    tokenId={tokenId}
-                                    className="lock-button"
-                                    style={{
-                                      backgroundColor: 'white',
-                                      color: '#059669',
-                                      fontWeight: 'bold',
-                                      padding: '12px 24px',
-                                      fontSize: '16px'
-                                    }}
-                                  >
-                                    🔒 Lock Tokens
-                                  </LockUnlockButton>
-                                </div>
+
                               </div>
                             </div>
                           ) : (
@@ -869,15 +845,7 @@ export default function RevenuePage() {
                           <p><strong>Current majority holder has: {revenueData.majorityHolderLockedTokens} tokens</strong></p>
                           <p><strong>You need to lock: {revenueData.majorityThreshold} tokens or more</strong></p>
                           
-                          {/* Lock Tokens Button for Non-Majority Holders */}
-                          <div className="lock-section">
-                            <LockUnlockButton 
-                              tokenId={tokenId}
-                              className="lock-button"
-                            >
-                              🔒 Lock Tokens
-                            </LockUnlockButton>
-                          </div>
+
                         </div>
                       )}
                     </div>

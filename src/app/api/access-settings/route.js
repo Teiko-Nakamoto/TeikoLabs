@@ -6,8 +6,6 @@ const ACCESS_SETTINGS_FILE = path.join(process.cwd(), 'access-settings.json');
 
 // Default settings
 const DEFAULT_SETTINGS = {
-  createProject: true,
-  lockUnlock: true, 
   claimRevenue: true,
   tokenTrading: {
     featured: false,
@@ -70,7 +68,7 @@ export async function POST(request) {
     }
 
     // Validate settings structure
-    const validKeys = ['createProject', 'lockUnlock', 'claimRevenue'];
+    const validKeys = ['claimRevenue'];
     const validatedSettings = {};
     
     for (const key of validKeys) {

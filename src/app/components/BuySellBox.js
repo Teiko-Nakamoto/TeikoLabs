@@ -80,10 +80,20 @@ export default function BuySellBox({
     return saved !== null ? JSON.parse(saved) : true;
   });
 
+  // Liquidity warning state
+  const [liquidityWarning, setLiquidityWarning] = useState({ show: false, message: '', type: '' });
+
   // Save network precheck preference whenever it changes
   useEffect(() => {
     localStorage.setItem('useNetworkPrecheck', JSON.stringify(useNetworkPrecheck));
   }, [useNetworkPrecheck]);
+
+  // Check liquidity warning when tab changes
+  useEffect(() => {
+    const cleanAmount = amount.replace(/,/g, '');
+    const amountValue = parseInt(cleanAmount);
+    checkLiquidityWarning(amountValue, tab);
+  }, [tab, amount]);
 
   // Function to fetch and store price calculation snapshot
   const fetchPriceSnapshot = async () => {
@@ -259,6 +269,33 @@ export default function BuySellBox({
       const formattedAmount = newAmount.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ',');
       setAmount(formattedAmount);
       setError(null);
+      
+      // Check for liquidity warning after setting amount
+      checkLiquidityWarning(newAmount, tab);
+    }
+  };
+
+  // Function to check liquidity warnings
+  const checkLiquidityWarning = (amountValue, transactionType) => {
+    if (!amountValue || amountValue <= 0) {
+      setLiquidityWarning({ show: false, message: '', type: '' });
+      return;
+    }
+
+    if (transactionType === 'buy' && amountValue <= 999) {
+      setLiquidityWarning({
+        show: true,
+        message: `Buying: Transactions with ${amountValue} sats or less may fail due to low liquidity.`,
+        type: 'buy'
+      });
+    } else if (transactionType === 'sell' && amountValue <= 7000) {
+      setLiquidityWarning({
+        show: true,
+        message: `Selling: Transactions with ${amountValue} tokens or less may fail due to low liquidity.`,
+        type: 'sell'
+      });
+    } else {
+      setLiquidityWarning({ show: false, message: '', type: '' });
     }
   };
 
@@ -278,8 +315,13 @@ export default function BuySellBox({
       const integerPart = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ',');
       const formattedValue = parts[1] ? `${integerPart}.${parts[1]}` : integerPart;
       setAmount(formattedValue);
+      
+      // Check for liquidity warning
+      const amountValue = parseInt(parts[0]);
+      checkLiquidityWarning(amountValue, tab);
     } else {
       setAmount(cleanValue);
+      setLiquidityWarning({ show: false, message: '', type: '' });
     }
   };
 
@@ -745,6 +787,35 @@ export default function BuySellBox({
             />
           )}
         </div>
+
+        {/* Liquidity Warning */}
+        {liquidityWarning.show && (
+          <div style={{
+            background: 'linear-gradient(135deg, #fef3c7 0%, #fde68a 100%)',
+            border: '2px solid #f59e0b',
+            borderRadius: '12px',
+            padding: '16px',
+            margin: '16px 0',
+            textAlign: 'center'
+          }}>
+            <div style={{
+              fontSize: '20px',
+              marginBottom: '8px'
+            }}>
+              ⚠️
+            </div>
+            <p style={{
+              color: '#92400e',
+              fontSize: '14px',
+              lineHeight: '1.4',
+              margin: '0',
+              fontWeight: '500',
+              fontFamily: 'Arial, sans-serif'
+            }}>
+              {liquidityWarning.message}
+            </p>
+          </div>
+        )}
 
         <div className="quick-buttons">
           {[20, 50, 75, 100].map((percent) => (

@@ -112,7 +112,7 @@ function getCurrentPage() {
   
   if (path === '/') return 'Home Page';
   if (path.includes('/swap') || path.includes('/trade')) return 'Token Swap Page';
-  if (path.includes('/lock-unlock')) return 'Lock/Unlock Page';
+  
   if (path.includes('/revenue')) return 'Revenue Page';
   if (path.includes('/admin')) return 'Admin Dashboard';
   if (path.includes('/create-project')) return 'Create Project Page';

@@ -6,8 +6,8 @@ import './LearnAboutHowTo.css';
 
 const LearnAboutHowTo = ({ onClose }) => {
   const { t } = useTranslation();
-  const [showComingSoonPopup, setShowComingSoonPopup] = useState(false);
-  const [accessSettings, setAccessSettings] = useState({ createProject: true });
+
+  const [accessSettings, setAccessSettings] = useState({});
 
   // Load access settings from server
   useEffect(() => {
@@ -37,13 +37,7 @@ const LearnAboutHowTo = ({ onClose }) => {
     };
   }, []);
 
-  const handleCreateProjectClick = (e) => {
-    if (accessSettings.createProject) {
-      e.preventDefault();
-      setShowComingSoonPopup(true);
-    }
-    // If createProject is false, let the normal Link navigation happen
-  };
+
   
   return (
     <div className="learn-about-overlay" onClick={onClose}>
@@ -104,24 +98,13 @@ const LearnAboutHowTo = ({ onClose }) => {
             </div>
           </div>
           
-                     {/* MAS Sats Features */}
-           <div className="step-container">
-             <div className="step">
-               <div className="step-content">
-                 <h4>Key Features</h4>
-                 <p>MAS Sats operates on an <strong>infinite bonding curve</strong> with a maximum supply of <strong>21 million units</strong>, trading against <strong>sBTC</strong> for continuous liquidity and price discovery.</p>
-               </div>
-             </div>
-           </div>
-
-                     {/* Trading Section */}
-          
+          {/* Trading Section */}
           <div className="step-container">
             <div className="step">
               <div className="step-number">1</div>
               <div className="step-content">
                 <h4>How Trading Works</h4>
-                <p>MAS Sats can be bought and sold on the infinite bonding curve. Whoever locks away the most MAS sats can withdraw revenue at any time, but cannot unlock tokens until the trading fee is paid back from trading.</p>
+                <p>MAS Sats operates on an <strong>infinite bonding curve</strong> with 21 million max supply, trading against <strong>sBTC</strong>. The largest holder can withdraw revenue anytime but must wait for trading fees to be paid back before unlocking tokens.</p>
               </div>
             </div>
             
@@ -158,46 +141,31 @@ const LearnAboutHowTo = ({ onClose }) => {
             </div>
           </div>
 
-          {/* Liquidity Warning Section */}
-          <div style={{
-            background: 'linear-gradient(135deg, #fef3c7 0%, #fde68a 100%)',
-            border: '2px solid #f59e0b',
-            borderRadius: '12px',
-            padding: '20px',
-            margin: '24px 0',
-            textAlign: 'center'
-          }}>
-            <div style={{
-              fontSize: '24px',
-              marginBottom: '12px'
-            }}>
-              ⚠️
-            </div>
-            <h3 style={{
-              color: '#92400e',
-              fontSize: '18px',
-              fontWeight: '600',
-              margin: '0 0 12px 0',
-              fontFamily: 'Arial, sans-serif'
-            }}>
-              Low Liquidity Warning
-            </h3>
-            <p style={{
-              color: '#78350f',
-              fontSize: '14px',
-              lineHeight: '1.5',
-              margin: '0',
-              fontFamily: 'Arial, sans-serif'
-            }}>
-              <strong>Buying:</strong> Transactions with 999 sats or less may fail due to low liquidity.<br/>
-              <strong>Selling:</strong> Transactions with 7,000 tokens or less may fail due to low liquidity.
-            </p>
-          </div>
+
           
           <div className="learn-more-section">
             <div style={{ display: 'flex', gap: '1rem', justifyContent: 'center', flexWrap: 'wrap' }}>
-              <Link href="/mas/swap" className="create-project-btn">
-                🚀 Trade MAS Sats
+              <Link 
+                href="/mas/swap" 
+                className="create-project-btn"
+                style={{ 
+                  backgroundColor: '#3b82f6', 
+                  borderColor: '#2563eb',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px'
+                }}
+              >
+                🚀 Trade
+                <img 
+                  src="/icons/The Mas Network.svg" 
+                  alt="MAS Sats" 
+                  style={{ 
+                    width: '20px', 
+                    height: '20px',
+                    verticalAlign: 'middle'
+                  }} 
+                />
               </Link>
               <a 
                 href="https://app.velar.com/swap" 
@@ -222,80 +190,7 @@ const LearnAboutHowTo = ({ onClose }) => {
         </div>
       </div>
 
-      {/* Coming Soon Popup */}
-      {showComingSoonPopup && (
-        <div style={{
-          position: 'fixed',
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0,
-          backgroundColor: 'rgba(0, 0, 0, 0.8)',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          zIndex: 1001
-        }}>
-          <div style={{
-            backgroundColor: '#1a1a2e',
-            border: '2px solid #fbbf24',
-            borderRadius: '16px',
-            padding: '40px',
-            maxWidth: '400px',
-            textAlign: 'center',
-            position: 'relative'
-          }}>
-            <div style={{
-              fontSize: '60px',
-              marginBottom: '20px'
-            }}>
-              🚧
-            </div>
-            <h2 style={{
-              color: '#fbbf24',
-              fontSize: '24px',
-              fontWeight: 'bold',
-              marginBottom: '16px',
-              fontFamily: 'Arial, sans-serif'
-            }}>
-              Coming Soon!
-            </h2>
-            <p style={{
-              color: '#ccc',
-              fontSize: '16px',
-              lineHeight: '1.5',
-              marginBottom: '24px',
-              fontFamily: 'Arial, sans-serif'
-            }}>
-              This feature is currently under development. Stay tuned for updates!
-            </p>
-            <button
-              onClick={() => setShowComingSoonPopup(false)}
-              style={{
-                backgroundColor: '#fbbf24',
-                color: '#1a1a2e',
-                border: 'none',
-                borderRadius: '8px',
-                padding: '12px 24px',
-                fontSize: '16px',
-                fontWeight: 'bold',
-                cursor: 'pointer',
-                transition: 'all 0.2s ease'
-              }}
-              onMouseEnter={(e) => {
-                e.target.style.backgroundColor = '#f59e0b';
-                e.target.style.transform = 'translateY(-1px)';
-              }}
-              onMouseLeave={(e) => {
-                e.target.style.backgroundColor = '#fbbf24';
-                e.target.style.transform = 'translateY(0)';
-              }}
-            >
-              Got it!
-            </button>
-          </div>
-        </div>
-      )}
+
     </div>
   );
 };

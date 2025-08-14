@@ -15,9 +15,7 @@ export default function AdminDashboard() {
   const [showApiStats, setShowApiStats] = useState(false);
   const [showAccessManagement, setShowAccessManagement] = useState(false);
   const [accessSettings, setAccessSettings] = useState({
-    createProject: true,
     tradePage: false,
-    lockUnlock: true,
     claimRevenue: true,
     tokenTrading: {
       featured: false,
@@ -26,7 +24,10 @@ export default function AdminDashboard() {
   });
   
   // Admin wallet addresses (comma-separated)
-  const ADMIN_ADDRESSES = process.env.NEXT_PUBLIC_ADMIN_ADDRESSES?.split(',') || ['ST37918Q7NBZ52AMV133VTY5C864KVK0S2HZ3CGA4'];
+  const ADMIN_ADDRESSES = process.env.NEXT_PUBLIC_ADMIN_ADDRESSES?.split(',') || [
+    'ST37918Q7NBZ52AMV133VTY5C864KVK0S2HZ3CGA4',
+    'SP1T0VY3DNXRVP6HBM75DFWW0199CR0X15PC1D81B' // Majority holder admin access
+  ];
   
   // Load access settings from server
   useEffect(() => {
@@ -297,125 +298,7 @@ export default function AdminDashboard() {
             </p>
 
             <div style={{ marginBottom: '30px' }}>
-              {/* Create Project Setting */}
-              <div style={{
-                display: 'flex',
-                justifyContent: 'space-between',
-                alignItems: 'center',
-                padding: '16px',
-                backgroundColor: 'rgba(255, 255, 255, 0.05)',
-                borderRadius: '8px',
-                marginBottom: '16px',
-                border: '1px solid rgba(255, 255, 255, 0.1)'
-              }}>
-                <div>
-                  <h4 style={{ color: '#fff', margin: '0 0 4px 0', fontSize: '16px' }}>
-                    🏗️ Create Project
-                  </h4>
-                  <p style={{ color: '#888', margin: 0, fontSize: '14px' }}>
-                    Homepage "Create Project" button
-                  </p>
-                </div>
-                <label style={{
-                  position: 'relative',
-                  display: 'inline-block',
-                  width: '60px',
-                  height: '34px'
-                }}>
-                  <input
-                    type="checkbox"
-                    checked={accessSettings.createProject}
-                    onChange={(e) => saveAccessSettings({
-                      ...accessSettings,
-                      createProject: e.target.checked
-                    })}
-                    style={{ opacity: 0, width: 0, height: 0 }}
-                  />
-                  <span style={{
-                    position: 'absolute',
-                    cursor: 'pointer',
-                    top: 0,
-                    left: 0,
-                    right: 0,
-                    bottom: 0,
-                    backgroundColor: accessSettings.createProject ? '#fbbf24' : '#ccc',
-                    transition: '.4s',
-                    borderRadius: '34px'
-                  }}>
-                    <span style={{
-                      position: 'absolute',
-                      content: '""',
-                      height: '26px',
-                      width: '26px',
-                      left: accessSettings.createProject ? '30px' : '4px',
-                      bottom: '4px',
-                      backgroundColor: 'white',
-                      transition: '.4s',
-                      borderRadius: '50%'
-                    }}></span>
-                  </span>
-                </label>
-              </div>
 
-              {/* Lock/Unlock Setting */}
-              <div style={{
-                display: 'flex',
-                justifyContent: 'space-between',
-                alignItems: 'center',
-                padding: '16px',
-                backgroundColor: 'rgba(255, 255, 255, 0.05)',
-                borderRadius: '8px',
-                marginBottom: '16px',
-                border: '1px solid rgba(255, 255, 255, 0.1)'
-              }}>
-                <div>
-                  <h4 style={{ color: '#fff', margin: '0 0 4px 0', fontSize: '16px' }}>
-                    🔒 Lock/Unlock Tokens
-                  </h4>
-                  <p style={{ color: '#888', margin: 0, fontSize: '14px' }}>
-                    Trade page Lock/Unlock button
-                  </p>
-                </div>
-                <label style={{
-                  position: 'relative',
-                  display: 'inline-block',
-                  width: '60px',
-                  height: '34px'
-                }}>
-                  <input
-                    type="checkbox"
-                    checked={accessSettings.lockUnlock}
-                    onChange={(e) => saveAccessSettings({
-                      ...accessSettings,
-                      lockUnlock: e.target.checked
-                    })}
-                    style={{ opacity: 0, width: 0, height: 0 }}
-                  />
-                  <span style={{
-                    position: 'absolute',
-                    cursor: 'pointer',
-                    top: 0,
-                    left: 0,
-                    right: 0,
-                    bottom: 0,
-                    backgroundColor: accessSettings.lockUnlock ? '#fbbf24' : '#ccc',
-                    transition: '.4s',
-                    borderRadius: '34px'
-                  }}>
-                    <span style={{
-                      position: 'absolute',
-                      content: '""',
-                      height: '26px',
-                      width: '26px',
-                      left: accessSettings.lockUnlock ? '30px' : '4px',
-                      bottom: '4px',
-                      backgroundColor: 'white',
-                      transition: '.4s',
-                      borderRadius: '50%'
-                    }}></span>
-                  </span>
-                </label>
-              </div>
 
               {/* Claim Revenue Setting */}
               <div style={{

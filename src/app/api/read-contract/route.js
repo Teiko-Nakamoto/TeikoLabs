@@ -1,3 +1,12 @@
+/**
+ * API Route: Read Contract Data
+ * 
+ * PURPOSE: Generic endpoint to read any contract function on Stacks blockchain
+ * USES: Hiro API with your API key for rate limit access (900 requests/min)
+ * 
+ * This endpoint is used to read token balances, total supply, and other
+ * contract data for tokens like MAS Sats.
+ */
 import { NextResponse } from 'next/server';
 import { fetchCallReadOnlyFunction, cvToValue, standardPrincipalCV } from '@stacks/transactions';
 import { getHiroNetworkServerSide } from '../../utils/hiro-config';

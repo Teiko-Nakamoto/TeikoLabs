@@ -1,3 +1,12 @@
+/**
+ * API Route: Check DEX Transaction Status
+ * 
+ * PURPOSE: Verifies if a DEX deployment transaction exists on the blockchain
+ * USES: Hiro API with your API key for rate limit access (900 requests/min)
+ * 
+ * This endpoint is used during token creation to verify that DEX contracts
+ * have been successfully deployed to the blockchain.
+ */
 import { NextResponse } from 'next/server';
 import { supabaseServer } from '../../../utils/supabaseServer';
 import { STACKS_TESTNET, STACKS_MAINNET } from '@stacks/network';
@@ -12,6 +21,7 @@ async function verifyTransactionExists(txId, network = 'testnet') {
     const response = await fetch(`${baseUrl}/extended/v1/tx/${txId}`, {
       headers: {
         'Accept': 'application/json',
+        'x-api-key': process.env.HIRO_API_KEY || ''
       },
     });
     

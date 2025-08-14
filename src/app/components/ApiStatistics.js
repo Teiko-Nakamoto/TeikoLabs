@@ -57,20 +57,7 @@ const ApiStatistics = ({ onClose }) => {
           cacheTime: "10 seconds"
         }
       ]
-    },
-    {
-      page: "Lock/Unlock Page", 
-      functions: [
-        {
-          name: "get-total-locked",
-          cacheTime: "40 seconds"
-        },
-        {
-          name: "get-user-balance",
-          cacheTime: "25 seconds"
-        }
-      ]
-    },
+
     {
       page: "Revenue Page",
       functions: [

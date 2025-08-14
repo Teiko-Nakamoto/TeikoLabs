@@ -1,3 +1,13 @@
+/**
+ * API Route: Get Token Candlesticks
+ * 
+ * PURPOSE: Fetches candlestick chart data for token price history
+ * USES: Hiro API with your API key for rate limit access (900 requests/min)
+ * CACHE: 5-minute caching to reduce API calls
+ * 
+ * This endpoint is used by the trading charts to display price history
+ * and candlestick patterns for tokens like MAS Sats.
+ */
 import { NextResponse } from 'next/server';
 import { fetchCallReadOnlyFunction } from '@stacks/transactions';
 import { STACKS_TESTNET } from '@stacks/network';
@@ -93,13 +103,13 @@ async function fetchRecentTrades(tokenId) {
     const now = Math.floor(Date.now() / 1000);
     const oneDayAgo = now - (24 * 60 * 60); // 24 hours ago
     
-    // Fetch recent transactions from Hiro API
+    // Fetch recent transactions from Hiro API - increased limit to get more data
     const response = await fetch(
-      `https://api.hiro.so/extended/v1/tx/?limit=100&start_time=${oneDayAgo}&end_time=${now}&contract_id=ST1F7QA2MDF17S807EPA36TSS8AMEFY4KA9TVGWXT.dex-v1-01`,
+      `https://api.hiro.so/extended/v1/tx/?limit=1000&start_time=${oneDayAgo}&end_time=${now}&contract_id=ST1F7QA2MDF17S807EPA36TSS8AMEFY4KA9TVGWXT.dex-v1-01`,
       {
         headers: {
           'Accept': 'application/json',
-          'X-Hiro-API-Key': process.env.HIRO_API_KEY || ''
+          'x-api-key': process.env.HIRO_API_KEY || ''
         }
       }
     );
@@ -276,10 +286,9 @@ function transformToCandlesticks(trades, interval) {
     candlesticks.push(candlestick);
   }
   
-  // Sort by timestamp and take last 21
+  // Sort by timestamp and return all available candlesticks
   return candlesticks
-    .sort((a, b) => a.timestamp - b.timestamp)
-    .slice(-21);
+    .sort((a, b) => a.timestamp - b.timestamp);
 }
 
 function groupTradesByInterval(trades, interval) {

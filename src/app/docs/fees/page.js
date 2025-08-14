@@ -69,8 +69,9 @@ export default function FeesPage() {
       title: 'Documentation',
       items: [
         { title: 'Overview', id: 'overview', href: '/docs' },
+        { title: 'Roadmap', id: 'roadmap', href: '/docs#roadmap' },
         { title: 'How It Works', id: 'how-it-works', href: '/docs/how-it-works' },
-        { title: 'Create Project', id: 'create-project', href: '/docs/create-project' },
+
         { title: 'Trading', id: 'trading', href: '/docs/trading' },
         { title: 'Claim Profit', id: 'claim-profit', href: '/docs/claim-profit' },
         { 
@@ -125,10 +126,12 @@ export default function FeesPage() {
             <Link href="/" className="docs-logo-link">
               <img src="/logo.png" alt="Teiko Labs Logo" className="docs-logo" />
             </Link>
-                      <div className="docs-title-section">
-            <div className="docs-site-name">Teikolabs.com</div>
-            <h2 className="docs-sidebar-title">Documentation</h2>
-          </div>
+                                  <div className="docs-title-section">
+              <Link href="/" className="docs-site-name-link">
+                <div className="docs-site-name">Teikolabs.com</div>
+              </Link>
+              <h2 className="docs-sidebar-title">Documentation</h2>
+            </div>
         </div>
         </div>
 
@@ -334,7 +337,7 @@ export default function FeesPage() {
                 </div>
                 <div className="docs-feature-item">
                   <h4>⚡ MAS Network Protocol</h4>
-                  <p>Powers The MAS Network Protocol, which rewards users for learning about teikolabs.com and engaging with the platform.</p>
+                  <p>Powers The MAS Network Protocol, which rewards users for learning about <Link href="/" className="docs-content-link">teikolabs.com</Link> and engaging with the platform.</p>
                 </div>
               </div>
             </section>
@@ -345,7 +348,7 @@ export default function FeesPage() {
                 Part of the platform fee directly supports The MAS Network Protocol, an innovative system that:
               </p>
               <ul>
-                <li>Rewards users for learning about teikolabs.com</li>
+                <li>Rewards users for learning about <Link href="/" className="docs-content-link">teikolabs.com</Link></li>
                 <li>Encourages platform engagement and education</li>
                 <li>Creates additional value for the community beyond trading</li>
                 <li>Promotes understanding of the platform's features and benefits</li>

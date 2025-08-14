@@ -1,9 +1,7 @@
 {
-  "createProject": true,
-  "lockUnlock": true,
   "claimRevenue": true,
   "tokenTrading": {
-    "featured": false,
-    "practice": false
+    "featured": true,
+    "practice": true
   }
 }

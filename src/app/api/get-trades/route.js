@@ -1,3 +1,12 @@
+/**
+ * API Route: Get Token Trades
+ * 
+ * PURPOSE: Fetches recent trading history for tokens on mainnet
+ * USES: Hiro API with your API key for rate limit access (900 requests/min)
+ * 
+ * This endpoint is used by the trading interface to show recent buy/sell
+ * transactions and trading activity for tokens like MAS Sats.
+ */
 import { NextResponse } from 'next/server';
 
 export async function GET(request) {
@@ -23,6 +32,7 @@ export async function GET(request) {
           method: 'GET',
           headers: {
             'Accept': 'application/json',
+            'x-api-key': process.env.HIRO_API_KEY || ''
           },
         });
 

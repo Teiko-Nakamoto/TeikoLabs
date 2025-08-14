@@ -11,6 +11,72 @@ import './footer.css';
 import { useState, useEffect } from 'react';
 import { getRevenueBalance, getLiquidityBalance, getTokenSymbol } from '../utils/fetchTokenData';
 
+// Animated counter component
+const AnimatedCounter = ({ endValue, duration = 2000, prefix = '', suffix = '', onComplete }) => {
+  const [count, setCount] = useState(0);
+  const [hasAnimated, setHasAnimated] = useState(false);
+
+  useEffect(() => {
+    if (hasAnimated) return; // Only animate once
+    
+    let startTime = null;
+    const startValue = 0;
+
+    const animate = (currentTime) => {
+      if (!startTime) startTime = currentTime;
+      const progress = Math.min((currentTime - startTime) / duration, 1);
+      
+      // Easing function for smooth animation
+      const easeOutQuart = 1 - Math.pow(1 - progress, 4);
+      const currentCount = Math.floor(startValue + (endValue - startValue) * easeOutQuart);
+      
+      setCount(currentCount);
+      
+      if (progress < 1) {
+        requestAnimationFrame(animate);
+      } else {
+        setCount(endValue);
+        setHasAnimated(true);
+        if (onComplete) onComplete();
+      }
+    };
+
+    // Start animation after a small delay
+    const timer = setTimeout(() => {
+      requestAnimationFrame(animate);
+    }, 500);
+
+    return () => clearTimeout(timer);
+  }, [endValue, duration, onComplete, hasAnimated]);
+
+  return (
+    <span>
+      {prefix}{count.toLocaleString()}{suffix}
+    </span>
+  );
+};
+
+// Typewriter effect component
+const TypewriterText = ({ text, speed = 100, onComplete }) => {
+  const [displayText, setDisplayText] = useState('');
+  const [currentIndex, setCurrentIndex] = useState(0);
+
+  useEffect(() => {
+    if (currentIndex < text.length) {
+      const timer = setTimeout(() => {
+        setDisplayText(prev => prev + text[currentIndex]);
+        setCurrentIndex(prev => prev + 1);
+      }, speed);
+
+      return () => clearTimeout(timer);
+    } else if (onComplete) {
+      onComplete();
+    }
+  }, [currentIndex, text, speed, onComplete]);
+
+  return <span>{displayText}</span>;
+};
+
 export default function ClientHomePage() {
   const { t } = useTranslation();
   const searchParams = useSearchParams();
@@ -28,9 +94,10 @@ export default function ClientHomePage() {
   const [isConnectingWallet, setIsConnectingWallet] = useState(false);
 
   const [showComingSoonPopup, setShowComingSoonPopup] = useState(false);
+  const [showPracticeWalletPopup, setShowPracticeWalletPopup] = useState(false);
+  const [showMainnetWalletPopup, setShowMainnetWalletPopup] = useState(false);
   const [accessSettings, setAccessSettings] = useState({
-    createProject: true,
-    lockUnlock: true,
+
     claimRevenue: true,
     tokenTrading: {
       featured: false,
@@ -44,6 +111,10 @@ export default function ClientHomePage() {
     totalProfitGenerated: 0,
     totalValueLocked: 0
   });
+
+  // State for animation sequence
+  const [showTypewriter, setShowTypewriter] = useState(false);
+  const [countersCompleted, setCountersCompleted] = useState(0);
 
   // Calculate mainnet totals from token data
   const calculateMainnetTotals = () => {
@@ -70,6 +141,17 @@ export default function ClientHomePage() {
   useEffect(() => {
     calculateMainnetTotals();
   }, [tokenData, tokenCards]);
+
+  // Handle counter completion
+  const handleCounterComplete = () => {
+    setCountersCompleted(prev => {
+      const newCount = prev + 1;
+      if (newCount >= 2) { // Both counters completed
+        setTimeout(() => setShowTypewriter(true), 300); // Small delay before typewriter starts
+      }
+      return newCount;
+    });
+  };
 
   // Load access settings from server
   useEffect(() => {
@@ -144,12 +226,13 @@ export default function ClientHomePage() {
 
   // Function to handle token card click
   const handleTokenCardClick = (tokenCard) => {
+    console.log('Token card clicked:', { activeTab, tokenCardTabType: tokenCard.tabType, connectedAddress });
     // Check if trading is disabled for this token category
     const isTokenTradingDisabled = () => {
-      if (activeTab === 'featured' && accessSettings.tokenTrading?.featured) {
+      if (activeTab === 'featured' && !accessSettings.tokenTrading?.featured) {
         return true;
       }
-      if (activeTab === 'practice' && accessSettings.tokenTrading?.practice) {
+      if (activeTab === 'practice' && !accessSettings.tokenTrading?.practice) {
         return true;
       }
       return false;
@@ -158,6 +241,41 @@ export default function ClientHomePage() {
     if (isTokenTradingDisabled()) {
       setShowTradingUpdatePopup(true);
       return;
+    }
+
+    // Check wallet connection and network based on active tab
+    if (activeTab === 'practice') {
+      console.log('Practice tab detected, checking wallet...');
+      if (!connectedAddress) {
+        console.log('No wallet connected for practice trading - showing practice popup');
+        // No wallet connected for practice trading - show popup
+        setShowPracticeWalletPopup(true);
+        return;
+      }
+      
+      // Check if mainnet wallet is connected (should be testnet for practice)
+      if (connectedAddress.startsWith('SP')) {
+        console.log('Mainnet wallet connected for practice trading - showing practice popup');
+        // Mainnet wallet connected for practice trading - show popup
+        setShowPracticeWalletPopup(true);
+        return;
+      }
+    } else if (activeTab === 'featured') {
+      console.log('Featured tab detected, checking wallet...');
+      if (!connectedAddress) {
+        console.log('No wallet connected for mainnet trading - showing mainnet popup');
+        // No wallet connected for mainnet trading - show popup
+        setShowMainnetWalletPopup(true);
+        return;
+      }
+      
+      // Check if testnet wallet is connected (should be mainnet for featured)
+      if (connectedAddress.startsWith('ST')) {
+        console.log('Testnet wallet connected for mainnet trading - showing mainnet popup');
+        // Testnet wallet connected for mainnet trading - show popup
+        setShowMainnetWalletPopup(true);
+        return;
+      }
     }
 
     if (!connectedAddress) {
@@ -399,100 +517,98 @@ export default function ClientHomePage() {
           <div className="page-header-centered">
             <h1 style={{ 
               textAlign: 'center',
-              color: '#fbbf24',
-              fontWeight: 'bold',
-              fontSize: '2rem',
+              background: 'linear-gradient(45deg, #FFD700, #FFA500, #FFD700)',
+              backgroundClip: 'text',
+              WebkitBackgroundClip: 'text',
+              WebkitTextFillColor: 'transparent',
+              fontWeight: '900',
+              fontSize: '2.5rem',
               fontFamily: 'Arial, sans-serif',
-              marginBottom: '8px'
+              marginBottom: '30px',
+              textShadow: '0 0 15px rgba(255,215,0,0.3)',
+              letterSpacing: '1px',
+              minHeight: '3rem'
             }}>
-              The Future of Sustainable Bitcoin DeFi Trading
+                              {showTypewriter ? (
+                  <TypewriterText 
+                    text="Join The Forever Pump Protocol" 
+                    speed={80}
+                  />
+                ) : (
+                  <span style={{ opacity: 0 }}>Join The Forever Pump Protocol</span>
+                )}
             </h1>
             
+            {/* Only show stats if there's actual data */}
+            {(mainnetTotals.totalProfitGenerated > 0 || mainnetTotals.totalValueLocked > 0) && (
             <div style={{
               textAlign: 'center',
-              marginBottom: '20px',
+                marginBottom: '30px',
               fontFamily: 'Arial, sans-serif'
             }}>
+                {mainnetTotals.totalProfitGenerated > 0 && (
+                  <div style={{
+                    background: 'linear-gradient(135deg, rgba(255,215,0,0.1) 0%, rgba(255,165,0,0.1) 100%)',
+                    borderRadius: '15px',
+                    padding: '20px',
+                    marginBottom: '15px',
+                    border: '1px solid rgba(255,215,0,0.3)',
+                    boxShadow: '0 8px 25px rgba(255,215,0,0.2)'
+                  }}>
               <p style={{
-                color: '#fbbf24',
-                fontSize: '1.5rem',
-                marginBottom: '16px',
-                fontWeight: 'bold',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: '12px'
-              }}>
-                Total Profit Generated {mainnetTotals.totalProfitGenerated.toLocaleString()}
-                <img src="/icons/sats1.svg" alt="sats" style={{ width: '20px', height: '20px', verticalAlign: 'middle' }} />
-                <img src="/icons/Vector.svg" alt="lightning" style={{ width: '20px', height: '20px', verticalAlign: 'middle' }} />
-              </p>
-              <p style={{
-                color: '#fbbf24',
-                fontSize: '1.5rem',
+                      background: 'linear-gradient(45deg, #FFD700, #FFA500)',
+                      backgroundClip: 'text',
+                      WebkitBackgroundClip: 'text',
+                      WebkitTextFillColor: 'transparent',
+                      fontSize: '1.8rem',
                 marginBottom: '8px',
                 fontWeight: 'bold',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                gap: '12px'
-              }}>
-                Total Value Locked {mainnetTotals.totalValueLocked.toLocaleString()}
-                <img src="/icons/sats1.svg" alt="sats" style={{ width: '20px', height: '20px', verticalAlign: 'middle' }} />
-                <img src="/icons/Vector.svg" alt="lightning" style={{ width: '20px', height: '20px', verticalAlign: 'middle' }} />
+                      gap: '15px',
+                      textShadow: '0 0 10px rgba(255,215,0,0.2)'
+                    }}>
+                      <span style={{ fontSize: '1.3rem', color: '#FFD700', textShadow: 'none', WebkitTextFillColor: '#FFD700' }}>💰</span>
+                      <span style={{ textShadow: '0 0 10px rgba(255,215,0,0.2)' }}>Total Profit Generated <AnimatedCounter endValue={mainnetTotals.totalProfitGenerated} duration={2500} onComplete={handleCounterComplete} /></span>
+                      <img src="/icons/sats1.svg" alt="sats" style={{ width: '25px', height: '25px' }} />
+                      <img src="/icons/Vector.svg" alt="lightning" style={{ width: '25px', height: '25px' }} />
               </p>
             </div>
+                )}
             
+                {mainnetTotals.totalValueLocked > 0 && (
             <div style={{
-              textAlign: 'center',
-              marginBottom: '20px',
+                    background: 'linear-gradient(135deg, rgba(255,215,0,0.1) 0%, rgba(255,165,0,0.1) 100%)',
+                    borderRadius: '15px',
+                    padding: '20px',
+                    border: '1px solid rgba(255,215,0,0.3)',
+                    boxShadow: '0 8px 25px rgba(255,215,0,0.2)'
+                  }}>
+                    <p style={{
+                      background: 'linear-gradient(45deg, #FFD700, #FFA500)',
+                      backgroundClip: 'text',
+                      WebkitBackgroundClip: 'text',
+                      WebkitTextFillColor: 'transparent',
+                      fontSize: '1.8rem',
+                      marginBottom: '8px',
+                      fontWeight: 'bold',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              gap: '8px'
-            }}>
-              <span style={{
-                color: '#fbbf24',
-                fontSize: '0.9rem',
-                fontFamily: 'Arial, sans-serif'
-              }}>
-                Powered By
-              </span>
-              <a 
-                href="https://themasnetwork.com" 
-                target="_blank" 
-                rel="noopener noreferrer"
-                style={{ display: 'inline-block' }}
-              >
-                <img 
-                  src="/icons/mas-network-logo.png" 
-                  alt="MAS Network" 
-                  style={{ 
-                    height: '40px',
-                    width: 'auto',
-                    cursor: 'pointer',
-                    transition: 'filter 0.3s ease, transform 0.2s ease',
-                    filter: 'brightness(1)'
-                  }}
-                  onMouseEnter={(e) => {
-                    e.target.style.filter = 'brightness(1.2) drop-shadow(0 0 8px #fca311)';
-                    e.target.style.transform = 'scale(1.05)';
-                  }}
-                  onMouseLeave={(e) => {
-                    e.target.style.filter = 'brightness(1)';
-                    e.target.style.transform = 'scale(1)';
-                  }}
-                  onMouseDown={(e) => {
-                    e.target.style.filter = 'brightness(1.3) drop-shadow(0 0 12px #ffb347)';
-                    e.target.style.transform = 'scale(0.98)';
-                  }}
-                  onMouseUp={(e) => {
-                    e.target.style.filter = 'brightness(1.2) drop-shadow(0 0 8px #fca311)';
-                    e.target.style.transform = 'scale(1.05)';
-                  }}
-                />
-              </a>
+                      gap: '15px',
+                      textShadow: '0 0 10px rgba(255,215,0,0.2)'
+                    }}>
+                      <span style={{ fontSize: '1.3rem', color: '#FFD700', textShadow: 'none', WebkitTextFillColor: '#FFD700' }}>🔒</span>
+                      <span style={{ textShadow: '0 0 10px rgba(255,215,0,0.2)' }}>Total Value Locked <AnimatedCounter endValue={mainnetTotals.totalValueLocked} duration={2500} onComplete={handleCounterComplete} /></span>
+                      <img src="/icons/sats1.svg" alt="sats" style={{ width: '25px', height: '25px' }} />
+                      <img src="/icons/Vector.svg" alt="lightning" style={{ width: '25px', height: '25px' }} />
+                    </p>
             </div>
+                )}
+              </div>
+            )}
+            
           </div>
         )}
         
@@ -505,6 +621,23 @@ export default function ClientHomePage() {
         }}>
           <button
             onClick={() => {
+              // Check if wallet is connected for mainnet trading
+              const connectedAddress = localStorage.getItem('connectedAddress');
+              
+              if (!connectedAddress) {
+                // No wallet connected for mainnet trading - show popup
+                setShowMainnetWalletPopup(true);
+                return;
+              }
+              
+              // Check if testnet wallet is connected (should be mainnet for MAS trading)
+              if (connectedAddress.startsWith('ST')) {
+                // Testnet wallet connected for mainnet trading - show popup
+                setShowMainnetWalletPopup(true);
+                return;
+              }
+              
+              // Wallet is connected and is mainnet (starts with "SP") - proceed normally
               window.location.href = '/mas/swap';
             }}
             style={{
@@ -512,26 +645,27 @@ export default function ClientHomePage() {
               alignItems: 'center',
               justifyContent: 'center',
               gap: '12px',
-              backgroundColor: '#3b82f6',
+              backgroundColor: '#1d4ed8',
               color: '#fbbf24',
               border: 'none',
               borderRadius: '12px',
-              padding: '16px 28px',
+              padding: '16px 32px',
               fontSize: '1rem',
               fontWeight: 'bold',
               cursor: 'pointer',
               transition: 'all 0.2s ease',
-              boxShadow: '0 4px 6px rgba(59, 130, 246, 0.3)'
+              boxShadow: '0 4px 6px rgba(29, 78, 216, 0.3)',
+              minWidth: '200px'
             }}
             onMouseEnter={(e) => {
-              e.target.style.backgroundColor = '#2563eb';
+              e.target.style.backgroundColor = '#1e40af';
               e.target.style.transform = 'translateY(-2px)';
-              e.target.style.boxShadow = '0 6px 12px rgba(59, 130, 246, 0.4)';
+              e.target.style.boxShadow = '0 6px 12px rgba(29, 78, 216, 0.4)';
             }}
             onMouseLeave={(e) => {
-              e.target.style.backgroundColor = '#3b82f6';
+              e.target.style.backgroundColor = '#1d4ed8';
               e.target.style.transform = 'translateY(0)';
-              e.target.style.boxShadow = '0 4px 6px rgba(59, 130, 246, 0.3)';
+              e.target.style.boxShadow = '0 4px 6px rgba(29, 78, 216, 0.3)';
             }}
           >
             Get
@@ -556,29 +690,87 @@ export default function ClientHomePage() {
               alignItems: 'center',
               justifyContent: 'center',
               gap: '12px',
-              backgroundColor: 'transparent',
-              color: '#fbbf24',
+              backgroundColor: '#fbbf24',
+              color: '#000000',
               border: '2px solid #fbbf24',
               borderRadius: '12px',
-              padding: '16px 28px',
+              padding: '16px 32px',
               fontSize: '1rem',
               fontWeight: 'bold',
               cursor: 'pointer',
-              transition: 'all 0.2s ease'
+              transition: 'all 0.2s ease',
+              minWidth: '200px'
             }}
             onMouseEnter={(e) => {
-              e.target.style.backgroundColor = '#fbbf24';
-              e.target.style.color = '#1e3a8a';
+              e.target.style.backgroundColor = '#f59e0b';
+              e.target.style.color = '#000000';
               e.target.style.transform = 'translateY(-2px)';
             }}
             onMouseLeave={(e) => {
-              e.target.style.backgroundColor = 'transparent';
-              e.target.style.color = '#fbbf24';
+              e.target.style.backgroundColor = '#fbbf24';
+              e.target.style.color = '#000000';
               e.target.style.transform = 'translateY(0)';
             }}
           >
-            {showProjects ? 'Hide Projects' : 'View Projects'}
+            {showProjects ? 'Hide Projects' : 'Practice Trading'}
           </button>
+        </div>
+
+        <div style={{
+          textAlign: 'center',
+          marginBottom: '20px',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          gap: '12px'
+        }}>
+          <span style={{
+            background: 'linear-gradient(45deg, #FFD700, #FFA500)',
+            backgroundClip: 'text',
+            WebkitBackgroundClip: 'text',
+            WebkitTextFillColor: 'transparent',
+            fontSize: '1.1rem',
+            fontFamily: 'Arial, sans-serif',
+            fontWeight: 'bold',
+            textShadow: '0 0 10px rgba(255,215,0,0.3)'
+          }}>
+            Powered By
+          </span>
+          <a 
+            href="https://themasnetwork.com" 
+            target="_blank" 
+            rel="noopener noreferrer"
+            style={{ display: 'inline-block' }}
+          >
+            <img 
+              src="/icons/mas-network-logo.png" 
+              alt="MAS Network" 
+              style={{ 
+                height: '45px',
+                width: 'auto',
+                cursor: 'pointer',
+                transition: 'all 0.3s ease',
+                filter: 'brightness(1) drop-shadow(0 0 10px rgba(255,215,0,0.3))',
+                borderRadius: '8px'
+              }}
+              onMouseEnter={(e) => {
+                e.target.style.filter = 'brightness(1.3) drop-shadow(0 0 20px rgba(255,215,0,0.6))';
+                e.target.style.transform = 'scale(1.1) rotate(2deg)';
+              }}
+              onMouseLeave={(e) => {
+                e.target.style.filter = 'brightness(1) drop-shadow(0 0 10px rgba(255,215,0,0.3))';
+                e.target.style.transform = 'scale(1) rotate(0deg)';
+              }}
+              onMouseDown={(e) => {
+                e.target.style.filter = 'brightness(1.4) drop-shadow(0 0 25px rgba(255,215,0,0.8))';
+                e.target.style.transform = 'scale(0.95) rotate(-1deg)';
+              }}
+              onMouseUp={(e) => {
+                e.target.style.filter = 'brightness(1.3) drop-shadow(0 0 20px rgba(255,215,0,0.6))';
+                e.target.style.transform = 'scale(1.1) rotate(2deg)';
+              }}
+            />
+          </a>
         </div>
 
         {showProjects && (
@@ -723,11 +915,186 @@ export default function ClientHomePage() {
                         >
                           {t('get_free_fake_bitcoin')}
                         </a>
-                      </div>
-                    )}
-                  </div>
-                );
-              })}
+                              </div>
+      )}
+
+      {/* Mainnet Wallet Required Popup */}
+      {showMainnetWalletPopup && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          backgroundColor: 'rgba(0, 0, 0, 0.8)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 1000
+        }}>
+          <div style={{
+            backgroundColor: '#1a1a2e',
+            border: '2px solid #fbbf24',
+            borderRadius: '16px',
+            padding: window.innerWidth <= 768 ? '24px' : '40px',
+            maxWidth: window.innerWidth <= 768 ? '90vw' : '450px',
+            width: window.innerWidth <= 768 ? '90vw' : 'auto',
+            textAlign: 'center',
+            position: 'relative'
+          }}>
+            <div style={{
+              fontSize: window.innerWidth <= 768 ? '48px' : '60px',
+              marginBottom: window.innerWidth <= 768 ? '16px' : '20px'
+            }}>
+              🚀
+            </div>
+            <h2 style={{
+              color: '#fbbf24',
+              fontSize: '24px',
+              fontWeight: 'bold',
+              marginBottom: '16px',
+              fontFamily: 'Arial, sans-serif'
+            }}>
+              Mainnet Wallet Required
+            </h2>
+            <p style={{
+              color: '#ccc',
+              fontSize: '16px',
+              lineHeight: '1.5',
+              marginBottom: '24px',
+              fontFamily: 'Arial, sans-serif'
+            }}>
+              To access real trading with actual Bitcoin, you need to connect your Bitcoin Stacks wallet 
+              on <strong>mainnet</strong> at the top right of your screen.
+            </p>
+            
+            <div style={{
+              background: '#374151',
+              borderRadius: '8px',
+              padding: '20px',
+              margin: '20px 0',
+              textAlign: 'left'
+            }}>
+              <div style={{
+                display: 'flex',
+                alignItems: 'center',
+                marginBottom: '12px',
+                color: '#d1d5db'
+              }}>
+                <span style={{
+                  background: '#fbbf24',
+                  color: '#1a1a2e',
+                  width: '24px',
+                  height: '24px',
+                  borderRadius: '50%',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  fontWeight: 'bold',
+                  fontSize: '0.9rem',
+                  marginRight: '12px',
+                  flexShrink: 0
+                }}>
+                  1
+                </span>
+                <span>Look for the "Connect Wallet" button in the top right corner</span>
+              </div>
+              <div style={{
+                display: 'flex',
+                alignItems: 'center',
+                marginBottom: '12px',
+                color: '#d1d5db'
+              }}>
+                <span style={{
+                  background: '#fbbf24',
+                  color: '#1a1a2e',
+                  width: '24px',
+                  height: '24px',
+                  borderRadius: '50%',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  fontWeight: 'bold',
+                  fontSize: '0.9rem',
+                  marginRight: '12px',
+                  flexShrink: 0
+                }}>
+                  2
+                </span>
+                <span>Make sure your wallet is set to <strong>mainnet</strong> (address starts with "SP")</span>
+              </div>
+              <div style={{
+                display: 'flex',
+                alignItems: 'center',
+                color: '#d1d5db'
+              }}>
+                <span style={{
+                  background: '#fbbf24',
+                  color: '#1a1a2e',
+                  width: '24px',
+                  height: '24px',
+                  borderRadius: '50%',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  fontWeight: 'bold',
+                  fontSize: '0.9rem',
+                  marginRight: '12px',
+                  flexShrink: 0
+                }}>
+                  3
+                </span>
+                <span>Connect your wallet and try again</span>
+              </div>
+            </div>
+            
+            <div style={{
+              background: '#dc2626',
+              border: '1px solid #ef4444',
+              borderRadius: '8px',
+              padding: '16px',
+              margin: '20px 0'
+            }}>
+              <p style={{
+                color: '#fecaca',
+                margin: 0,
+                fontSize: '14px'
+              }}>
+                <strong>Warning:</strong> Mainnet trading uses real Bitcoin. Make sure you understand the risks 
+                and only trade with funds you can afford to lose.
+              </p>
+            </div>
+            
+            <button
+              onClick={() => setShowMainnetWalletPopup(false)}
+              style={{
+                backgroundColor: '#fbbf24',
+                color: '#1a1a2e',
+                border: 'none',
+                borderRadius: '8px',
+                padding: '12px 24px',
+                fontSize: '16px',
+                fontWeight: 'bold',
+                cursor: 'pointer',
+                transition: 'all 0.2s ease'
+              }}
+              onMouseEnter={(e) => {
+                e.target.style.backgroundColor = '#f59e0b';
+                e.target.style.transform = 'translateY(-1px)';
+              }}
+              onMouseLeave={(e) => {
+                e.target.style.backgroundColor = '#fbbf24';
+                e.target.style.transform = 'translateY(0)';
+              }}
+            >
+              Got it!
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+})}
               
               {/* Show message if no tokens are configured for this tab */}
               {displayedCards.length === 0 && (
@@ -898,6 +1265,354 @@ export default function ClientHomePage() {
               }}
               onMouseLeave={(e) => {
                 e.target.style.backgroundColor = '#fbbf24';
+                e.target.style.transform = 'translateY(0)';
+              }}
+            >
+              Got it!
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Practice Wallet Popup */}
+      {/* Mainnet Wallet Required Popup */}
+      {showMainnetWalletPopup && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          backgroundColor: 'rgba(0, 0, 0, 0.8)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 1000
+        }}>
+          <div style={{
+            backgroundColor: '#1a1a2e',
+            border: '2px solid #fbbf24',
+            borderRadius: '16px',
+            padding: window.innerWidth <= 768 ? '24px' : '40px',
+            maxWidth: window.innerWidth <= 768 ? '90vw' : '450px',
+            width: window.innerWidth <= 768 ? '90vw' : 'auto',
+            textAlign: 'center',
+            position: 'relative'
+          }}>
+            <div style={{
+              fontSize: window.innerWidth <= 768 ? '48px' : '60px',
+              marginBottom: window.innerWidth <= 768 ? '16px' : '20px'
+            }}>
+              🚀
+            </div>
+            <h2 style={{
+              color: '#fbbf24',
+              fontSize: '24px',
+              fontWeight: 'bold',
+              marginBottom: '16px',
+              fontFamily: 'Arial, sans-serif'
+            }}>
+              Mainnet Wallet Required
+            </h2>
+            <p style={{
+              color: '#ccc',
+              fontSize: '16px',
+              lineHeight: '1.5',
+              marginBottom: '24px',
+              fontFamily: 'Arial, sans-serif'
+            }}>
+              To access real trading with actual Bitcoin, you need to connect your Bitcoin Stacks wallet 
+              on <strong>mainnet</strong> at the top right of your screen.
+            </p>
+            
+            <div style={{
+              background: '#374151',
+              borderRadius: '8px',
+              padding: '20px',
+              margin: '20px 0',
+              textAlign: 'left'
+            }}>
+              <div style={{
+                display: 'flex',
+                alignItems: 'center',
+                marginBottom: '12px',
+                color: '#d1d5db'
+              }}>
+                <span style={{
+                  background: '#fbbf24',
+                  color: '#1a1a2e',
+                  width: '24px',
+                  height: '24px',
+                  borderRadius: '50%',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  fontWeight: 'bold',
+                  fontSize: '0.9rem',
+                  marginRight: '12px',
+                  flexShrink: 0
+                }}>
+                  1
+                </span>
+                <span>Look for the "Connect Wallet" button in the top right corner</span>
+              </div>
+              <div style={{
+                display: 'flex',
+                alignItems: 'center',
+                marginBottom: '12px',
+                color: '#d1d5db'
+              }}>
+                <span style={{
+                  background: '#fbbf24',
+                  color: '#1a1a2e',
+                  width: '24px',
+                  height: '24px',
+                  borderRadius: '50%',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  fontWeight: 'bold',
+                  fontSize: '0.9rem',
+                  marginRight: '12px',
+                  flexShrink: 0
+                }}>
+                  2
+                </span>
+                <span>Make sure your wallet is set to <strong>mainnet</strong> (address starts with "SP")</span>
+              </div>
+              <div style={{
+                display: 'flex',
+                alignItems: 'center',
+                color: '#d1d5db'
+              }}>
+                <span style={{
+                  background: '#fbbf24',
+                  color: '#1a1a2e',
+                  width: '24px',
+                  height: '24px',
+                  borderRadius: '50%',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  fontWeight: 'bold',
+                  fontSize: '0.9rem',
+                  marginRight: '12px',
+                  flexShrink: 0
+                }}>
+                  3
+                </span>
+                <span>Connect your wallet and try again</span>
+              </div>
+            </div>
+            
+            <div style={{
+              background: '#dc2626',
+              border: '1px solid #ef4444',
+              borderRadius: '8px',
+              padding: '16px',
+              margin: '20px 0'
+            }}>
+              <p style={{
+                color: '#fecaca',
+                margin: 0,
+                fontSize: '14px'
+              }}>
+                <strong>Warning:</strong> Mainnet trading uses real Bitcoin. Make sure you understand the risks 
+                and only trade with funds you can afford to lose.
+              </p>
+            </div>
+            
+            <button
+              onClick={() => setShowMainnetWalletPopup(false)}
+              style={{
+                backgroundColor: '#fbbf24',
+                color: '#1a1a2e',
+                border: 'none',
+                borderRadius: '8px',
+                padding: '12px 24px',
+                fontSize: '16px',
+                fontWeight: 'bold',
+                cursor: 'pointer',
+                transition: 'all 0.2s ease'
+              }}
+              onMouseEnter={(e) => {
+                e.target.style.backgroundColor = '#f59e0b';
+                e.target.style.transform = 'translateY(-1px)';
+              }}
+              onMouseLeave={(e) => {
+                e.target.style.backgroundColor = '#fbbf24';
+                e.target.style.transform = 'translateY(0)';
+              }}
+            >
+              Got it!
+            </button>
+          </div>
+        </div>
+      )}
+      {showPracticeWalletPopup && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          backgroundColor: 'rgba(0, 0, 0, 0.8)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 1000
+        }}>
+          <div style={{
+            backgroundColor: '#1a1a2e',
+            border: '2px solid #4CAF50',
+            borderRadius: '16px',
+            padding: '40px',
+            maxWidth: '500px',
+            textAlign: 'center',
+            position: 'relative'
+          }}>
+            <div style={{
+              fontSize: '60px',
+              marginBottom: '20px'
+            }}>
+              🧪
+            </div>
+            <h2 style={{
+              color: '#4CAF50',
+              fontSize: '24px',
+              fontWeight: 'bold',
+              marginBottom: '16px',
+              fontFamily: 'Arial, sans-serif'
+            }}>
+              Testnet Wallet Required
+            </h2>
+            <p style={{
+              color: '#ccc',
+              fontSize: '16px',
+              lineHeight: '1.5',
+              marginBottom: '24px',
+              fontFamily: 'Arial, sans-serif'
+            }}>
+              To access practice trading, you need to connect your Bitcoin Stacks wallet 
+              on <strong>testnet</strong> at the top right of your screen.
+            </p>
+            
+            <div style={{
+              background: '#374151',
+              borderRadius: '8px',
+              padding: '20px',
+              margin: '20px 0',
+              textAlign: 'left'
+            }}>
+              <div style={{
+                display: 'flex',
+                alignItems: 'center',
+                marginBottom: '12px',
+                color: '#d1d5db'
+              }}>
+                <span style={{
+                  background: '#4CAF50',
+                  color: '#1a1a2e',
+                  width: '24px',
+                  height: '24px',
+                  borderRadius: '50%',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  fontWeight: 'bold',
+                  fontSize: '0.9rem',
+                  marginRight: '12px',
+                  flexShrink: 0
+                }}>
+                  1
+                </span>
+                <span>Look for the "Connect Wallet" button in the top right corner</span>
+              </div>
+              <div style={{
+                display: 'flex',
+                alignItems: 'center',
+                marginBottom: '12px',
+                color: '#d1d5db'
+              }}>
+                <span style={{
+                  background: '#4CAF50',
+                  color: '#1a1a2e',
+                  width: '24px',
+                  height: '24px',
+                  borderRadius: '50%',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  fontWeight: 'bold',
+                  fontSize: '0.9rem',
+                  marginRight: '12px',
+                  flexShrink: 0
+                }}>
+                  2
+                </span>
+                <span>Make sure your wallet is set to <strong>testnet</strong> (address starts with "ST")</span>
+              </div>
+              <div style={{
+                display: 'flex',
+                alignItems: 'center',
+                color: '#d1d5db'
+              }}>
+                <span style={{
+                  background: '#4CAF50',
+                  color: '#1a1a2e',
+                  width: '24px',
+                  height: '24px',
+                  borderRadius: '50%',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  fontWeight: 'bold',
+                  fontSize: '0.9rem',
+                  marginRight: '12px',
+                  flexShrink: 0
+                }}>
+                  3
+                </span>
+                <span>Connect your wallet and try again</span>
+              </div>
+            </div>
+            
+            <div style={{
+              background: '#dc2626',
+              border: '1px solid #ef4444',
+              borderRadius: '8px',
+              padding: '16px',
+              margin: '20px 0'
+            }}>
+              <p style={{
+                color: '#fecaca',
+                margin: 0,
+                fontSize: '14px'
+              }}>
+                <strong>Note:</strong> Mainnet wallets (addresses starting with "SP") are not supported 
+                for practice trading. Practice trading uses fake money on testnet only.
+              </p>
+            </div>
+            
+            <button
+              onClick={() => setShowPracticeWalletPopup(false)}
+              style={{
+                backgroundColor: '#4CAF50',
+                color: 'white',
+                border: 'none',
+                borderRadius: '8px',
+                padding: '12px 24px',
+                fontSize: '16px',
+                fontWeight: 'bold',
+                cursor: 'pointer',
+                transition: 'all 0.2s ease'
+              }}
+              onMouseEnter={(e) => {
+                e.target.style.backgroundColor = '#45a049';
+                e.target.style.transform = 'translateY(-1px)';
+              }}
+              onMouseLeave={(e) => {
+                e.target.style.backgroundColor = '#4CAF50';
                 e.target.style.transform = 'translateY(0)';
               }}
             >

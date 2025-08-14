@@ -96,7 +96,9 @@ export default function ApiEndpointsPage() {
           <div className="docs-logo-section">
             <img src="/logo.png" alt="Teiko Labs Logo" className="docs-logo" />
             <div className="docs-title-section">
-              <div className="docs-site-name">Teikolabs.com</div>
+              <Link href="/" className="docs-site-name-link">
+                <div className="docs-site-name">Teikolabs.com</div>
+              </Link>
               <h2 className="docs-sidebar-title">Documentation</h2>
             </div>
           </div>

@@ -552,33 +552,5 @@ select:focus {
 
 
 
-/* Lock/Unlock Button Styles */
-.lock-unlock-button {
-  background: linear-gradient(135deg, #fbbf24, #f59e0b);
-  color: #0f172a;
-  border: none;
-  padding: 0.75rem 1.5rem;
-  border-radius: 8px;
-  font-size: 1rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  display: inline-flex;
-  align-items: center;
-  gap: 0.5rem;
-}
 
-.lock-unlock-button:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 8px 25px rgba(251, 191, 36, 0.3);
-}
 
-.lock-unlock-button:active {
-  transform: translateY(0);
-}
-
-.lock-unlock-button:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-  transform: none;
-}
