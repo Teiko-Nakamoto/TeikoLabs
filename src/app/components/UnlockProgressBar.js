@@ -2,7 +2,8 @@
 
 import React, { useState, useEffect } from 'react';
 import { request } from '@stacks/connect';
-import { Cl, Pc, postConditionToHex } from '@stacks/transactions';
+import { Cl, Pc, postConditionToHex, fetchCallReadOnlyFunction, principalCV } from '@stacks/transactions';
+import { getHiroNetworkServerSide } from '../utils/hiro-config';
 import ProfitLoss from './ProfitLoss';
 import TokenStats from './TokenStats';
 import WhaleAccessProgressBar from './WhaleAccessProgressBar';
@@ -80,7 +81,12 @@ const UnlockProgressBar = React.memo(function UnlockProgressBar({
   const [showCustomSlippage, setShowCustomSlippage] = useState(false); // Show custom slippage input
   const [majorityHolderBalance, setMajorityHolderBalance] = useState(0);
   const [loadingMajorityHolder, setLoadingMajorityHolder] = useState(true);
+  const [teikoTokenBalance, setTeikoTokenBalance] = useState(0);
+  const [loadingTeikoBalance, setLoadingTeikoBalance] = useState(false);
+  const [showRestrictionPopup, setShowRestrictionPopup] = useState(false);
   
+
+
 
 
 
@@ -203,6 +209,78 @@ const UnlockProgressBar = React.memo(function UnlockProgressBar({
     }
   };
 
+  // Fetch Teiko token balance using the same approach as MAS Sats
+  const fetchTeikoTokenBalance = async () => {
+    try {
+      setLoadingTeikoBalance(true);
+      const connectedAddress = localStorage.getItem('connectedAddress');
+      
+      if (!connectedAddress) {
+        console.log('⚠️ No connected address found for Teiko balance fetch');
+        setTeikoTokenBalance(0);
+        return;
+      }
+
+      // Only fetch for mainnet addresses
+      if (!connectedAddress.startsWith('SP')) {
+        console.log('⚠️ Not a mainnet address, skipping Teiko balance fetch');
+        setTeikoTokenBalance(0);
+        return;
+      }
+
+      console.log('🔍 Fetching Teiko token balance for address:', connectedAddress);
+      
+      // Use direct frontend blockchain call (same as MAS Sats)
+      const result = await fetchCallReadOnlyFunction({
+        contractAddress: 'SP1T0VY3DNXRVP6HBM75DFWW0199CR0X15PC1D81B',
+        contractName: 'teiko-token-stxcity',
+        functionName: 'get-balance',
+        functionArgs: [principalCV(connectedAddress)],
+        network: getHiroNetworkServerSide('mainnet'),
+        senderAddress: connectedAddress,
+      });
+
+      console.log('🔍 Teiko balance raw result:', result);
+      
+      // Convert the result using the same logic as getUserTokenBalance
+      const raw = result?.value?.value || result?.value || null;
+      console.log('🔍 Teiko balance raw value:', raw);
+      
+      if (!raw) {
+        console.log('🔍 No Teiko balance raw value found');
+        setTeikoTokenBalance(0);
+        return;
+      }
+      
+      // Convert from smallest units (6 decimal places) to whole tokens
+      let rawValue = 0;
+      if (typeof raw === 'bigint') {
+        rawValue = Number(raw);
+        console.log('🔍 Teiko balance: Converted bigint to number:', rawValue);
+      } else {
+        rawValue = parseInt(raw);
+        console.log('🔍 Teiko balance: Parsed string to integer:', rawValue);
+      }
+      
+      const tokensInWholeUnits = rawValue / 1000000;
+      const finalResult = Math.floor(tokensInWholeUnits);
+      
+      console.log('🔍 Teiko balance conversion:', {
+        rawValue: rawValue,
+        tokensInWholeUnits: tokensInWholeUnits,
+        finalResult: finalResult
+      });
+      
+      setTeikoTokenBalance(finalResult);
+      
+    } catch (error) {
+      console.error('❌ Error fetching Teiko token balance:', error);
+      setTeikoTokenBalance(0);
+    } finally {
+      setLoadingTeikoBalance(false);
+    }
+  };
+
   // Fetch latest price on component mount and periodically
   useEffect(() => {
     if (tokenId) {
@@ -214,6 +292,37 @@ const UnlockProgressBar = React.memo(function UnlockProgressBar({
       return () => clearInterval(interval);
     }
   }, [tokenId]);
+
+  // Fetch Teiko token balance on component mount and when address changes - Only for mainnet tokens
+  useEffect(() => {
+    console.log('🔍 Teiko balance useEffect triggered, dexInfo:', dexInfo);
+    
+    // Only fetch Teiko balance if this is a mainnet token
+    if (dexInfo) {
+      const [dexContractAddress] = dexInfo.split('.');
+      const isMainnet = dexContractAddress.startsWith('SP');
+      
+      console.log('🔍 DEX info analysis:', {
+        fullDexInfo: dexInfo,
+        dexContractAddress: dexContractAddress,
+        isMainnet: isMainnet
+      });
+      
+      if (isMainnet) {
+        console.log('🔍 Mainnet token detected, fetching Teiko balance...');
+        fetchTeikoTokenBalance();
+        
+        // Update Teiko balance every 60 seconds
+        const interval = setInterval(fetchTeikoTokenBalance, 60000);
+        
+        return () => clearInterval(interval);
+      } else {
+        console.log('🔍 Testnet token detected, skipping Teiko balance fetch');
+      }
+    } else {
+      console.log('🔍 No dexInfo available yet, skipping Teiko balance fetch');
+    }
+  }, [dexInfo]);
 
   // Wait for transaction confirmation by checking recent trades
   const waitForConfirmation = async (txId, timeout = 60000, interval = 3000) => {
@@ -307,6 +416,8 @@ const UnlockProgressBar = React.memo(function UnlockProgressBar({
 
   // Buy function using Stacks Connect
   const handleBuy = async () => {
+    console.log('🔍 handleBuy function called');
+    
     // Trigger pending transaction animation
     if (typeof window !== 'undefined') {
       window.dispatchEvent(new CustomEvent('transactionPending', {
@@ -577,6 +688,8 @@ const UnlockProgressBar = React.memo(function UnlockProgressBar({
 
   // Sell function using Stacks Connect
   const handleSell = async () => {
+    console.log('🔍 handleSell function called');
+    
     // Trigger pending transaction animation
     if (typeof window !== 'undefined') {
       window.dispatchEvent(new CustomEvent('transactionPending', {
@@ -1169,7 +1282,7 @@ const UnlockProgressBar = React.memo(function UnlockProgressBar({
                         fontWeight: 'bold',
                         justifyContent: 'center'
                       }}>
-                                  {loadingMajorityHolder ? 'Loading...' : (majorityHolderBalance || 1500).toLocaleString()}
+                                  {loadingMajorityHolder ? 'Loading...' : (majorityHolderBalance || lockRequirement).toLocaleString()}
                                   <img 
                                     src="/icons/The Mas Network.svg" 
                                     alt="MAS Sats" 
@@ -1234,7 +1347,7 @@ const UnlockProgressBar = React.memo(function UnlockProgressBar({
                   if (dexInfo) {
                     const [dexContractAddress] = dexInfo.split('.');
                     const isMainnet = dexContractAddress.startsWith('SP');
-                    return isMainnet ? 'Teiko Token Balance: ' : 'Your Token Balance: ';
+                    return isMainnet ? 'Holdings: ' : 'Your Token Balance: ';
                   }
                   return 'Your Token Balance: ';
                 })()}{userTokenBalance.toLocaleString()}
@@ -1281,29 +1394,64 @@ const UnlockProgressBar = React.memo(function UnlockProgressBar({
                   height: window.innerWidth <= 768 ? '14px' : '16px'
                 }} 
               />
-              
-
-              
-              {/* Network Mismatch Warning */}
-              {networkMismatch && (
-                <div style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  gap: '4px',
-                  marginTop: '4px',
-                  padding: '4px 8px',
-                  backgroundColor: '#ef4444',
-                  borderRadius: '6px',
-                  fontSize: window.innerWidth <= 768 ? '10px' : '11px',
-                  fontWeight: '500',
-                  color: '#ffffff',
-                  textAlign: 'center'
-                }}>
-                  <span>⚠️ {networkMismatch.message}</span>
-                </div>
-              )}
             </div>
+            
+            {/* Teiko Token Holdings Display - Only show for mainnet tokens */}
+            {(() => {
+              // Check if this is a mainnet token (SP address)
+              if (dexInfo) {
+                const [dexContractAddress] = dexInfo.split('.');
+                const isMainnet = dexContractAddress.startsWith('SP');
+                return isMainnet ? (
+                  <div style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '4px',
+                    marginTop: window.innerWidth <= 768 ? '6px' : '8px',
+                    fontSize: window.innerWidth <= 768 ? '12px' : '14px',
+                    fontWeight: '600',
+                    color: '#ffffff',
+                    flexWrap: window.innerWidth <= 768 ? 'wrap' : 'nowrap',
+                    textAlign: window.innerWidth <= 768 ? 'center' : 'left'
+                  }}>
+                                  <span style={{ whiteSpace: window.innerWidth <= 768 ? 'normal' : 'nowrap' }}>
+                Teiko Token Holdings: {loadingTeikoBalance ? 'Loading...' : (typeof teikoTokenBalance === 'number' && !isNaN(teikoTokenBalance) ? teikoTokenBalance.toLocaleString() : '0')}
+              </span>
+                                         <img 
+                       src="/logo.png" 
+                       alt="Teiko Labs" 
+                       style={{ 
+                         width: window.innerWidth <= 768 ? '14px' : '16px', 
+                         height: window.innerWidth <= 768 ? '14px' : '16px'
+                       }} 
+                     />
+
+                  </div>
+                ) : null;
+              }
+              return null;
+            })()}
+            
+            {/* Network Mismatch Warning */}
+            {networkMismatch && (
+              <div style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '4px',
+                marginTop: '4px',
+                padding: '4px 8px',
+                backgroundColor: '#ef4444',
+                borderRadius: '6px',
+                fontSize: window.innerWidth <= 768 ? '10px' : '11px',
+                fontWeight: '500',
+                color: '#ffffff',
+                textAlign: 'center'
+              }}>
+                <span>⚠️ {networkMismatch.message}</span>
+              </div>
+            )}
           </div>
         </div>
       )}
@@ -1445,7 +1593,7 @@ const UnlockProgressBar = React.memo(function UnlockProgressBar({
                       if (dexInfo) {
                         const [dexContractAddress] = dexInfo.split('.');
                         const isMainnet = dexContractAddress.startsWith('SP');
-                        return isMainnet ? 'Teiko Token Balance: ' : 'Holdings: ';
+                        return isMainnet ? 'Holdings: ' : 'Holdings: ';
                       }
                       return 'Holdings: ';
                     })()}{userTokenBalance.toLocaleString()}
@@ -2128,7 +2276,16 @@ const UnlockProgressBar = React.memo(function UnlockProgressBar({
           {/* Buy/Sell Button */}
           <button
             onClick={() => {
-              setShowBuySellPanel(!showBuySellPanel);
+              // Check Teiko token balance for trading access
+              const requiredTeikoTokens = 21000;
+              
+              if (teikoTokenBalance >= requiredTeikoTokens) {
+                // User has enough Teiko tokens, allow trading
+                setShowBuySellPanel(!showBuySellPanel);
+              } else {
+                // User doesn't have enough Teiko tokens, show restriction popup
+                setShowRestrictionPopup(true);
+              }
             }}
             style={{
               backgroundColor: showBuySellPanel ? '#dc2626' : '#059669',
@@ -2655,7 +2812,7 @@ const UnlockProgressBar = React.memo(function UnlockProgressBar({
                          <div style={{ 
                            fontSize: '24px'
                          }}>
-                           {currentRevenue >= minimumRevenueThreshold ? '🔓' : '🔒'}
+                           {currentRevenue >= lockRequirement ? '🔓' : '🔒'}
                          </div>
                          
                          <div style={{
@@ -2663,7 +2820,7 @@ const UnlockProgressBar = React.memo(function UnlockProgressBar({
                            color: '#ffa500',
                            textAlign: 'center'
                          }}>
-                           {currentRevenue >= minimumRevenueThreshold ? (
+                           {currentRevenue >= lockRequirement ? (
                              <>
                                <div style={{ fontSize: '12px', fontWeight: 'bold' }}>Maintain:</div>
                                <div style={{
@@ -2674,7 +2831,7 @@ const UnlockProgressBar = React.memo(function UnlockProgressBar({
                                  fontWeight: 'bold',
                                  justifyContent: 'center'
                                }}>
-                                 {loadingThreshold ? 'Loading...' : (minimumRevenueThreshold || 1500).toLocaleString()}
+                                 {loadingThreshold ? 'Loading...' : lockRequirement.toLocaleString()}
                                  <img 
                                    src="/icons/sats1.svg" 
                                    alt="Sats" 
@@ -2704,7 +2861,7 @@ const UnlockProgressBar = React.memo(function UnlockProgressBar({
                                  fontWeight: 'bold',
                                  justifyContent: 'center'
                                }}>
-                                 {loadingThreshold ? 'Loading...' : minimumRevenueThreshold.toLocaleString()}
+                                 {loadingThreshold ? 'Loading...' : lockRequirement.toLocaleString()}
                                  <img 
                                    src="/icons/sats1.svg" 
                                    alt="Sats" 
@@ -2875,6 +3032,164 @@ const UnlockProgressBar = React.memo(function UnlockProgressBar({
            </div>
          </div>
        )}
+
+       {/* Restriction Popup Placeholder */}
+       {showRestrictionPopup && (
+         <div style={{
+           position: 'fixed',
+           top: 0,
+           left: 0,
+           right: 0,
+           bottom: 0,
+           backgroundColor: 'rgba(0, 0, 0, 0.8)',
+           display: 'flex',
+           alignItems: 'center',
+           justifyContent: 'center',
+           zIndex: 10000,
+           padding: window.innerWidth <= 768 ? '16px' : '24px'
+         }}>
+           <div style={{
+             backgroundColor: '#1a1a2e',
+             border: '2px solid #ef4444',
+             borderRadius: '16px',
+             padding: window.innerWidth <= 768 ? '24px' : '40px',
+             maxWidth: window.innerWidth <= 768 ? '90vw' : '450px',
+             width: window.innerWidth <= 768 ? '90vw' : 'auto',
+             textAlign: 'center',
+             position: 'relative'
+           }}>
+             <div style={{
+               fontSize: window.innerWidth <= 768 ? '48px' : '60px',
+               marginBottom: window.innerWidth <= 768 ? '16px' : '20px'
+             }}>
+               🔒
+             </div>
+             <h2 style={{
+               color: '#fbbf24',
+               fontSize: window.innerWidth <= 768 ? '20px' : '24px',
+               fontWeight: 'bold',
+               marginBottom: window.innerWidth <= 768 ? '12px' : '16px',
+               fontFamily: 'Arial, sans-serif'
+             }}>
+               Teiko Token Requirement
+             </h2>
+             <p style={{
+               color: '#ccc',
+               fontSize: window.innerWidth <= 768 ? '14px' : '16px',
+               lineHeight: '1.5',
+               marginBottom: window.innerWidth <= 768 ? '20px' : '24px',
+               fontFamily: 'Arial, sans-serif'
+             }}>
+               You need at least <strong style={{ color: '#fbbf24' }}>21,000 Teiko tokens</strong> to access trading.
+             </p>
+             <p style={{
+               color: '#ccc',
+               fontSize: window.innerWidth <= 768 ? '12px' : '14px',
+               lineHeight: '1.5',
+               marginBottom: window.innerWidth <= 768 ? '20px' : '24px',
+               fontFamily: 'Arial, sans-serif'
+             }}>
+               <strong style={{ color: '#fbbf24' }}>Ecosystem Benefits:</strong> Trading fees from MAS Sats are used to buy back Teiko tokens weekly, creating a sustainable ecosystem where every holder contributes to mutual growth.
+             </p>
+             <div style={{
+               backgroundColor: '#374151',
+               borderRadius: '8px',
+               padding: window.innerWidth <= 768 ? '12px' : '16px',
+               marginBottom: window.innerWidth <= 768 ? '20px' : '24px',
+               border: '1px solid #4b5563'
+             }}>
+               <p style={{
+                 color: '#ccc',
+                 fontSize: window.innerWidth <= 768 ? '12px' : '14px',
+                 marginBottom: window.innerWidth <= 768 ? '6px' : '8px'
+               }}>
+                 Your current Teiko balance:
+               </p>
+               <p style={{
+                 color: '#fbbf24',
+                 fontSize: window.innerWidth <= 768 ? '16px' : '18px',
+                 fontWeight: 'bold'
+               }}>
+                 {loadingTeikoBalance ? 'Loading...' : teikoTokenBalance.toLocaleString()}
+                 <img 
+                   src="/logo.png" 
+                   alt="Teiko Labs" 
+                   style={{ 
+                     width: '16px', 
+                     height: '16px',
+                     verticalAlign: 'middle',
+                     marginLeft: '4px'
+                   }} 
+                 />
+               </p>
+             </div>
+             <div style={{
+               marginBottom: window.innerWidth <= 768 ? '20px' : '24px'
+             }}>
+               <a 
+                 href="https://stx.city/bonding-curve/SP1T0VY3DNXRVP6HBM75DFWW0199CR0X15PC1D81B.teiko-token-stxcity-dex/SP1T0VY3DNXRVP6HBM75DFWW0199CR0X15PC1D81B.teiko-token-stxcity/SP359XMJYWRDY24H7VDYJWKPAGHN75V8M0W1NBF3P" 
+                 target="_blank" 
+                 rel="noopener noreferrer"
+                 style={{
+                   backgroundColor: '#fbbf24',
+                   color: '#1a1a2e',
+                   textDecoration: 'none',
+                   padding: window.innerWidth <= 768 ? '10px 20px' : '12px 24px',
+                   borderRadius: '8px',
+                   fontSize: window.innerWidth <= 768 ? '14px' : '16px',
+                   fontWeight: 'bold',
+                   display: 'inline-block',
+                   transition: 'all 0.2s ease',
+                   marginBottom: window.innerWidth <= 768 ? '12px' : '16px'
+                 }}
+                 onMouseEnter={(e) => {
+                   e.target.style.backgroundColor = '#f59e0b';
+                   e.target.style.transform = 'translateY(-1px)';
+                 }}
+                 onMouseLeave={(e) => {
+                   e.target.style.backgroundColor = '#fbbf24';
+                   e.target.style.transform = 'translateY(0)';
+                 }}
+               >
+                 🛒 Buy Teiko Tokens on STX.CITY
+               </a>
+               <p style={{
+                 color: '#888',
+                 fontSize: window.innerWidth <= 768 ? '10px' : '12px',
+                 margin: 0
+               }}>
+                 Opens in STX.CITY bonding curve
+               </p>
+             </div>
+             <button
+               onClick={() => setShowRestrictionPopup(false)}
+               style={{
+                 backgroundColor: '#ef4444',
+                 color: 'white',
+                 border: 'none',
+                 borderRadius: '8px',
+                 padding: window.innerWidth <= 768 ? '10px 20px' : '12px 24px',
+                 fontSize: window.innerWidth <= 768 ? '14px' : '16px',
+                 fontWeight: 'bold',
+                 cursor: 'pointer',
+                 transition: 'all 0.2s ease'
+               }}
+               onMouseEnter={(e) => {
+                 e.target.style.backgroundColor = '#dc2626';
+                 e.target.style.transform = 'translateY(-1px)';
+               }}
+               onMouseLeave={(e) => {
+                 e.target.style.backgroundColor = '#ef4444';
+                 e.target.style.transform = 'translateY(0)';
+               }}
+             >
+               Close
+             </button>
+           </div>
+         </div>
+       )}
+
+
 
 
      </div>
