@@ -45,6 +45,8 @@ export default function SwapPage() {
   const [userSatsBalance, setUserSatsBalance] = useState(0);
   const [userTokenBalance, setUserTokenBalance] = useState(0);
   const [isHeaderVisible, setIsHeaderVisible] = useState(true);
+  
+
 
   // Restore tab and active section from localStorage on component mount
   useEffect(() => {
@@ -870,14 +872,20 @@ export default function SwapPage() {
 
 
 
-          {/* Trade History with Blue and Pink Boxes */}
-          <TradeHistory 
-            trades={trades} 
-            pendingTransaction={pendingTransaction} 
-            isSuccessfulTransaction={isSuccessfulTransaction} 
-            tokenData={tokenData}
-            onTradesUpdate={setTrades}
-          />
+          {/* Bottom Section Toggle */}
+          <div style={{
+            marginTop: '20px'
+          }}>
+            {/* Toggle Buttons */}
+            {/* Content Area */}
+            <TradeHistory 
+              trades={trades} 
+              pendingTransaction={pendingTransaction} 
+              isSuccessfulTransaction={isSuccessfulTransaction} 
+              tokenData={tokenData}
+              onTradesUpdate={setTrades}
+            />
+          </div>
         </div>
       </div>
 

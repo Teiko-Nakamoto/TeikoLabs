@@ -1,6 +1,6 @@
 .terms-container {
   min-height: 100vh;
-  background: linear-gradient(135deg, #0f0f0f 0%, #1a1a1a 100%);
+  background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
   color: #ffffff;
   padding: 2rem 1rem;
 }
@@ -12,39 +12,42 @@
 }
 
 .terms-content h1 {
-  color: #ff6b35;
+  color: #60a5fa;
   text-align: center;
   font-size: 2.5rem;
   margin-bottom: 1rem;
-  font-weight: 700;
+  font-weight: 600;
 }
 
 .critical-warning {
-  background: rgba(255, 107, 53, 0.2);
-  border: 2px solid #ff6b35;
-  border-radius: 12px;
+  background: rgba(96, 165, 250, 0.1);
+  border: 2px solid #60a5fa;
+  border-radius: 16px;
   padding: 1.5rem;
   margin-bottom: 2rem;
   text-align: center;
+  box-shadow: 0 4px 20px rgba(96, 165, 250, 0.2);
 }
 
 .critical-warning h2 {
-  color: #ff6b35;
+  color: #60a5fa;
   font-size: 1.4rem;
-  font-weight: 700;
+  font-weight: 600;
   margin: 0;
 }
 
 .disclaimer-section {
-  border: 2px solid #ff6b35 !important;
-  background: rgba(255, 107, 53, 0.1) !important;
+  border: 2px solid #60a5fa !important;
+  background: rgba(96, 165, 250, 0.05) !important;
+  border-radius: 16px;
 }
 
 .bold-warning {
   font-size: 1.2rem;
   text-align: center;
-  color: #ff6b35;
+  color: #60a5fa;
   margin-bottom: 1.5rem;
+  font-weight: 600;
 }
 
 .liability-list {
@@ -53,76 +56,98 @@
 }
 
 .liability-list li {
-  background: rgba(255, 107, 53, 0.1);
-  border: 1px solid #ff6b35;
-  border-radius: 6px;
-  padding: 0.8rem;
-  margin-bottom: 0.8rem;
+  background: rgba(96, 165, 250, 0.08);
+  border: 1px solid #60a5fa;
+  border-radius: 12px;
+  padding: 1rem;
+  margin-bottom: 1rem;
   color: #ffffff;
+  transition: all 0.3s ease;
+}
+
+.liability-list li:hover {
+  background: rgba(96, 165, 250, 0.12);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(96, 165, 250, 0.2);
 }
 
 .liability-list li strong {
-  color: #ff6b35;
+  color: #60a5fa;
 }
 
 .risk-emphasis {
-  background: rgba(255, 107, 53, 0.3);
-  border: 2px solid #ff6b35;
-  border-radius: 8px;
-  padding: 1rem;
+  background: rgba(96, 165, 250, 0.15);
+  border: 2px solid #60a5fa;
+  border-radius: 12px;
+  padding: 1.2rem;
   text-align: center;
   font-size: 1.2rem;
   color: #ffffff;
   margin-top: 1.5rem;
+  font-weight: 600;
 }
 
 .risk-category {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid #3b82f6;
+  border-radius: 12px;
+  padding: 1.2rem;
+  margin-bottom: 1.2rem;
+  transition: all 0.3s ease;
+}
+
+.risk-category:hover {
   background: rgba(255, 255, 255, 0.05);
-  border: 1px solid #fca311;
-  border-radius: 8px;
-  padding: 1rem;
-  margin-bottom: 1rem;
+  border-color: #60a5fa;
+  transform: translateY(-1px);
 }
 
 .risk-category h3 {
-  color: #fca311;
+  color: #3b82f6;
   font-size: 1.1rem;
   margin-bottom: 0.5rem;
+  font-weight: 600;
 }
 
 .last-updated {
   text-align: center;
-  color: #888;
+  color: #94a3b8;
   font-style: italic;
   margin-bottom: 3rem;
   padding-bottom: 1rem;
-  border-bottom: 1px solid #333;
+  border-bottom: 1px solid #334155;
 }
 
 .terms-section {
   margin-bottom: 2.5rem;
-  padding: 1.5rem;
+  padding: 1.8rem;
+  background: rgba(255, 255, 255, 0.03);
+  border-radius: 16px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  transition: all 0.3s ease;
+}
+
+.terms-section:hover {
   background: rgba(255, 255, 255, 0.05);
-  border-radius: 12px;
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-color: rgba(255, 255, 255, 0.12);
 }
 
 .terms-section h2 {
-  color: #fca311;
+  color: #3b82f6;
   font-size: 1.4rem;
   margin-bottom: 1rem;
   font-weight: 600;
 }
 
 .terms-section h3 {
-  color: #ffb347;
+  color: #60a5fa;
   font-size: 1.2rem;
   margin-bottom: 0.8rem;
   font-weight: 600;
 }
 
 .terms-section h4 {
-  color: #fbbf24;
+  color: #93c5fd;
   font-size: 1.1rem;
   margin-top: 1.5rem;
   margin-bottom: 0.8rem;
@@ -131,7 +156,7 @@
 
 .terms-section p {
   margin-bottom: 1rem;
-  color: #e5e5e5;
+  color: #e2e8f0;
 }
 
 .terms-section ul {
@@ -141,58 +166,60 @@
 
 .terms-section li {
   margin-bottom: 0.5rem;
-  color: #d1d1d1;
+  color: #cbd5e1;
 }
 
 .terms-section li strong {
-  color: #fbbf24;
+  color: #93c5fd;
 }
 
 /* Risk Section Styling */
 .risk-section {
-  border: 2px solid #ff6b35;
-  background: rgba(255, 107, 53, 0.1);
+  border: 2px solid #60a5fa;
+  background: rgba(96, 165, 250, 0.05);
+  border-radius: 16px;
 }
 
 .risk-warning {
-  background: rgba(255, 107, 53, 0.2);
-  border: 1px solid #ff6b35;
-  border-radius: 8px;
-  padding: 1rem;
+  background: rgba(96, 165, 250, 0.1);
+  border: 1px solid #60a5fa;
+  border-radius: 12px;
+  padding: 1.2rem;
   margin-bottom: 1.5rem;
   text-align: center;
 }
 
 .risk-warning h3 {
-  color: #ff6b35;
+  color: #60a5fa;
   font-size: 1.3rem;
   margin-bottom: 0.5rem;
-  font-weight: 700;
+  font-weight: 600;
 }
 
 .risk-warning p {
   color: #ffffff;
-  font-weight: 600;
+  font-weight: 500;
   margin: 0;
 }
 
 /* Acknowledgment Section */
 .acknowledgment {
-  border: 2px solid #fca311;
-  background: rgba(252, 163, 17, 0.1);
+  border: 2px solid #10b981;
+  background: rgba(16, 185, 129, 0.05);
+  border-radius: 16px;
 }
 
 .acknowledgment-box {
-  background: rgba(252, 163, 17, 0.15);
-  border: 1px solid #fca311;
-  border-radius: 8px;
+  background: rgba(16, 185, 129, 0.08);
+  border: 1px solid #10b981;
+  border-radius: 12px;
   padding: 1.5rem;
   margin-top: 1rem;
 }
 
 .acknowledgment-box p {
   font-weight: 600;
-  color: #fca311;
+  color: #10b981;
   margin-bottom: 1rem;
 }
 
@@ -210,19 +237,19 @@
 .contact-section {
   margin-top: 3rem;
   padding: 2rem;
-  background: rgba(252, 163, 17, 0.1);
-  border-radius: 12px;
-  border: 1px solid #fca311;
+  background: rgba(16, 185, 129, 0.05);
+  border-radius: 16px;
+  border: 1px solid #10b981;
   text-align: center;
 }
 
 .contact-section h2 {
-  color: #fca311;
+  color: #10b981;
   margin-bottom: 1rem;
 }
 
 .contact-section p {
-  color: #e5e5e5;
+  color: #e2e8f0;
   margin: 0;
 }
 
@@ -265,19 +292,19 @@
   }
   
   .liability-list li {
-    padding: 0.6rem;
-    margin-bottom: 0.6rem;
+    padding: 0.8rem;
+    margin-bottom: 0.8rem;
     font-size: 0.9rem;
   }
   
   .risk-emphasis {
-    padding: 0.8rem;
+    padding: 1rem;
     font-size: 1rem;
   }
   
   .risk-category {
-    padding: 0.8rem;
-    margin-bottom: 0.8rem;
+    padding: 1rem;
+    margin-bottom: 1rem;
   }
   
   .risk-category h3 {
@@ -321,17 +348,17 @@
   }
   
   .liability-list li {
-    padding: 0.5rem;
+    padding: 0.6rem;
     font-size: 0.85rem;
   }
   
   .risk-emphasis {
-    padding: 0.6rem;
+    padding: 0.8rem;
     font-size: 0.9rem;
   }
   
   .risk-category {
-    padding: 0.6rem;
+    padding: 0.8rem;
   }
   
   .contact-section {
@@ -346,11 +373,11 @@ html {
 
 /* Selection styling */
 ::selection {
-  background: #fca311;
+  background: #60a5fa;
   color: #000;
 }
 
 ::-moz-selection {
-  background: #fca311;
+  background: #60a5fa;
   color: #000;
 }

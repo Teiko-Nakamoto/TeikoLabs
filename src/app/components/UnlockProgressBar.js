@@ -80,6 +80,10 @@ const UnlockProgressBar = React.memo(function UnlockProgressBar({
   const [showCustomSlippage, setShowCustomSlippage] = useState(false); // Show custom slippage input
   const [majorityHolderBalance, setMajorityHolderBalance] = useState(0);
   const [loadingMajorityHolder, setLoadingMajorityHolder] = useState(true);
+  
+
+
+
 
   // Function to detect network mismatch
   const detectNetworkMismatch = () => {
@@ -1225,7 +1229,15 @@ const UnlockProgressBar = React.memo(function UnlockProgressBar({
               textAlign: window.innerWidth <= 768 ? 'center' : 'left'
             }}>
               <span style={{ whiteSpace: window.innerWidth <= 768 ? 'normal' : 'nowrap' }}>
-                Your Token Balance: {userTokenBalance.toLocaleString()}
+                {(() => {
+                  // Check if this is a mainnet token (SP address) or testnet token (ST address)
+                  if (dexInfo) {
+                    const [dexContractAddress] = dexInfo.split('.');
+                    const isMainnet = dexContractAddress.startsWith('SP');
+                    return isMainnet ? 'Teiko Token Balance: ' : 'Your Token Balance: ';
+                  }
+                  return 'Your Token Balance: ';
+                })()}{userTokenBalance.toLocaleString()}
               </span>
               <img 
                 src="/icons/The Mas Network.svg" 
@@ -1436,7 +1448,15 @@ const UnlockProgressBar = React.memo(function UnlockProgressBar({
                 textAlign: window.innerWidth <= 768 ? 'center' : 'left'
               }}>
                 <span style={{ whiteSpace: window.innerWidth <= 768 ? 'normal' : 'nowrap' }}>
-                    Holdings: {userTokenBalance.toLocaleString()}
+                    {(() => {
+                      // Check if this is a mainnet token (SP address) or testnet token (ST address)
+                      if (dexInfo) {
+                        const [dexContractAddress] = dexInfo.split('.');
+                        const isMainnet = dexContractAddress.startsWith('SP');
+                        return isMainnet ? 'Teiko Token Balance: ' : 'Holdings: ';
+                      }
+                      return 'Holdings: ';
+                    })()}{userTokenBalance.toLocaleString()}
                 </span>
                 <img 
                   src="/icons/The Mas Network.svg" 
@@ -2065,7 +2085,8 @@ const UnlockProgressBar = React.memo(function UnlockProgressBar({
         </div>
       )}
 
-      {/* Action Buttons Section - Optional */}
+            {/* Action Buttons Section - Optional */}
+      {console.log('🔍 showButtons value:', showButtons)}
       {showButtons && (
         <div style={{
           background: '#1c2d4e',
@@ -2203,6 +2224,8 @@ const UnlockProgressBar = React.memo(function UnlockProgressBar({
           >
             🐋 Whale Access
           </button>
+
+
         </div>
       )}
 
@@ -2867,6 +2890,8 @@ const UnlockProgressBar = React.memo(function UnlockProgressBar({
            </div>
          </div>
        )}
+
+
      </div>
    );
  });

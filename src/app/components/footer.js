@@ -6,7 +6,7 @@ import { useState } from 'react';
 export default function Footer() {
   const { t } = useTranslation();
   const [showPopup, setShowPopup] = useState(false);
-  const [showAuditPopup, setShowAuditPopup] = useState(false);
+
   const [copied, setCopied] = useState(false);
 
   const handleCopy = async () => {
@@ -58,10 +58,7 @@ export default function Footer() {
                 <img src="/icons/github.svg" alt="GitHub" className="invert-icon" style={{ width: '16px', height: '16px', marginRight: '8px' }} />
                 GitHub
               </a>
-              <button onClick={() => setShowAuditPopup(true)} className="footer-link-button">
-                <span>🔍</span>
-                <span>Audit</span>
-              </button>
+
             </div>
           </div>
           
@@ -112,23 +109,7 @@ export default function Footer() {
         </div>
       )}
 
-      {/* Audit popup */}
-      {showAuditPopup && (
-        <div className="popup-overlay" onClick={() => setShowAuditPopup(false)}>
-          <div className="popup" onClick={(e) => e.stopPropagation()}>
-            <h3 style={{ color: '#fca311', marginBottom: '1rem' }}>🔍 Security Audit</h3>
-            <p style={{ marginBottom: '1rem' }}>
-              Our comprehensive security audit report is coming soon! 
-              We&apos;re working with leading blockchain security firms to ensure 
-              the highest level of security for our smart contracts.
-            </p>
-            <p style={{ fontSize: '0.9rem', color: '#9ca3af' }}>
-              Expected: Q1 2024
-            </p>
-            <button onClick={() => setShowAuditPopup(false)} style={{ marginTop: '1rem' }}>Close</button>
-          </div>
-        </div>
-      )}
+
     </>
   );
 }

@@ -13,12 +13,89 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata = {
-  title: "Teiko Labs: The Future of Bitcoin DeFi",
-  description: "Trade on The MAS Network Protocol, Bitcoin's Layer 3 and unlock the power of MAS Sats",
+  // Basic SEO
+  title: "Teiko Labs - Bitcoin DeFi Trading Platform | MAS Network Protocol",
+  description: "Trade Bitcoin DeFi tokens, meme coins, and sBTC on The MAS Network Protocol. Access Stacks (STX) DeFi with staking, yield farming, and liquidity pools. The Forever Pump Protocol - Bitcoin's Layer 3 DeFi platform for maximum yield.",
+  keywords: "Bitcoin DeFi, The Forever Pump Protocol, MAS Sats, Stacks blockchain, decentralized trading, cryptocurrency, Bitcoin Layer 3, DeFi platform, token trading, blockchain trading, meme coin, sBTC, STX, Stacks, Pump.fun, staking, yield farming, liquidity pools, yield farm, The MAS Network, Bitcoin DeFi tokens, Stacks DeFi, sBTC trading, meme coin trading, DeFi staking, yield optimization, liquidity mining, Bitcoin Layer 3 DeFi, Stacks ecosystem, DeFi yield farming, cryptocurrency staking, Bitcoin DeFi platform",
+  authors: [{ name: "Teiko Labs" }],
+  creator: "Teiko Labs",
+  publisher: "Teiko Labs",
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      'max-video-preview': -1,
+      'max-image-preview': 'large',
+      'max-snippet': -1,
+    },
+  },
+  
+  // Open Graph (Facebook, LinkedIn)
+  openGraph: {
+    type: 'website',
+    locale: 'en_US',
+    url: 'https://teikolabs.com', // Replace with your actual domain
+    siteName: 'Teiko Labs',
+    title: 'Teiko Labs - Bitcoin DeFi Trading Platform | MAS Network Protocol',
+    description: 'Trade Bitcoin DeFi tokens, meme coins, and sBTC on The MAS Network Protocol. Access Stacks (STX) DeFi with staking, yield farming, and liquidity pools.',
+    images: [
+      {
+        url: '/logo.png', // Replace with your actual OG image
+        width: 1200,
+        height: 630,
+        alt: 'Teiko Labs - Bitcoin DeFi Trading Platform',
+      },
+    ],
+  },
+  
+  // Twitter Card
+  twitter: {
+    card: 'summary_large_image',
+    site: '@TeikoLabs', // Replace with your actual Twitter handle
+    creator: '@TeikoLabs', // Replace with your actual Twitter handle
+    title: 'Teiko Labs - Bitcoin DeFi Trading Platform',
+    description: 'Trade Bitcoin DeFi tokens, meme coins, and sBTC on The MAS Network Protocol. Access Stacks (STX) DeFi with staking, yield farming, and liquidity pools.',
+    images: ['/logo.png'], // Replace with your actual Twitter image
+  },
+  
+  // Icons
   icons: {
-    icon: "/logo.png",     // favicon for browser tab
-    shortcut: "/logo.png", // for pinned shortcuts
-    apple: "/logo.png",    // for iOS home screen
+    icon: [
+      { url: '/logo.png', sizes: '32x32', type: 'image/png' },
+      { url: '/logo.png', sizes: '16x16', type: 'image/png' },
+    ],
+    shortcut: '/logo.png',
+    apple: [
+      { url: '/logo.png', sizes: '180x180', type: 'image/png' },
+    ],
+  },
+  
+  // Additional SEO
+  alternates: {
+    canonical: 'https://teikolabs.com', // Replace with your actual domain
+  },
+  
+  // Verification
+  verification: {
+    google: 'your-google-verification-code', // Replace with your Google Search Console verification code
+    // yandex: 'your-yandex-verification-code',
+    // yahoo: 'your-yahoo-verification-code',
+  },
+  
+  // Category
+  category: 'technology',
+  
+  // Classification
+  classification: 'Bitcoin DeFi Trading Platform',
+  
+  // Other
+  referrer: 'origin-when-cross-origin',
+  formatDetection: {
+    email: false,
+    address: false,
+    telephone: false,
   },
 };
 
@@ -27,6 +104,65 @@ export default function RootLayout({ children }) {
     <html lang="en">
       <head>
         <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+        
+        {/* Additional SEO Meta Tags */}
+        <meta name="theme-color" content="#1a1a2e" />
+        <meta name="color-scheme" content="dark" />
+        <meta name="application-name" content="Teiko Labs" />
+        <meta name="apple-mobile-web-app-capable" content="yes" />
+        <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+        <meta name="apple-mobile-web-app-title" content="Teiko Labs" />
+        <meta name="mobile-web-app-capable" content="yes" />
+        <meta name="msapplication-TileColor" content="#1a1a2e" />
+        <meta name="msapplication-tap-highlight" content="no" />
+        
+        {/* Structured Data for Rich Snippets */}
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify({
+              "@context": "https://schema.org",
+              "@type": "WebApplication",
+              "name": "Teiko Labs",
+              "description": "Bitcoin DeFi trading platform on The Forever Pump Protocol",
+              "url": "https://teikolabs.com",
+              "applicationCategory": "FinanceApplication",
+              "operatingSystem": "Web Browser",
+              "offers": {
+                "@type": "Offer",
+                "price": "0",
+                "priceCurrency": "USD"
+              },
+              "author": {
+                "@type": "Organization",
+                "name": "Teiko Labs"
+              },
+              "publisher": {
+                "@type": "Organization",
+                "name": "Teiko Labs"
+              }
+            })
+          }}
+        />
+        
+        {/* Additional Structured Data for Organization */}
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify({
+              "@context": "https://schema.org",
+              "@type": "Organization",
+              "name": "Teiko Labs",
+              "url": "https://teikolabs.com",
+              "logo": "https://teikolabs.com/logo.png",
+              "description": "Bitcoin DeFi trading platform on The Forever Pump Protocol",
+              "sameAs": [
+                "https://twitter.com/TeikoLabs",
+                "https://github.com/TeikoLabs"
+              ]
+            })
+          }}
+        />
       </head>
       <body className={`${geistSans.variable} ${geistMono.variable}`}>
         {children}

@@ -126,28 +126,31 @@ export default function Header() {
               <span>ℹ️</span>
             </button>
           </div>
-          <div className="language-profile">
-            <div style={{ position: 'relative', display: 'inline-block' }}>
-              <span
-                onClick={() => setOpen(!open)}
-                style={{
-                  padding: '6px 12px',
-                  borderRadius: '8px',
-                  border: '1px solid #374151',
-                  background: '#1c2d4e',
-                  cursor: 'pointer',
-                  userSelect: 'none',
-                  fontWeight: 'bold',
-                  color: '#fff',
-                  minWidth: 90,
-                  display: 'inline-block',
-                  boxShadow: open ? '0 0 0 3px #60a5fa, 0 0 0 6px rgba(96, 165, 250, 0.3)' : undefined
-                }}
-              >
-                {languages.find(l => l.code === i18n.language)?.label || t('language')}
-            </span>
-
+          {/* Language Profile - Only visible to admin */}
+          {isAdmin && (
+            <div className="language-profile">
+              <div style={{ position: 'relative', display: 'inline-block' }}>
+                <span
+                  onClick={() => setOpen(!open)}
+                  style={{
+                    padding: '6px 12px',
+                    borderRadius: '8px',
+                    border: '1px solid #374151',
+                    background: '#1c2d4e',
+                    cursor: 'pointer',
+                    userSelect: 'none',
+                    fontWeight: 'bold',
+                    color: '#fff',
+                    minWidth: 90,
+                    display: 'inline-block',
+                    boxShadow: open ? '0 0 0 3px #60a5fa, 0 0 0 6px rgba(96, 165, 250, 0.3)' : undefined
+                  }}
+                >
+                  {languages.find(l => l.code === i18n.language)?.label || t('language')}
+                </span>
+              </div>
             </div>
+          )}
 
             
             {/* Admin Icon - Only visible to admin wallet */}
@@ -169,7 +172,6 @@ export default function Header() {
                 <span>Admin</span>
               </Link>
             )}
-          </div>
 
           {/* ✅ Wallet button with ref */}
           <ConnectWallet ref={walletRef} />

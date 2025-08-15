@@ -108,7 +108,7 @@ export default function HowItWorksPage() {
                 </div>
                 <p className="intro-subtitle-docs">Market Activated Satoshis</p>
                 <p className="intro-description-docs">
-                  Discourages dumps by allowing anyone to claim the trading fee revenue generated and saved in smart contracts on-chain. Incentivising holders to <span style={{ color: '#60A5FA' }}>HODL</span> and not <span style={{ color: '#EF4444' }}>DUMP</span>.
+                  The revolutionary system that turns <span style={{ color: '#EF4444' }}>dumps</span> into <span style={{ color: '#60A5FA' }}>opportunities</span> - every trade generates fees for holders. Buy the dip with <span style={{ color: '#60A5FA' }}>zero fear</span> and grow your revenue streams as the largest holder.
                 </p>
               </div>
             </section>
@@ -116,18 +116,10 @@ export default function HowItWorksPage() {
             {/* Trading Section */}
             <section className="docs-section">
               <div className="step-container-docs">
-                <div className="step-docs">
-                  <div className="step-number-docs">1</div>
-                  <div className="step-content-docs">
-                    <h3>How Trading Works</h3>
-                    <p>MAS Sats operates on an <strong>infinite bonding curve</strong> with 21 million max supply, trading against <strong>sBTC</strong>. The largest holder can withdraw revenue anytime but must wait for trading fees to be paid back before unlocking tokens.</p>
-                  </div>
-                </div>
                 
                 {/* Choice Split */}
                 <div className="choice-section-docs">
                   <div className="step-docs">
-                    <div className="step-number-docs">2</div>
                     <div className="step-content-docs">
                       <h3>Choose Your Strategy</h3>
                     </div>

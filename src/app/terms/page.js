@@ -1,245 +1,248 @@
 'use client';
 import './terms.css';
+import { useTranslation } from 'react-i18next';
 
 export default function TermsPage() {
+  const { t } = useTranslation();
+  
   return (
     <div className="terms-container">
       <div className="terms-content">
-        <h1>⚠️ TERMS OF SERVICE & RISK DISCLAIMER</h1>
+        <h1>📋 {t('terms_of_service_risk_disclosure')}</h1>
         
         <div className="critical-warning">
-          <h2>🚨 BY ACCESSING OR USING TEIKO LABS, YOU AUTOMATICALLY AGREE TO THESE TERMS AND ACKNOWLEDGE ALL RISKS</h2>
+          <h2>📝 {t('terms_agreement_notice')}</h2>
         </div>
 
         <div className="last-updated">
-          Last Updated: {new Date().toLocaleDateString()}
+          {t('last_updated')}: {new Date().toLocaleDateString()}
         </div>
 
         <section className="terms-section disclaimer-section">
-          <h2>🚨 COMPLETE DISCLAIMER OF LIABILITY</h2>
+          <h2>📋 {t('complete_disclaimer_liability')}</h2>
           <p className="bold-warning">
-            <strong>TEIKO LABS ACCEPTS ABSOLUTELY NO RESPONSIBILITY OR LIABILITY FOR:</strong>
+            <strong>{t('teiko_labs_no_responsibility')}</strong>
           </p>
           <ul className="liability-list">
-            <li><strong>Financial Losses:</strong> Any loss of funds, sBTC, treasury ownership tokens, or digital assets</li>
-            <li><strong>Project Failures:</strong> Failed crowdfunding projects, abandoned developments, or project scams</li>
-            <li><strong>Treasury Ownership Risks:</strong> Loss of majority holder status, locked ownership tokens, or inability to claim trading fees</li>
-            <li><strong>Smart Contract Risks:</strong> Bugs, exploits, or vulnerabilities in Clarity smart contracts</li>
-            <li><strong>sBTC/Stacks Risks:</strong> Issues with sBTC peg, Stacks blockchain failures, or network congestion</li>
-            <li><strong>Market Manipulation:</strong> Price manipulation, wash trading, or coordinated attacks</li>
-            <li><strong>Wallet Security:</strong> Loss of private keys, wallet hacks, or unauthorized transactions</li>
-            <li><strong>Technical Failures:</strong> Platform downtime, transaction failures, or data loss</li>
-            <li><strong>Regulatory Actions:</strong> Legal or regulatory consequences in any jurisdiction, including fines, penalties, or criminal prosecution</li>
-            <li><strong>Tax Liabilities:</strong> Any tax obligations, penalties, or legal consequences arising from your activities</li>
-            <li><strong>Compliance Failures:</strong> Consequences of failing to comply with your country's laws and regulations</li>
+            <li><strong>{t('financial_losses')}:</strong> {t('financial_losses_desc')}</li>
+            <li><strong>{t('project_failures')}:</strong> {t('project_failures_desc')}</li>
+            <li><strong>{t('treasury_ownership_risks')}:</strong> {t('treasury_ownership_risks_desc')}</li>
+            <li><strong>{t('smart_contract_risks')}:</strong> {t('smart_contract_risks_desc')}</li>
+            <li><strong>{t('sbtc_stacks_risks')}:</strong> {t('sbtc_stacks_risks_desc')}</li>
+            <li><strong>{t('market_manipulation')}:</strong> {t('market_manipulation_desc')}</li>
+            <li><strong>{t('wallet_security')}:</strong> {t('wallet_security_desc')}</li>
+            <li><strong>{t('technical_failures')}:</strong> {t('technical_failures_desc')}</li>
+            <li><strong>{t('regulatory_actions')}:</strong> {t('regulatory_actions_desc')}</li>
+            <li><strong>{t('tax_liabilities')}:</strong> {t('tax_liabilities_desc')}</li>
+            <li><strong>{t('compliance_failures')}:</strong> {t('compliance_failures_desc')}</li>
           </ul>
           <p className="risk-emphasis">
-            <strong>YOU USE TEIKO LABS ENTIRELY AT YOUR OWN RISK!</strong>
+            <strong>{t('use_at_own_risk')}</strong>
           </p>
         </section>
 
         <section className="terms-section">
-          <h2>⚠️ CRITICAL RISK WARNINGS</h2>
+          <h2>⚠️ {t('important_risk_information')}</h2>
           
           <div className="risk-category">
-            <h3>🎲 Experimental Bitcoin Layer 2 Technology</h3>
-            <p>sBTC and Stacks blockchain technology are experimental and may contain unknown vulnerabilities that could result in total loss of funds.</p>
+            <h3>🔬 {t('experimental_technology')}</h3>
+            <p>{t('experimental_technology_desc')}</p>
           </div>
 
           <div className="risk-category">
-            <h3>💸 Total Loss Possible</h3>
-            <p>You may lose 100% of any funds, sBTC, or treasury ownership tokens you interact with on this platform. Treasury ownership competition means you could lose majority holder status at any time.</p>
+            <h3>💰 {t('potential_loss_funds')}</h3>
+            <p>{t('potential_loss_funds_desc')}</p>
           </div>
 
           <div className="risk-category">
-            <h3>🔒 Ownership Token Lock Risk</h3>
-            <p>Treasury ownership tokens may become permanently locked based on platform mechanics. Unlocking requires specific revenue thresholds that may never be met.</p>
+            <h3>🔐 {t('token_locking_mechanism')}</h3>
+            <p>{t('token_locking_mechanism_desc')}</p>
           </div>
 
           <div className="risk-category">
-            <h3>🚫 No Project Verification</h3>
-            <p>Teiko Labs does not verify, audit, or endorse any crowdfunding projects on the platform. Project creators may abandon projects or misuse funds.</p>
+            <h3>📋 {t('no_project_verification')}</h3>
+            <p>{t('no_project_verification_desc')}</p>
           </div>
 
           <div className="risk-category">
-            <h3>⚖️ No Investment Advice</h3>
-            <p>Nothing on this platform constitutes financial, investment, legal, or tax advice. All project funding decisions are yours alone.</p>
+            <h3>📚 {t('no_investment_advice')}</h3>
+            <p>{t('no_investment_advice_desc')}</p>
           </div>
 
           <div className="risk-category">
-            <h3>🏛️ Regulatory Compliance Required</h3>
-            <p>You must comply with ALL laws in your country regarding cryptocurrency, securities, crowdfunding, and DeFi activities. Some jurisdictions prohibit or restrict these activities. Penalties may include fines, asset seizure, or criminal prosecution.</p>
+            <h3>⚖️ {t('regulatory_compliance')}</h3>
+            <p>{t('regulatory_compliance_desc')}</p>
           </div>
         </section>
 
         <section className="terms-section">
-          <h2>1. PLATFORM DESCRIPTION</h2>
+          <h2>1. {t('platform_description_title')}</h2>
           <p>
-            <strong>Teiko Labs</strong> is a Bitcoin-powered crowdfunding platform where users can:
+            <strong>{t('teiko_labs')}</strong> {t('platform_description_intro')}
           </p>
           <ul>
-            <li>Create crowdfunding projects with 21 million units of treasury ownership</li>
-            <li>Trade treasury ownership tokens using sBTC on Stacks blockchain</li>
-            <li>Compete to become majority holders to claim 1.5% trading fees from every transaction</li>
-            <li>Lock ownership tokens to secure majority holder status</li>
-            <li>Participate in decentralized project funding and profit distribution</li>
+            <li>{t('platform_feature_1')}</li>
+            <li>{t('platform_feature_2')}</li>
+            <li>{t('platform_feature_3')}</li>
+            <li>{t('platform_feature_4')}</li>
+            <li>{t('platform_feature_5')}</li>
           </ul>
           <p>
-            <strong>IMPORTANT:</strong> Teiko Labs is purely a technology platform. We do not control project outcomes, smart contract execution, or fund custody.
+            <strong>{t('important')}:</strong> {t('platform_disclaimer')}
           </p>
         </section>
 
         <section className="terms-section">
-          <h2>2. USER RESPONSIBILITIES & REQUIREMENTS</h2>
+          <h2>2. {t('user_responsibilities_title')}</h2>
           <ul>
-            <li><strong>Age Requirement:</strong> You must be at least 18 years old to use Teiko Labs</li>
-            <li><strong>Legal Capacity:</strong> You must have legal capacity to enter into contracts in your jurisdiction</li>
-            <li><strong>Wallet Security:</strong> You are solely responsible for your wallet security, private keys, and seed phrases</li>
-            <li><strong>Due Diligence:</strong> You must research all projects before funding (#DYOR - Do Your Own Research)</li>
-            <li><strong>Legal Compliance:</strong> You must comply with ALL applicable laws and regulations in your country, state, province, and local jurisdiction, including but not limited to securities laws, tax obligations, anti-money laundering (AML) requirements, and know-your-customer (KYC) regulations</li>
-            <li><strong>Jurisdictional Responsibility:</strong> You are solely responsible for determining whether your use of Teiko Labs is legal in your jurisdiction. We do not provide legal advice regarding compliance</li>
-            <li><strong>Prohibited Jurisdictions:</strong> You must not use the platform if cryptocurrency trading, crowdfunding, or DeFi activities are prohibited in your jurisdiction</li>
-            <li><strong>Tax Obligations:</strong> You are responsible for reporting and paying all taxes on your activities, including capital gains, income from trading fees, and any other tax liabilities in your country</li>
-            <li><strong>Anti-Fraud:</strong> You must not engage in market manipulation, wash trading, or fraudulent activities</li>
-            <li><strong>Project Verification:</strong> You acknowledge that project creators may be anonymous and unverified</li>
+            <li><strong>{t('age_requirement')}:</strong> {t('age_requirement_desc')}</li>
+            <li><strong>{t('legal_capacity')}:</strong> {t('legal_capacity_desc')}</li>
+            <li><strong>{t('wallet_security_responsibility')}:</strong> {t('wallet_security_responsibility_desc')}</li>
+            <li><strong>{t('due_diligence')}:</strong> {t('due_diligence_desc')}</li>
+            <li><strong>{t('legal_compliance_responsibility')}:</strong> {t('legal_compliance_responsibility_desc')}</li>
+            <li><strong>{t('jurisdictional_responsibility')}:</strong> {t('jurisdictional_responsibility_desc')}</li>
+            <li><strong>{t('prohibited_jurisdictions')}:</strong> {t('prohibited_jurisdictions_desc')}</li>
+            <li><strong>{t('tax_obligations')}:</strong> {t('tax_obligations_desc')}</li>
+            <li><strong>{t('anti_fraud')}:</strong> {t('anti_fraud_desc')}</li>
+            <li><strong>{t('project_verification')}:</strong> {t('project_verification_desc')}</li>
           </ul>
         </section>
 
         <section className="terms-section">
-          <h2>3. SPECIFIC PLATFORM RISKS</h2>
+          <h2>3. {t('specific_platform_risks_title')}</h2>
           
           <div className="risk-category">
-            <h3>🏛️ Treasury Ownership Competition</h3>
-            <p>Multiple users compete for majority holder status. You may lose majority status and trading fee rights to other users at any time without warning.</p>
+            <h3>🏆 {t('treasury_ownership_competition')}</h3>
+            <p>{t('treasury_ownership_competition_desc')}</p>
           </div>
 
           <div className="risk-category">
-            <h3>🔐 Token Locking Mechanism</h3>
-            <p>Locked ownership tokens cannot be unlocked until specific revenue thresholds are met. These thresholds may never be reached, permanently locking your tokens.</p>
+            <h3>🔐 {t('token_locking_mechanism_risk')}</h3>
+            <p>{t('token_locking_mechanism_risk_desc')}</p>
           </div>
 
           <div className="risk-category">
-            <h3>💰 1.5% Trading Fee Structure</h3>
-            <p>Trading fees are not guaranteed. Low trading volume means minimal fees. Platform mechanics may change fee distribution at any time.</p>
+            <h3>💰 {t('trading_fee_structure')}</h3>
+            <p>{t('trading_fee_structure_desc')}</p>
           </div>
 
           <div className="risk-category">
-            <h3>📊 21 Million Token Supply</h3>
-            <p>Fixed supply may create artificial scarcity or dilution effects. Early buyers may have unfair advantages over later participants.</p>
+            <h3>📊 {t('fixed_token_supply')}</h3>
+            <p>{t('fixed_token_supply_desc')}</p>
           </div>
 
           <div className="risk-category">
-            <h3>🎯 Crowdfunding Project Risks</h3>
-            <p>Projects may fail, be abandoned, or be fraudulent. Project creators may disappear with funds. No guarantees exist for project completion or success.</p>
+            <h3>📈 {t('crowdfunding_project_risks')}</h3>
+            <p>{t('crowdfunding_project_risks_desc')}</p>
           </div>
         </section>
 
         <section className="terms-section risk-section">
-          <h2>⚠️ 4. RISK DISCLAIMER</h2>
+          <h2>⚠️ 4. {t('risk_disclaimer_title')}</h2>
           <div className="risk-warning">
-            <h3>IMPORTANT: PLEASE READ CAREFULLY</h3>
+            <h3>{t('important_read_carefully')}</h3>
             <p>
-              <strong>TRADING CRYPTOCURRENCY AND DIGITAL ASSETS INVOLVES SUBSTANTIAL RISK OF LOSS AND IS NOT SUITABLE FOR ALL INVESTORS.</strong>
+              <strong>{t('cryptocurrency_trading_risk')}</strong>
             </p>
           </div>
           
-          <h4>Financial Risks:</h4>
+          <h4>{t('financial_risks')}:</h4>
           <ul>
-            <li><strong>Total Loss of Funds:</strong> You may lose all money invested in treasury ownership tokens</li>
-            <li><strong>Market Volatility:</strong> Token prices can fluctuate dramatically and unpredictably</li>
-            <li><strong>No Guaranteed Returns:</strong> Trading fees and profits are not guaranteed</li>
-            <li><strong>Majority Holder Competition:</strong> Other users may outbid you for majority holder status</li>
-            <li><strong>Locked Funds:</strong> Ownership tokens may become locked based on platform mechanics</li>
+            <li><strong>{t('total_loss_funds')}:</strong> {t('total_loss_funds_desc')}</li>
+            <li><strong>{t('market_volatility')}:</strong> {t('market_volatility_desc')}</li>
+            <li><strong>{t('no_guaranteed_returns')}:</strong> {t('no_guaranteed_returns_desc')}</li>
+            <li><strong>{t('majority_holder_competition')}:</strong> {t('majority_holder_competition_desc')}</li>
+            <li><strong>{t('locked_funds')}:</strong> {t('locked_funds_desc')}</li>
           </ul>
 
-          <h4>Technical Risks:</h4>
+          <h4>{t('technical_risks')}:</h4>
           <ul>
-            <li><strong>Smart Contract Risk:</strong> Bugs or vulnerabilities in Clarity smart contracts may cause loss of funds</li>
-            <li><strong>Blockchain Risk:</strong> Issues with Stacks blockchain or sBTC peg may affect functionality</li>
-            <li><strong>Platform Downtime:</strong> Technical issues may prevent access to funds or trading</li>
-            <li><strong>Wallet Security:</strong> Loss of private keys results in permanent loss of funds</li>
+            <li><strong>{t('smart_contract_risk')}:</strong> {t('smart_contract_risk_desc')}</li>
+            <li><strong>{t('blockchain_risk')}:</strong> {t('blockchain_risk_desc')}</li>
+            <li><strong>{t('platform_downtime')}:</strong> {t('platform_downtime_desc')}</li>
+            <li><strong>{t('wallet_security_risk')}:</strong> {t('wallet_security_risk_desc')}</li>
           </ul>
 
-          <h4>Regulatory Risks:</h4>
+          <h4>{t('regulatory_risks')}:</h4>
           <ul>
-            <li><strong>Uncertain Legal Status:</strong> Regulatory treatment of digital assets may change</li>
-            <li><strong>Compliance Requirements:</strong> You may be subject to tax or reporting obligations</li>
-            <li><strong>Jurisdictional Restrictions:</strong> Use may be prohibited in certain jurisdictions</li>
+            <li><strong>{t('uncertain_legal_status')}:</strong> {t('uncertain_legal_status_desc')}</li>
+            <li><strong>{t('compliance_requirements')}:</strong> {t('compliance_requirements_desc')}</li>
+            <li><strong>{t('jurisdictional_restrictions')}:</strong> {t('jurisdictional_restrictions_desc')}</li>
           </ul>
         </section>
 
         <section className="terms-section">
-          <h2>5. NO INVESTMENT ADVICE</h2>
+          <h2>5. {t('no_investment_advice_title')}</h2>
           <p>
-            Nothing on this Platform constitutes investment, financial, trading, or other advice. All content is for informational purposes only. You should consult with qualified professionals before making any investment decisions.
+            {t('no_investment_advice_desc')}
           </p>
         </section>
 
         <section className="terms-section">
-          <h2>6. PLATFORM DISCLAIMERS</h2>
+          <h2>6. {t('platform_disclaimers_title')}</h2>
           <ul>
-            <li>The Platform is provided "as is" without warranties of any kind</li>
-            <li>We do not guarantee Platform availability, functionality, or security</li>
-            <li>We are not responsible for user-generated content or project outcomes</li>
-            <li>We do not custody funds or control smart contract operations</li>
-            <li>Third-party integrations (wallets, explorers) are used at your own risk</li>
+            <li>{t('platform_disclaimer_1')}</li>
+            <li>{t('platform_disclaimer_2')}</li>
+            <li>{t('platform_disclaimer_3')}</li>
+            <li>{t('platform_disclaimer_4')}</li>
+            <li>{t('platform_disclaimer_5')}</li>
           </ul>
         </section>
 
         <section className="terms-section">
-          <h2>7. LIMITATION OF LIABILITY</h2>
+          <h2>7. {t('limitation_liability_title')}</h2>
           <p>
-            <strong>TO THE MAXIMUM EXTENT PERMITTED BY LAW, WE SHALL NOT BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, CONSEQUENTIAL, OR PUNITIVE DAMAGES ARISING FROM YOUR USE OF THE PLATFORM, INCLUDING BUT NOT LIMITED TO LOSS OF FUNDS, PROFITS, OR DATA.</strong>
+            <strong>{t('limitation_liability_desc')}</strong>
           </p>
         </section>
 
         <section className="terms-section">
-          <h2>8. PROHIBITED ACTIVITIES</h2>
+          <h2>8. {t('prohibited_activities_title')}</h2>
           <ul>
-            <li>Market manipulation or wash trading</li>
-            <li>Creating fraudulent or misleading projects</li>
-            <li>Attempting to exploit smart contract vulnerabilities</li>
-            <li>Using the Platform for money laundering or illegal activities</li>
-            <li>Violating intellectual property rights</li>
-            <li>Interfering with Platform operations or other users</li>
+            <li>{t('prohibited_activity_1')}</li>
+            <li>{t('prohibited_activity_2')}</li>
+            <li>{t('prohibited_activity_3')}</li>
+            <li>{t('prohibited_activity_4')}</li>
+            <li>{t('prohibited_activity_5')}</li>
+            <li>{t('prohibited_activity_6')}</li>
           </ul>
         </section>
 
         <section className="terms-section">
-          <h2>9. MODIFICATIONS AND TERMINATION</h2>
+          <h2>9. {t('modifications_termination_title')}</h2>
           <p>
-            We reserve the right to modify these terms, update the Platform, or terminate services at any time without notice. Continued use after modifications constitutes acceptance of updated terms.
+            {t('modifications_termination_desc')}
           </p>
         </section>
 
         <section className="terms-section">
-          <h2>10. GOVERNING LAW</h2>
+          <h2>10. {t('governing_law_title')}</h2>
           <p>
-            These terms are governed by applicable law. Any disputes shall be resolved through binding arbitration where permitted by law.
+            {t('governing_law_desc')}
           </p>
         </section>
 
         <section className="terms-section acknowledgment">
-          <h2>11. ACKNOWLEDGMENT</h2>
+          <h2>11. {t('acknowledgment_title')}</h2>
           <div className="acknowledgment-box">
             <p>
-              <strong>BY USING THIS PLATFORM, YOU ACKNOWLEDGE THAT:</strong>
+              <strong>{t('acknowledgment_intro')}</strong>
             </p>
             <ul>
-              <li>You have read and understood these Terms of Service and Risk Disclaimer</li>
-              <li>You understand the substantial risks involved in cryptocurrency trading</li>
-              <li>You are using the Platform at your own risk and responsibility</li>
-              <li>You may lose all funds invested in treasury ownership tokens</li>
-              <li>No returns or profits are guaranteed</li>
-              <li>You are responsible for compliance with applicable laws</li>
+              <li>{t('acknowledgment_1')}</li>
+              <li>{t('acknowledgment_2')}</li>
+              <li>{t('acknowledgment_3')}</li>
+              <li>{t('acknowledgment_4')}</li>
+              <li>{t('acknowledgment_5')}</li>
+              <li>{t('acknowledgment_6')}</li>
             </ul>
           </div>
         </section>
 
         <div className="contact-section">
-          <h2>Contact</h2>
+          <h2>{t('contact')}</h2>
           <p>
-            For questions about these terms, please contact us through our official channels.
+            {t('contact_desc')}
           </p>
         </div>
       </div>

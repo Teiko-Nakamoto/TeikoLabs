@@ -227,6 +227,7 @@ export default function ClientHomePage() {
   // Function to handle token card click
   const handleTokenCardClick = (tokenCard) => {
     console.log('Token card clicked:', { activeTab, tokenCardTabType: tokenCard.tabType, connectedAddress });
+    
     // Check if trading is disabled for this token category
     const isTokenTradingDisabled = () => {
       if (activeTab === 'featured' && !accessSettings.tokenTrading?.featured) {
@@ -262,9 +263,12 @@ export default function ClientHomePage() {
       }
     } else if (activeTab === 'featured') {
       console.log('Featured tab detected, checking wallet...');
+      
+      // For featured (mainnet) tokens, prevent access if:
+      // 1. No wallet connected
+      // 2. Testnet wallet connected (ST address)
       if (!connectedAddress) {
         console.log('No wallet connected for mainnet trading - showing mainnet popup');
-        // No wallet connected for mainnet trading - show popup
         setShowMainnetWalletPopup(true);
         return;
       }
@@ -272,7 +276,13 @@ export default function ClientHomePage() {
       // Check if testnet wallet is connected (should be mainnet for featured)
       if (connectedAddress.startsWith('ST')) {
         console.log('Testnet wallet connected for mainnet trading - showing mainnet popup');
-        // Testnet wallet connected for mainnet trading - show popup
+        setShowMainnetWalletPopup(true);
+        return;
+      }
+      
+      // Additional check: ensure it's a mainnet wallet (SP address)
+      if (!connectedAddress.startsWith('SP')) {
+        console.log('Invalid wallet type for mainnet trading - showing mainnet popup');
         setShowMainnetWalletPopup(true);
         return;
       }
@@ -531,7 +541,7 @@ export default function ClientHomePage() {
             }}>
                               {showTypewriter ? (
                   <TypewriterText 
-                    text="Join The Forever Pump Protocol" 
+                    text={t('join_forever_pump_protocol')} 
                     speed={80}
                   />
                 ) : (
@@ -1106,15 +1116,15 @@ export default function ClientHomePage() {
                 }}>
                   <p>
                     {activeTab === 'featured' ? (
-                      <>🚀 <strong>Mainnet tokens coming soon!</strong><br />
-                      Real tokens with real value will be available here.</>
+                      <>🚀 <strong>{t('mainnet_tokens_coming_soon')}</strong><br />
+                      {t('real_tokens_coming_soon')}</>
                     ) : (
-                      <>🧪 <strong>Testnet tokens coming soon!</strong><br />
-                      Practice tokens will be available here.</>
+                      <>🧪 <strong>{t('testnet_tokens_coming_soon')}</strong><br />
+                      {t('practice_tokens_coming_soon')}</>
                     )}
                   </p>
                   <p style={{ fontSize: '0.9rem', marginTop: '0.5rem' }}>
-                    Admin can configure tokens in the admin panel
+                    {t('admin_configure_tokens')}
                   </p>
                 </div>
               )}
@@ -1160,7 +1170,7 @@ export default function ClientHomePage() {
               marginBottom: '16px',
               fontFamily: 'Arial, sans-serif'
             }}>
-              Coming Soon!
+              {t('coming_soon_title')}
             </h2>
             <p style={{
               color: '#ccc',
@@ -1169,7 +1179,7 @@ export default function ClientHomePage() {
               marginBottom: '24px',
               fontFamily: 'Arial, sans-serif'
             }}>
-              Project creation feature is currently under development. Stay tuned for updates!
+              {t('project_creation_development')}
             </p>
             <button
               onClick={() => setShowComingSoonPopup(false)}
@@ -1235,7 +1245,7 @@ export default function ClientHomePage() {
               marginBottom: '16px',
               fontFamily: 'Arial, sans-serif'
             }}>
-              Feature Being Updated
+              {t('feature_being_updated')}
             </h2>
             <p style={{
               color: '#ccc',
@@ -1244,7 +1254,7 @@ export default function ClientHomePage() {
               marginBottom: '24px',
               fontFamily: 'Arial, sans-serif'
             }}>
-              This feature is currently being updated. Please check back soon for the latest improvements!
+              {t('feature_being_updated_desc')}
             </p>
             <button
               onClick={() => setShowTradingUpdatePopup(false)}

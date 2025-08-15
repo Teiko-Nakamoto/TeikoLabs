@@ -93,25 +93,17 @@ const LearnAboutHowTo = ({ onClose }) => {
                 maxWidth: '500px',
                 margin: '0 auto 1rem'
               }}>
-                Discourages dumps by allowing anyone to claim the trading fee revenue generated and saved in smart contracts on-chain. Incentivising holders to <span style={{ color: '#60A5FA' }}>HODL</span> and not <span style={{ color: '#EF4444' }}>DUMP</span>.
+                The revolutionary system that turns <span style={{ color: '#EF4444' }}>dumps</span> into <span style={{ color: '#60A5FA' }}>opportunities</span> - every trade generates fees for holders. Buy the dip with <span style={{ color: '#60A5FA' }}>zero fear</span> and grow your revenue streams as the largest holder.
               </p>
             </div>
           </div>
           
           {/* Trading Section */}
           <div className="step-container">
-            <div className="step">
-              <div className="step-number">1</div>
-              <div className="step-content">
-                <h4>How Trading Works</h4>
-                <p>MAS Sats operates on an <strong>infinite bonding curve</strong> with 21 million max supply, trading against <strong>sBTC</strong>. The largest holder can withdraw revenue anytime but must wait for trading fees to be paid back before unlocking tokens.</p>
-              </div>
-            </div>
             
             {/* Choice Split */}
             <div className="choice-section">
               <div className="step">
-                <div className="step-number">2</div>
                 <div className="step-content">
                   <h4>Choose Your Strategy</h4>
                 </div>
