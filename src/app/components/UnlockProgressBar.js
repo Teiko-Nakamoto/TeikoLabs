@@ -1282,15 +1282,7 @@ const UnlockProgressBar = React.memo(function UnlockProgressBar({
                 }} 
               />
               
-              {/* Progress Percentage Display */}
-              <div style={{
-                textAlign: 'center',
-                marginTop: window.innerWidth <= 768 ? '6px' : '8px',
-                fontSize: window.innerWidth <= 768 ? '12px' : '14px',
-                color: '#ccc'
-              }}>
-                {progressPercentage.toFixed(1)}% Complete
-              </div>
+
               
               {/* Network Mismatch Warning */}
               {networkMismatch && (
@@ -2767,14 +2759,7 @@ const UnlockProgressBar = React.memo(function UnlockProgressBar({
                      </div>
                      
                      {/* Progress Percentage */}
-                     <div style={{
-                       textAlign: 'center',
-                       fontSize: '12px',
-                       color: '#9ca3af',
-                       marginTop: '8px'
-                     }}>
-                       {progressPercentage.toFixed(1)}% Complete
-                     </div>
+
                    </div>
                  </div>
                )}

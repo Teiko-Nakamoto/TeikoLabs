@@ -281,15 +281,7 @@ const WhaleAccessProgressBar = React.memo(function WhaleAccessProgressBar({
         />
       </div>
       
-      {/* Progress Percentage Display */}
-      <div style={{
-        textAlign: 'center',
-        marginTop: '12px',
-        fontSize: '14px',
-        color: '#ccc'
-      }}>
-        {progressPercentage.toFixed(1)}% Complete
-      </div>
+
     </div>
   );
 });
