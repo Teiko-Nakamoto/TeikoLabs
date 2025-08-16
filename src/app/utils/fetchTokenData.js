@@ -19,7 +19,8 @@ export const SATS_CONTRACT_NAME = 'sbtc-token';
 
 // Default fallback values (for backward compatibility)
 export const DEX_CONTRACT_ADDRESS = 'ST37918Q7NBZ52AMV133VTY5C864KVK0S2HZ3CGA4';
-export const DEX_CONTRACT_NAME = 'mas-sats-dex';
+// Remove the hardcoded contract name - it should come from backend data
+// export const DEX_CONTRACT_NAME = 'mas-sats-dex';
 export const TOKEN_CONTRACT_NAME = 'mas-sats';
 
 // Utility function to parse contract info from tokenData (source of truth)

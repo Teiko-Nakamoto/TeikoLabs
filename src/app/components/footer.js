@@ -71,7 +71,7 @@ export default function Footer() {
               <a href="https://platform.hiro.so/faucet" target="_blank" rel="noopener noreferrer">
                 Get Testnet SBTC
               </a>
-              <a href="https://explorer.hiro.so/txid/ST37918Q7NBZ52AMV133VTY5C864KVK0S2HZ3CGA4.mas-sats-dex?chain=testnet" target="_blank" rel="noopener noreferrer">
+              <a href="https://explorer.hiro.so" target="_blank" rel="noopener noreferrer">
                 Stacks Explorer
               </a>
             </div>

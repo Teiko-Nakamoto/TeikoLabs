@@ -1,0 +1,14 @@
+{
+  "name": "MAS Sats",
+  "description": "MAS Sats is the native token of the MAS Network Protocol, a Bitcoin Layer 3 DeFi trading platform. MAS Sats holders can earn trading fees from token trades and participate in the decentralized trading ecosystem.",
+  "image": "/icons/The Mas Network.svg",
+  "xlink": "https://x.com/TeikoLabs",
+  "homepage": "teikolabs.com",
+  "telegram": "https://t.me/teikolabs21/1",
+  "discord": "https://discord.gg/rx4AkP7xhu",
+  "contract_address": "SP1T0VY3DNXRVP6HBM75DFWW0199CR0X15PC1D81B",
+  "contract_name": "mas-sats-treasury",
+  "symbol": "MAS",
+  "decimals": 8,
+  "network": "mainnet"
+}

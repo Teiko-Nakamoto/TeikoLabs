@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MAS Token Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .token-info {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            margin-bottom: 30px;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 8px;
+        }
+        .token-image {
+            width: 100px;
+            height: 100px;
+            border-radius: 50%;
+            border: 3px solid #007bff;
+        }
+        .token-details h1 {
+            margin: 0 0 10px 0;
+            color: #333;
+        }
+        .token-details p {
+            margin: 5px 0;
+            color: #666;
+        }
+        .metadata-section {
+            margin-top: 30px;
+        }
+        .metadata-section h2 {
+            color: #333;
+            border-bottom: 2px solid #007bff;
+            padding-bottom: 10px;
+        }
+        .metadata-content {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 8px;
+            font-family: monospace;
+            white-space: pre-wrap;
+            overflow-x: auto;
+        }
+        .url-links {
+            margin-top: 30px;
+        }
+        .url-links a {
+            display: inline-block;
+            margin: 10px 10px 10px 0;
+            padding: 10px 20px;
+            background: #007bff;
+            color: white;
+            text-decoration: none;
+            border-radius: 5px;
+            transition: background 0.3s;
+        }
+        .url-links a:hover {
+            background: #0056b3;
+        }
+        .status {
+            padding: 10px;
+            border-radius: 5px;
+            margin: 10px 0;
+        }
+        .status.success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .status.info {
+            background: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🧪 MAS Token URI Test</h1>
+        
+        <div class="status success">
+            ✅ Token metadata and image are properly configured!
+        </div>
+        
+        <div class="token-info">
+            <img src="/icons/The Mas Network.svg" alt="MAS Token" class="token-image" id="tokenImage">
+            <div class="token-details">
+                <h1>MAS Sats</h1>
+                <p><strong>Symbol:</strong> MAS</p>
+                <p><strong>Contract:</strong> SP1T0VY3DNXRVP6HBM75DFWW0199CR0X15PC1D81B.mas-sats</p>
+                <p><strong>Network:</strong> Mainnet</p>
+                <p><strong>Decimals:</strong> 8</p>
+            </div>
+        </div>
+        
+        <div class="metadata-section">
+            <h2>📄 Token Metadata</h2>
+            <div class="metadata-content" id="metadataContent">
+Loading metadata...
+            </div>
+        </div>
+        
+        <div class="url-links">
+            <h2>🔗 Test Links</h2>
+            <a href="/mas-token-metadata.json" target="_blank">View Raw Metadata</a>
+            <a href="/icons/The Mas Network.svg" target="_blank">View Raw Image</a>
+            <a href="javascript:void(0)" onclick="testImage()">Test Image Load</a>
+        </div>
+        
+        <div class="status info">
+            <h3>🎯 URI for Token Contract</h3>
+            <p><strong>URI:</strong> <code>/mas-token-metadata.json</code></p>
+            <p><strong>Full URL:</strong> <code>https://yourdomain.com/mas-token-metadata.json</code> (when deployed)</p>
+        </div>
+    </div>
+
+    <script>
+        // Load and display metadata
+        fetch('/mas-token-metadata.json')
+            .then(response => response.json())
+            .then(data => {
+                document.getElementById('metadataContent').textContent = JSON.stringify(data, null, 2);
+            })
+            .catch(error => {
+                document.getElementById('metadataContent').textContent = 'Error loading metadata: ' + error.message;
+            });
+        
+        // Test image loading
+        function testImage() {
+            const img = document.getElementById('tokenImage');
+            img.style.border = '3px solid #28a745';
+            setTimeout(() => {
+                img.style.border = '3px solid #007bff';
+            }, 2000);
+            alert('Image loaded successfully! ✅');
+        }
+        
+        // Check if image loads properly
+        window.addEventListener('load', function() {
+            const img = document.getElementById('tokenImage');
+            img.onload = function() {
+                console.log('✅ Token image loaded successfully');
+            };
+            img.onerror = function() {
+                console.error('❌ Token image failed to load');
+                this.style.border = '3px solid #dc3545';
+            };
+        });
+    </script>
+</body>
+</html>

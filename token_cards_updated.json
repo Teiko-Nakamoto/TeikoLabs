@@ -1,0 +1,16 @@
+[
+  {
+    "id": 1,
+    "isComingSoon": false,
+    "isHidden": false,
+    "tabType": "featured",
+    "dexInfo": "SP1T0VY3DNXRVP6HBM75DFWW0199CR0X15PC1D81B.mas-sats-treasury",
+    "tokenInfo": "SP1T0VY3DNXRVP6HBM75DFWW0199CR0X15PC1D81B.mas-sats",
+    "symbol": "MAS",
+    "revenue": 0,
+    "liquidity": 0,
+    "network": "mainnet",
+    "metadataUri": "/mas-token-metadata.json",
+    "imageUrl": "/icons/The Mas Network.svg"
+  }
+]

@@ -134,7 +134,9 @@ export async function getTokenCardsServer() {
     symbol: card.symbol || '',
     revenue: card.revenue || 0,
     liquidity: card.liquidity || 0,
-    network: card.network || 'testnet'
+    network: card.network || 'testnet',
+    metadataUri: card.metadata_uri || null,
+    imageUrl: card.image_url || null
   }));
 
   return transformedData;
@@ -164,6 +166,8 @@ export async function saveTokenCardsServer(tokenCards, defaultTab) {
     revenue: card.revenue || 0,
     liquidity: card.liquidity || 0,
     network: card.network || 'testnet',
+    metadata_uri: card.metadataUri || null,
+    image_url: card.imageUrl || null,
     created_at: new Date().toISOString(),
     updated_at: new Date().toISOString()
   }));
