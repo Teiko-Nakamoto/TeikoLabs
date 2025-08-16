@@ -76,62 +76,44 @@ async function handler(request) {
           console.log('🔍 Result constructor:', chainResult?.constructor?.name);
           console.log('🔍 Result keys:', chainResult && typeof chainResult === 'object' ? Object.keys(chainResult) : 'N/A');
           
-          // Handle different response formats including BigInt
-          let balance = 0;
-          if (typeof chainResult === 'bigint') {
-            balance = Number(chainResult);
-            console.log('🔍 Parsed BigInt:', balance);
-          } else if (typeof chainResult === 'number') {
-            balance = chainResult;
-            console.log('🔍 Parsed as number:', balance);
-          } else if (typeof chainResult === 'string') {
-            console.log('🔍 Parsing string result:', chainResult);
-            // Handle string format like "ok u123456"
-            if (chainResult.startsWith('ok u')) {
-              balance = parseInt(chainResult.substring(4));
-              console.log('🔍 Parsed "ok u" format:', balance);
-            } else if (chainResult.startsWith('ok ')) {
-              balance = parseInt(chainResult.substring(3));
-              console.log('🔍 Parsed "ok " format:', balance);
-            } else {
-              balance = parseInt(chainResult) || 0;
-              console.log('🔍 Parsed direct string:', balance);
-            }
-          } else if (chainResult && typeof chainResult === 'object') {
-            console.log('🔍 Parsing object result:', JSON.stringify(chainResult, (key, value) => 
-              typeof value === 'bigint' ? value.toString() : value, 2));
-            // Handle object format
-            if (chainResult.value !== undefined) {
-              const value = typeof chainResult.value === 'bigint' ? Number(chainResult.value) : chainResult.value;
-              balance = parseInt(value) || 0;
-              console.log('🔍 Parsed from .value:', balance);
-            } else if (chainResult.result !== undefined) {
-              const result = typeof chainResult.result === 'bigint' ? Number(chainResult.result) : chainResult.result;
-              balance = parseInt(result) || 0;
-              console.log('🔍 Parsed from .result:', balance);
-            } else {
-              // Try to parse the object directly
-              balance = parseInt(chainResult) || 0;
-              console.log('🔍 Parsed object directly:', balance);
-            }
-          } else {
-            console.log('🔍 Unknown result format, defaulting to 0');
-          }
+          // Use the same parsing logic as the frontend
+          const raw = chainResult?.value?.value || chainResult?.value || null;
+          console.log('🔍 Teiko balance raw value:', raw);
           
-          // Convert from raw balance (6 decimal places) to actual token amount
-          const actualBalance = balance / 1000000;
+          let balance = 0;
+          if (raw) {
+            // Convert from smallest units (6 decimal places) to whole tokens
+            let rawValue = 0;
+            if (typeof raw === 'bigint') {
+              rawValue = Number(raw);
+              console.log('🔍 Teiko balance: Converted bigint to number:', rawValue);
+            } else {
+              rawValue = parseInt(raw);
+              console.log('🔍 Teiko balance: Parsed string to integer:', rawValue);
+            }
+            
+            const tokensInWholeUnits = rawValue / 1000000;
+            balance = Math.floor(tokensInWholeUnits);
+            
+            console.log('🔍 Teiko balance conversion:', {
+              rawValue: rawValue,
+              tokensInWholeUnits: tokensInWholeUnits,
+              finalResult: balance
+            });
+          } else {
+            console.log('🔍 No Teiko balance raw value found');
+          }
           
           console.log('✅ Teiko get-balance result:', { 
             principal, 
             rawBalance: balance,
-            actualBalance,
             network: 'mainnet' 
           });
           
           return { 
             principal, 
-            balance: actualBalance,
-            rawBalance: balance,
+            balance: balance,
+            rawBalance: balance * 1000000, // Convert back to raw units for reference
             source: 'contract', 
             network: 'mainnet',
             contractAddress: teikoContractAddress,

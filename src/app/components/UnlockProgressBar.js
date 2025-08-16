@@ -86,7 +86,7 @@ const UnlockProgressBar = React.memo(function UnlockProgressBar({
   const [showRestrictionPopup, setShowRestrictionPopup] = useState(false);
   
 
-
+  
 
 
 
@@ -209,7 +209,7 @@ const UnlockProgressBar = React.memo(function UnlockProgressBar({
     }
   };
 
-  // Fetch Teiko token balance using the same approach as MAS Sats
+  // Fetch Teiko token balance using server-side API with API keys
   const fetchTeikoTokenBalance = async () => {
     try {
       setLoadingTeikoBalance(true);
@@ -230,48 +230,22 @@ const UnlockProgressBar = React.memo(function UnlockProgressBar({
 
       console.log('🔍 Fetching Teiko token balance for address:', connectedAddress);
       
-      // Use direct frontend blockchain call (same as MAS Sats)
-      const result = await fetchCallReadOnlyFunction({
-        contractAddress: 'SP1T0VY3DNXRVP6HBM75DFWW0199CR0X15PC1D81B',
-        contractName: 'teiko-token-stxcity',
-        functionName: 'get-balance',
-        functionArgs: [principalCV(connectedAddress)],
-        network: getHiroNetworkServerSide('mainnet'),
-        senderAddress: connectedAddress,
-      });
-
-      console.log('🔍 Teiko balance raw result:', result);
+      // Use server-side API with API keys (secure and reliable)
+      const response = await fetch(`/api/get-teiko-balance?principal=${connectedAddress}`);
+      const data = await response.json();
       
-      // Convert the result using the same logic as getUserTokenBalance
-      const raw = result?.value?.value || result?.value || null;
-      console.log('🔍 Teiko balance raw value:', raw);
+      console.log('🔍 Teiko balance API response:', data);
       
-      if (!raw) {
-        console.log('🔍 No Teiko balance raw value found');
+      if (data.error) {
+        console.error('❌ API error:', data.error);
         setTeikoTokenBalance(0);
         return;
       }
       
-      // Convert from smallest units (6 decimal places) to whole tokens
-      let rawValue = 0;
-      if (typeof raw === 'bigint') {
-        rawValue = Number(raw);
-        console.log('🔍 Teiko balance: Converted bigint to number:', rawValue);
-      } else {
-        rawValue = parseInt(raw);
-        console.log('🔍 Teiko balance: Parsed string to integer:', rawValue);
-      }
+      const balance = data.balance || 0;
+      console.log('🔍 Teiko balance received:', balance);
       
-      const tokensInWholeUnits = rawValue / 1000000;
-      const finalResult = Math.floor(tokensInWholeUnits);
-      
-      console.log('🔍 Teiko balance conversion:', {
-        rawValue: rawValue,
-        tokensInWholeUnits: tokensInWholeUnits,
-        finalResult: finalResult
-      });
-      
-      setTeikoTokenBalance(finalResult);
+      setTeikoTokenBalance(balance);
       
     } catch (error) {
       console.error('❌ Error fetching Teiko token balance:', error);
@@ -417,6 +391,41 @@ const UnlockProgressBar = React.memo(function UnlockProgressBar({
   // Buy function using Stacks Connect
   const handleBuy = async () => {
     console.log('🔍 handleBuy function called');
+    
+    // FINAL CHECKPOINT: Verify Teiko token balance before allowing transaction
+    const requiredTeikoTokens = 21000;
+    
+    // First, try to use existing data if available
+    let currentTeikoBalance = teikoTokenBalance;
+    
+    // If we don't have valid data, fetch it fresh with API keys
+    if (!currentTeikoBalance || currentTeikoBalance === 0) {
+      console.log('🔍 No valid Teiko balance data, fetching fresh...');
+      try {
+        const connectedAddress = localStorage.getItem('connectedAddress');
+        if (connectedAddress && connectedAddress.startsWith('SP')) {
+          const response = await fetch(`/api/get-teiko-balance?principal=${connectedAddress}`);
+          const data = await response.json();
+          currentTeikoBalance = data.balance || 0;
+          console.log('🔍 Fresh Teiko balance fetched:', currentTeikoBalance);
+        }
+      } catch (error) {
+        console.error('❌ Error fetching fresh Teiko balance:', error);
+        currentTeikoBalance = 0;
+      }
+    }
+    
+    // Check if user meets Teiko requirement
+    if (currentTeikoBalance < requiredTeikoTokens) {
+      console.log('❌ Teiko balance insufficient for trading:', {
+        current: currentTeikoBalance,
+        required: requiredTeikoTokens
+      });
+      alert(`You need at least ${requiredTeikoTokens.toLocaleString()} Teiko tokens to trade. Current balance: ${currentTeikoBalance.toLocaleString()}`);
+      return;
+    }
+    
+    console.log('✅ Teiko balance check passed:', currentTeikoBalance);
     
     // Trigger pending transaction animation
     if (typeof window !== 'undefined') {
@@ -689,6 +698,41 @@ const UnlockProgressBar = React.memo(function UnlockProgressBar({
   // Sell function using Stacks Connect
   const handleSell = async () => {
     console.log('🔍 handleSell function called');
+    
+    // FINAL CHECKPOINT: Verify Teiko token balance before allowing transaction
+    const requiredTeikoTokens = 21000;
+    
+    // First, try to use existing data if available
+    let currentTeikoBalance = teikoTokenBalance;
+    
+    // If we don't have valid data, fetch it fresh with API keys
+    if (!currentTeikoBalance || currentTeikoBalance === 0) {
+      console.log('🔍 No valid Teiko balance data, fetching fresh...');
+      try {
+        const connectedAddress = localStorage.getItem('connectedAddress');
+        if (connectedAddress && connectedAddress.startsWith('SP')) {
+          const response = await fetch(`/api/get-teiko-balance?principal=${connectedAddress}`);
+          const data = await response.json();
+          currentTeikoBalance = data.balance || 0;
+          console.log('🔍 Fresh Teiko balance fetched:', currentTeikoBalance);
+        }
+      } catch (error) {
+        console.error('❌ Error fetching fresh Teiko balance:', error);
+        currentTeikoBalance = 0;
+      }
+    }
+    
+    // Check if user meets Teiko requirement
+    if (currentTeikoBalance < requiredTeikoTokens) {
+      console.log('❌ Teiko balance insufficient for trading:', {
+        current: currentTeikoBalance,
+        required: requiredTeikoTokens
+      });
+      alert(`You need at least ${requiredTeikoTokens.toLocaleString()} Teiko tokens to trade. Current balance: ${currentTeikoBalance.toLocaleString()}`);
+      return;
+    }
+    
+    console.log('✅ Teiko balance check passed:', currentTeikoBalance);
     
     // Trigger pending transaction animation
     if (typeof window !== 'undefined') {
@@ -1432,26 +1476,26 @@ const UnlockProgressBar = React.memo(function UnlockProgressBar({
               }
               return null;
             })()}
-            
-            {/* Network Mismatch Warning */}
-            {networkMismatch && (
-              <div style={{
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: '4px',
-                marginTop: '4px',
-                padding: '4px 8px',
-                backgroundColor: '#ef4444',
-                borderRadius: '6px',
-                fontSize: window.innerWidth <= 768 ? '10px' : '11px',
-                fontWeight: '500',
-                color: '#ffffff',
-                textAlign: 'center'
-              }}>
-                <span>⚠️ {networkMismatch.message}</span>
-              </div>
-            )}
+              
+              {/* Network Mismatch Warning */}
+              {networkMismatch && (
+                <div style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '4px',
+                  marginTop: '4px',
+                  padding: '4px 8px',
+                  backgroundColor: '#ef4444',
+                  borderRadius: '6px',
+                  fontSize: window.innerWidth <= 768 ? '10px' : '11px',
+                  fontWeight: '500',
+                  color: '#ffffff',
+                  textAlign: 'center'
+                }}>
+                  <span>⚠️ {networkMismatch.message}</span>
+                </div>
+              )}
           </div>
         </div>
       )}
@@ -1863,7 +1907,7 @@ const UnlockProgressBar = React.memo(function UnlockProgressBar({
                       if (buySellMode === 'buy') {
                         setBuyAmount(amount.toString());
                       } else {
-                        setSellAmount((amount / 100000000).toString());
+                        setSellAmount(amount.toString());
                       }
                     }}
                     disabled={isTransactionPending}
@@ -2281,7 +2325,7 @@ const UnlockProgressBar = React.memo(function UnlockProgressBar({
               
               if (teikoTokenBalance >= requiredTeikoTokens) {
                 // User has enough Teiko tokens, allow trading
-                setShowBuySellPanel(!showBuySellPanel);
+              setShowBuySellPanel(!showBuySellPanel);
               } else {
                 // User doesn't have enough Teiko tokens, show restriction popup
                 setShowRestrictionPopup(true);

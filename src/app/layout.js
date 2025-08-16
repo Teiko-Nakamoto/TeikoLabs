@@ -15,7 +15,7 @@ const geistMono = Geist_Mono({
 export const metadata = {
   // Basic SEO
   title: "Teiko Labs - Bitcoin DeFi Trading Platform | MAS Network Protocol",
-  description: "Trade Bitcoin DeFi tokens, meme coins, and sBTC on The MAS Network Protocol. Access Stacks (STX) DeFi with staking, yield farming, and liquidity pools. The Forever Pump Protocol - Bitcoin's Layer 3 DeFi platform for maximum yield.",
+  description: "Bitcoin Layer 3 DeFi trading platform. Home of MAS Sats with real trading profit anyone can claim.",
   keywords: "Bitcoin DeFi, The Forever Pump Protocol, MAS Sats, Stacks blockchain, decentralized trading, cryptocurrency, Bitcoin Layer 3, DeFi platform, token trading, blockchain trading, meme coin, sBTC, STX, Stacks, Pump.fun, staking, yield farming, liquidity pools, yield farm, The MAS Network, Bitcoin DeFi tokens, Stacks DeFi, sBTC trading, meme coin trading, DeFi staking, yield optimization, liquidity mining, Bitcoin Layer 3 DeFi, Stacks ecosystem, DeFi yield farming, cryptocurrency staking, Bitcoin DeFi platform",
   authors: [{ name: "Teiko Labs" }],
   creator: "Teiko Labs",
@@ -39,7 +39,7 @@ export const metadata = {
     url: 'https://teikolabs.com', // Replace with your actual domain
     siteName: 'Teiko Labs',
     title: 'Teiko Labs - Bitcoin DeFi Trading Platform | MAS Network Protocol',
-    description: 'Trade Bitcoin DeFi tokens, meme coins, and sBTC on The MAS Network Protocol. Access Stacks (STX) DeFi with staking, yield farming, and liquidity pools.',
+    description: 'Bitcoin Layer 3 DeFi trading platform. Home of MAS Sats with real trading profit anyone can claim.',
     images: [
       {
         url: '/logo.png', // Replace with your actual OG image
@@ -56,7 +56,7 @@ export const metadata = {
     site: '@TeikoLabs', // Replace with your actual Twitter handle
     creator: '@TeikoLabs', // Replace with your actual Twitter handle
     title: 'Teiko Labs - Bitcoin DeFi Trading Platform',
-    description: 'Trade Bitcoin DeFi tokens, meme coins, and sBTC on The MAS Network Protocol. Access Stacks (STX) DeFi with staking, yield farming, and liquidity pools.',
+    description: 'Bitcoin Layer 3 DeFi trading platform. Home of MAS Sats with real trading profit anyone can claim.',
     images: ['/logo.png'], // Replace with your actual Twitter image
   },
   
