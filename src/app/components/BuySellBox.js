@@ -444,8 +444,31 @@ export default function BuySellBox({
     console.log('  Token specific:', false); // No longer token specific
     console.log('  Token data:', null); // No longer token data
     
+    // Determine network based on token data or connected wallet
+    let network = 'testnet'; // default
+    const connectedAddress = localStorage.getItem('connectedAddress');
+    
+    // If we have tokenData with tabType, use that to determine network
+    if (tokenData?.tabType) {
+      if (tokenData.tabType === 'featured') {
+        network = 'mainnet';
+      } else if (tokenData.tabType === 'practice') {
+        network = 'testnet';
+      }
+    }
+    // Otherwise, determine network from connected wallet address
+    else if (connectedAddress) {
+      if (connectedAddress.startsWith('SP')) {
+        network = 'mainnet';
+      } else if (connectedAddress.startsWith('ST')) {
+        network = 'testnet';
+      }
+    }
+    
+    console.log('🌐 Using network for transaction:', network);
+    
     let result;
-    result = await handleTransaction(tab, cleanAmount, null, setToast, expectedPriceAtTrade, handleDuplicate, slippageProtectionParams, estimatedOutput, currentPriceAtTrade);
+    result = await handleTransaction(tab, cleanAmount, null, setToast, expectedPriceAtTrade, handleDuplicate, slippageProtectionParams, estimatedOutput, currentPriceAtTrade, null, true, network);
 
     setLoading(false);
 
@@ -672,7 +695,7 @@ export default function BuySellBox({
             <>
               <div style={{ marginBottom: '8px' }}>
                 {t('holdings')}:{" "}
-                {(userBalance || 1500).toLocaleString()}{" "}
+                {(userBalance || 0).toLocaleString()}{" "}
                 <img 
                   src="/icons/sats1.svg" 
                   alt="SATS" 

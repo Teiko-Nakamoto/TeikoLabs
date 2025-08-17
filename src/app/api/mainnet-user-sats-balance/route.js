@@ -13,6 +13,8 @@ import { rateLimitMiddleware, addRateLimitHeaders } from '../../utils/rateLimite
 import { withCors } from '../../utils/corsMiddleware';
 import { loggedBlockchainCall } from '../../utils/cacheLogger';
 import { getHiroNetworkServerSide } from '../../utils/hiro-config';
+import { SATS_CONTRACT_ADDRESS } from '../../utils/constants-test';
+import { MAINNET_SBTC_CONTRACT_ADDRESS } from '../../utils/mainnetTokenData';
 
 async function handler(request) {
   try {
@@ -32,7 +34,7 @@ async function handler(request) {
     const network = getHiroNetworkServerSide(isTestnet ? 'testnet' : 'mainnet');
     
     // Use appropriate sBTC contract based on network
-    const sbtcContractAddress = isTestnet ? 'ST37918Q7NBZ52AMV133VTY5C864KVK0S2HZ3CGA4' : 'SM3VDXK3WZZSA84XXFKAFAF15NNZX32CTSG82JFQ4';
+    const sbtcContractAddress = isTestnet ? SATS_CONTRACT_ADDRESS : MAINNET_SBTC_CONTRACT_ADDRESS;
     const sbtcContractName = 'sbtc-token';
     
     console.log('🌐 Auto-detected network for sBTC balance:', {

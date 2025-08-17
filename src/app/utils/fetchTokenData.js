@@ -5,6 +5,8 @@ import { fetchCallReadOnlyFunction, Cl, principalCV, cvToValue } from '@stacks/t
 import { getLocalStorage } from '@stacks/connect';
 import { logCacheActivity, loggedBlockchainCall } from './cacheLogger';
 import { getCachedBlockchainData } from './hiro-config';
+import { SATS_CONTRACT_ADDRESS } from './constants-test';
+import { MAINNET_SBTC_CONTRACT_ADDRESS } from './mainnetTokenData';
 
 // Custom JSON replacer to handle BigInt serialization
 function jsonReplacer(key, value) {
@@ -14,7 +16,6 @@ function jsonReplacer(key, value) {
   return value;
 }
 
-export const SATS_CONTRACT_ADDRESS = 'ST1F7QA2MDF17S807EPA36TSS8AMEFY4KA9TVGWXT';
 export const SATS_CONTRACT_NAME = 'sbtc-token';
 
 // Default fallback values (for backward compatibility)
@@ -584,16 +585,31 @@ export async function getUserSatsBalance() {
     const userAddress = data?.addresses?.stx?.[0]?.address;
     if (!userAddress) return 0;
 
+    // Auto-detect network based on address prefix
+    const isTestnet = userAddress.startsWith('ST');
+    const network = isTestnet ? STACKS_TESTNET : STACKS_MAINNET;
+    
+    // Use appropriate sBTC contract based on network
+    const sbtcContractAddress = isTestnet ? SATS_CONTRACT_ADDRESS : MAINNET_SBTC_CONTRACT_ADDRESS;
+    const sbtcContractName = 'sbtc-token';
+    
+    console.log('🌐 getUserSatsBalance network detection:', {
+      userAddress,
+      isTestnet,
+      network: isTestnet ? 'testnet' : 'mainnet',
+      sbtcContract: `${sbtcContractAddress}.${sbtcContractName}`
+    });
+
     // Use logged blockchain call with 15-second cache
     const result = await loggedBlockchainCall(
-      'get-user-sats-balance', 
+      `get-user-sats-balance-${isTestnet ? 'testnet' : 'mainnet'}-${userAddress}`, 
       async () => {
         return await fetchCallReadOnlyFunction({
-          contractAddress: SATS_CONTRACT_ADDRESS,
-          contractName: SATS_CONTRACT_NAME,
+          contractAddress: sbtcContractAddress,
+          contractName: sbtcContractName,
           functionName: 'get-balance',
           functionArgs: [principalCV(userAddress)],
-          network: STACKS_TESTNET,
+          network: network,
           senderAddress: userAddress,
         });
       },
@@ -601,7 +617,16 @@ export async function getUserSatsBalance() {
     );
 
     const raw = result?.value?.value || result?.value || null;
-    return raw ? parseInt(raw) : 0;
+    const balance = raw ? parseInt(raw) : 0;
+    
+    console.log('✅ getUserSatsBalance result:', {
+      userAddress,
+      network: isTestnet ? 'testnet' : 'mainnet',
+      balance,
+      raw
+    });
+    
+    return balance;
   } catch (err) {
     console.error('❌ Failed to fetch user SATS balance:', err);
     return 0;

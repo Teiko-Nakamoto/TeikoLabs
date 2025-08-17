@@ -7,6 +7,8 @@ import { getHiroNetworkServerSide } from '../utils/hiro-config';
 import ProfitLoss from './ProfitLoss';
 import TokenStats from './TokenStats';
 import WhaleAccessProgressBar from './WhaleAccessProgressBar';
+import { SATS_CONTRACT_ADDRESS } from '../utils/constants-test';
+import { MAINNET_SBTC_CONTRACT_ADDRESS } from '../utils/mainnetTokenData';
 
 /**
  * UnlockProgressBar Component
@@ -223,8 +225,8 @@ const UnlockProgressBar = React.memo(function UnlockProgressBar({
 
       // Only fetch for mainnet addresses
       if (!connectedAddress.startsWith('SP')) {
-        console.log('⚠️ Not a mainnet address, skipping Teiko balance fetch');
-        setTeikoTokenBalance(0);
+        console.log('✅ Testnet address detected, setting hardcoded Teiko balance to 21000');
+        setTeikoTokenBalance(21000); // Hardcode for testnet wallets
         return;
       }
 
@@ -395,37 +397,54 @@ const UnlockProgressBar = React.memo(function UnlockProgressBar({
     // FINAL CHECKPOINT: Verify Teiko token balance before allowing transaction
     const requiredTeikoTokens = 21000;
     
-    // First, try to use existing data if available
-    let currentTeikoBalance = teikoTokenBalance;
+    // Check wallet address FIRST to avoid race condition
+    const connectedAddress = localStorage.getItem('connectedAddress');
+    const isTestnetWallet = connectedAddress && connectedAddress.startsWith('ST');
+    const isMainnetWallet = connectedAddress && connectedAddress.startsWith('SP');
     
-    // If we don't have valid data, fetch it fresh with API keys
-    if (!currentTeikoBalance || currentTeikoBalance === 0) {
-      console.log('🔍 No valid Teiko balance data, fetching fresh...');
-      try {
-        const connectedAddress = localStorage.getItem('connectedAddress');
-        if (connectedAddress && connectedAddress.startsWith('SP')) {
+    // For testnet wallets, hardcode Teiko balance to 21000 to bypass requirement
+    let currentTeikoBalance;
+    if (isTestnetWallet) {
+      currentTeikoBalance = 21000; // Hardcode for testnet - IGNORE teikoTokenBalance state
+      console.log('✅ Testnet wallet detected - hardcoding Teiko balance to 21000 (ignoring teikoTokenBalance state)');
+    } else if (isMainnetWallet) {
+      // For mainnet wallets, check actual Teiko balance
+      currentTeikoBalance = teikoTokenBalance;
+      
+      // If we don't have valid data, fetch it fresh with API keys
+      if (!currentTeikoBalance || currentTeikoBalance === 0) {
+        console.log('🔍 No valid Teiko balance data, fetching fresh...');
+        try {
           const response = await fetch(`/api/get-teiko-balance?principal=${connectedAddress}`);
           const data = await response.json();
           currentTeikoBalance = data.balance || 0;
           console.log('🔍 Fresh Teiko balance fetched:', currentTeikoBalance);
+        } catch (error) {
+          console.error('❌ Error fetching fresh Teiko balance:', error);
+          currentTeikoBalance = 0;
         }
-      } catch (error) {
-        console.error('❌ Error fetching fresh Teiko balance:', error);
-        currentTeikoBalance = 0;
       }
+    } else {
+      // No wallet connected
+      currentTeikoBalance = 0;
     }
     
-    // Check if user meets Teiko requirement
-    if (currentTeikoBalance < requiredTeikoTokens) {
-      console.log('❌ Teiko balance insufficient for trading:', {
+    // Check if user meets Teiko requirement (only for mainnet transactions)
+    if (isMainnetWallet && currentTeikoBalance < requiredTeikoTokens) {
+      console.log('❌ Teiko balance insufficient for mainnet trading:', {
         current: currentTeikoBalance,
-        required: requiredTeikoTokens
+        required: requiredTeikoTokens,
+        network: 'mainnet'
       });
-      alert(`You need at least ${requiredTeikoTokens.toLocaleString()} Teiko tokens to trade. Current balance: ${currentTeikoBalance.toLocaleString()}`);
+      alert(`You need at least ${requiredTeikoTokens.toLocaleString()} Teiko tokens to trade on mainnet. Current balance: ${currentTeikoBalance.toLocaleString()}`);
       return;
     }
     
-    console.log('✅ Teiko balance check passed:', currentTeikoBalance);
+    if (isTestnetWallet) {
+      console.log('✅ Teiko requirement bypassed for testnet wallet (hardcoded balance)');
+    } else if (isMainnetWallet) {
+      console.log('✅ Teiko balance check passed for mainnet:', currentTeikoBalance);
+    }
     
     // Trigger pending transaction animation
     if (typeof window !== 'undefined') {
@@ -444,7 +463,6 @@ const UnlockProgressBar = React.memo(function UnlockProgressBar({
     }
 
     // Check if wallet is connected
-    const connectedAddress = localStorage.getItem('connectedAddress');
     if (!connectedAddress) {
       alert('Please connect your wallet first');
       return;
@@ -702,37 +720,54 @@ const UnlockProgressBar = React.memo(function UnlockProgressBar({
     // FINAL CHECKPOINT: Verify Teiko token balance before allowing transaction
     const requiredTeikoTokens = 21000;
     
-    // First, try to use existing data if available
-    let currentTeikoBalance = teikoTokenBalance;
+    // Check wallet address FIRST to avoid race condition
+    const connectedAddress = localStorage.getItem('connectedAddress');
+    const isTestnetWallet = connectedAddress && connectedAddress.startsWith('ST');
+    const isMainnetWallet = connectedAddress && connectedAddress.startsWith('SP');
     
-    // If we don't have valid data, fetch it fresh with API keys
-    if (!currentTeikoBalance || currentTeikoBalance === 0) {
-      console.log('🔍 No valid Teiko balance data, fetching fresh...');
-      try {
-        const connectedAddress = localStorage.getItem('connectedAddress');
-        if (connectedAddress && connectedAddress.startsWith('SP')) {
+    // For testnet wallets, hardcode Teiko balance to 21000 to bypass requirement
+    let currentTeikoBalance;
+    if (isTestnetWallet) {
+      currentTeikoBalance = 21000; // Hardcode for testnet - IGNORE teikoTokenBalance state
+      console.log('✅ Testnet wallet detected - hardcoding Teiko balance to 21000 (ignoring teikoTokenBalance state)');
+    } else if (isMainnetWallet) {
+      // For mainnet wallets, check actual Teiko balance
+      currentTeikoBalance = teikoTokenBalance;
+      
+      // If we don't have valid data, fetch it fresh with API keys
+      if (!currentTeikoBalance || currentTeikoBalance === 0) {
+        console.log('🔍 No valid Teiko balance data, fetching fresh...');
+        try {
           const response = await fetch(`/api/get-teiko-balance?principal=${connectedAddress}`);
           const data = await response.json();
           currentTeikoBalance = data.balance || 0;
           console.log('🔍 Fresh Teiko balance fetched:', currentTeikoBalance);
+        } catch (error) {
+          console.error('❌ Error fetching fresh Teiko balance:', error);
+          currentTeikoBalance = 0;
         }
-      } catch (error) {
-        console.error('❌ Error fetching fresh Teiko balance:', error);
-        currentTeikoBalance = 0;
       }
+    } else {
+      // No wallet connected
+      currentTeikoBalance = 0;
     }
     
-    // Check if user meets Teiko requirement
-    if (currentTeikoBalance < requiredTeikoTokens) {
-      console.log('❌ Teiko balance insufficient for trading:', {
+    // Check if user meets Teiko requirement (only for mainnet transactions)
+    if (isMainnetWallet && currentTeikoBalance < requiredTeikoTokens) {
+      console.log('❌ Teiko balance insufficient for mainnet trading:', {
         current: currentTeikoBalance,
-        required: requiredTeikoTokens
+        required: requiredTeikoTokens,
+        network: 'mainnet'
       });
-      alert(`You need at least ${requiredTeikoTokens.toLocaleString()} Teiko tokens to trade. Current balance: ${currentTeikoBalance.toLocaleString()}`);
+      alert(`You need at least ${requiredTeikoTokens.toLocaleString()} Teiko tokens to trade on mainnet. Current balance: ${currentTeikoBalance.toLocaleString()}`);
       return;
     }
     
-    console.log('✅ Teiko balance check passed:', currentTeikoBalance);
+    if (isTestnetWallet) {
+      console.log('✅ Teiko requirement bypassed for testnet wallet (hardcoded balance)');
+    } else if (isMainnetWallet) {
+      console.log('✅ Teiko balance check passed for mainnet:', currentTeikoBalance);
+    }
     
     // Trigger pending transaction animation
     if (typeof window !== 'undefined') {
@@ -751,7 +786,6 @@ const UnlockProgressBar = React.memo(function UnlockProgressBar({
     }
 
     // Check if wallet is connected
-    const connectedAddress = localStorage.getItem('connectedAddress');
     if (!connectedAddress) {
       alert('Please connect your wallet first');
       return;
@@ -827,9 +861,10 @@ const UnlockProgressBar = React.memo(function UnlockProgressBar({
         postConditionMode = "deny";
         
         // Add post condition to ensure minimum sBTC received
+        const sbtcContractAddress = network === 'testnet' ? SATS_CONTRACT_ADDRESS : MAINNET_SBTC_CONTRACT_ADDRESS;
         const sbtcCondition = Pc.principal(dexContractAddress)
           .willSendGte(minSats)
-          .ft('SM3VDXK3WZZSA84XXFKAFAF15NNZX32CTSG82JFQ4.sbtc-token', 'sbtc-token');
+          .ft(`${sbtcContractAddress}.sbtc-token`, 'sbtc-token');
         
         postConditions = [
           postConditionToHex(sbtcCondition)
@@ -1755,7 +1790,7 @@ const UnlockProgressBar = React.memo(function UnlockProgressBar({
                 textAlign: window.innerWidth <= 768 ? 'center' : 'left'
               }}>
                 <span style={{ whiteSpace: window.innerWidth <= 768 ? 'normal' : 'nowrap' }}>
-                  Your sBTC Balance: {parseInt(holdingsSats || 1500).toLocaleString()}
+                  Your sBTC Balance: {parseInt(holdingsSats || 0).toLocaleString()}
                 </span>
                 <img 
                   src="/icons/sats1.svg" 
@@ -2320,15 +2355,25 @@ const UnlockProgressBar = React.memo(function UnlockProgressBar({
           {/* Buy/Sell Button */}
           <button
             onClick={() => {
-              // Check Teiko token balance for trading access
+              // Check Teiko token balance for trading access (only for mainnet)
               const requiredTeikoTokens = 21000;
+              const connectedAddress = localStorage.getItem('connectedAddress');
+              const isTestnetWallet = connectedAddress && connectedAddress.startsWith('ST');
+              const isMainnetWallet = connectedAddress && connectedAddress.startsWith('SP');
               
-              if (teikoTokenBalance >= requiredTeikoTokens) {
-                // User has enough Teiko tokens, allow trading
-              setShowBuySellPanel(!showBuySellPanel);
-              } else {
-                // User doesn't have enough Teiko tokens, show restriction popup
+              if (isTestnetWallet) {
+                // Testnet wallet - always allow trading
+                console.log('✅ Testnet wallet detected - allowing trading without Teiko check');
+                setShowBuySellPanel(!showBuySellPanel);
+              } else if (isMainnetWallet && teikoTokenBalance >= requiredTeikoTokens) {
+                // Mainnet wallet with enough Teiko tokens
+                setShowBuySellPanel(!showBuySellPanel);
+              } else if (isMainnetWallet) {
+                // Mainnet wallet without enough Teiko tokens
                 setShowRestrictionPopup(true);
+              } else {
+                // No wallet connected
+                setShowBuySellPanel(!showBuySellPanel);
               }
             }}
             style={{

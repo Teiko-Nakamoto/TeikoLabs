@@ -449,12 +449,13 @@ export default function SwapPage() {
         return;
       }
 
-      // Only fetch for mainnet tokens (SP/SM addresses)
+      // Fetch for both testnet and mainnet tokens
       const isMainnet = /^(SP|SM)/.test(connectedAddress);
-      console.log('🔍 isMainnet check:', isMainnet, 'address:', connectedAddress);
+      const isTestnet = /^(ST|SM)/.test(connectedAddress);
+      console.log('🔍 Network check:', { isMainnet, isTestnet, address: connectedAddress });
 
-      if (!isMainnet) {
-        console.log('🔍 Not mainnet address, setting balance to 0');
+      if (!isMainnet && !isTestnet) {
+        console.log('🔍 Invalid address format, setting balance to 0');
         setUserSatsBalance(0);
         return;
       }
