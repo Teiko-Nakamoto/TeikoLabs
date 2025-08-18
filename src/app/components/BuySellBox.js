@@ -446,7 +446,6 @@ export default function BuySellBox({
     
     // Determine network based on token data or connected wallet
     let network = 'testnet'; // default
-    const connectedAddress = localStorage.getItem('connectedAddress');
     
     // If we have tokenData with tabType, use that to determine network
     if (tokenData?.tabType) {
