@@ -6,6 +6,7 @@ import { useSearchParams } from 'next/navigation';
 import Header from './header';
 import Footer from './footer';
 import BackgroundImage from './BackgroundImage';
+
 import '../globals.css';
 import './footer.css';
 import { useState, useEffect } from 'react';
@@ -78,6 +79,7 @@ const TypewriterText = ({ text, speed = 100, onComplete }) => {
 };
 
 export default function ClientHomePage() {
+  console.log('🚀 ClientHomePage component is loading...');
   const { t } = useTranslation();
   const searchParams = useSearchParams();
   const [activeTab, setActiveTab] = useState('featured'); // Changed back to 'featured'
@@ -96,6 +98,7 @@ export default function ClientHomePage() {
   const [showComingSoonPopup, setShowComingSoonPopup] = useState(false);
   const [showPracticeWalletPopup, setShowPracticeWalletPopup] = useState(false);
   const [showMainnetWalletPopup, setShowMainnetWalletPopup] = useState(false);
+  const [showMajorityHolderPopup, setShowMajorityHolderPopup] = useState(false);
   const [accessSettings, setAccessSettings] = useState({
 
     claimRevenue: true,
@@ -115,6 +118,8 @@ export default function ClientHomePage() {
   // State for animation sequence
   const [showTypewriter, setShowTypewriter] = useState(false);
   const [countersCompleted, setCountersCompleted] = useState(0);
+  
+
 
   // Calculate mainnet totals from token data
   const calculateMainnetTotals = () => {
@@ -209,6 +214,12 @@ export default function ClientHomePage() {
       if (savedAddress && isConnectingWallet) {
         setIsConnectingWallet(false);
       }
+      
+      // Check if SP address is detected and show majority holder popup
+      if (savedAddress && savedAddress.startsWith('SP') && !localStorage.getItem('majorityHolderPopupShown')) {
+        setShowMajorityHolderPopup(true);
+        localStorage.setItem('majorityHolderPopupShown', 'true');
+      }
     };
 
     checkWalletConnection();
@@ -244,9 +255,9 @@ export default function ClientHomePage() {
       return;
     }
 
-    // Check wallet connection and network based on active tab
-    if (activeTab === 'practice') {
-      console.log('Practice tab detected, checking wallet...');
+    // Check wallet connection and network based on token card type (not active tab)
+    if (tokenCard.tabType === 'practice') {
+      console.log('Practice token detected, checking wallet...');
       if (!connectedAddress) {
         console.log('No wallet connected for practice trading - showing practice popup');
         // No wallet connected for practice trading - show popup
@@ -254,15 +265,18 @@ export default function ClientHomePage() {
         return;
       }
       
-      // Check if mainnet wallet is connected (should be testnet for practice)
-      if (connectedAddress.startsWith('SP')) {
-        console.log('Mainnet wallet connected for practice trading - showing practice popup');
-        // Mainnet wallet connected for practice trading - show popup
+      // For practice (testnet) tokens, require testnet wallet (ST address)
+      if (!connectedAddress.startsWith('ST')) {
+        console.log('Non-testnet wallet connected for practice trading - showing practice popup');
+        // Non-testnet wallet connected for practice trading - show popup
         setShowPracticeWalletPopup(true);
         return;
       }
-    } else if (activeTab === 'featured') {
-      console.log('Featured tab detected, checking wallet...');
+      
+      // Testnet wallet is connected - proceed
+      console.log('✅ Testnet wallet connected for practice trading - proceeding');
+    } else if (tokenCard.tabType === 'featured') {
+      console.log('Featured token detected, checking wallet...');
       
       // For featured (mainnet) tokens, prevent access if:
       // 1. No wallet connected
@@ -286,6 +300,9 @@ export default function ClientHomePage() {
         setShowMainnetWalletPopup(true);
         return;
       }
+      
+      // Mainnet wallet is connected - proceed
+      console.log('✅ Mainnet wallet connected for featured trading - proceeding');
     }
 
     if (!connectedAddress) {
@@ -421,6 +438,8 @@ export default function ClientHomePage() {
     }
   };
 
+
+
   const fetchData = async () => {
     try {
       const response = await fetch('/api/get-token-cards');
@@ -458,11 +477,15 @@ export default function ClientHomePage() {
     }
   };
 
+
+
   useEffect(() => {
+    console.log('🏠 Home page useEffect triggered');
     fetchData();
     
     // Set up interval to refresh data every 30 seconds
     const interval = setInterval(() => {
+      console.log('🔄 Refreshing data...');
       fetchData();
     }, 30000);
     
@@ -485,6 +508,7 @@ export default function ClientHomePage() {
   };
 
   if (loading) {
+    console.log('⏳ Component is in loading state...');
     return (
       <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
         <BackgroundImage />
@@ -513,6 +537,7 @@ export default function ClientHomePage() {
     );
   }
 
+  console.log('✅ Component finished loading, rendering main content...');
   return (
     <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
       <BackgroundImage />
@@ -523,47 +548,54 @@ export default function ClientHomePage() {
         setIsConnectingWallet={setIsConnectingWallet}
       />
       <main className="home-page" style={{ flex: 1 }}>
-        {!showProjects && (
-          <div className="page-header-centered">
-            <h1 style={{ 
-              textAlign: 'center',
-              background: 'linear-gradient(45deg, #FFD700, #FFA500, #FFD700)',
-              backgroundClip: 'text',
-              WebkitBackgroundClip: 'text',
-              WebkitTextFillColor: 'transparent',
-              fontWeight: '900',
-              fontSize: '2.5rem',
-              fontFamily: 'Arial, sans-serif',
-              marginBottom: '30px',
-              textShadow: '0 0 15px rgba(255,215,0,0.3)',
-              letterSpacing: '1px',
-              minHeight: '3rem'
-            }}>
-                              {showTypewriter ? (
-                  <TypewriterText 
-                    text={t('join_forever_pump_protocol')} 
-                    speed={80}
-                  />
-                ) : (
-                  <span style={{ opacity: 0 }}>Join The Forever Pump Protocol</span>
-                )}
-            </h1>
-            
-            {/* Only show stats if there's actual data */}
+        {/* Title at the top */}
+        <div style={{ textAlign: 'center', marginBottom: '20px', marginTop: '20px' }}>
+          <h1 style={{ 
+            textAlign: 'center',
+            background: 'linear-gradient(45deg, #FFD700, #FFA500, #FFD700)',
+            backgroundClip: 'text',
+            WebkitBackgroundClip: 'text',
+            WebkitTextFillColor: 'transparent',
+            fontWeight: '900',
+            fontSize: '2.5rem',
+            fontFamily: 'Arial, sans-serif',
+            marginBottom: '30px',
+            textShadow: '0 0 15px rgba(255,215,0,0.3)',
+            letterSpacing: '1px',
+            minHeight: '3rem'
+          }}>
+            {showTypewriter ? (
+              <TypewriterText 
+                text={t('join_forever_pump_protocol')} 
+                speed={80}
+              />
+            ) : (
+              <span style={{ opacity: 0 }}>Join The Forever Pump Protocol</span>
+            )}
+          </h1>
+        </div>
+
+        {/* Total Value Locked and Profit Generated Stats */}
             {(mainnetTotals.totalProfitGenerated > 0 || mainnetTotals.totalValueLocked > 0) && (
             <div style={{
               textAlign: 'center',
                 marginBottom: '30px',
-              fontFamily: 'Arial, sans-serif'
+              fontFamily: 'Arial, sans-serif',
+              display: 'flex',
+            flexDirection: 'column',
+              gap: '20px',
+            alignItems: 'center'
             }}>
                 {mainnetTotals.totalProfitGenerated > 0 && (
                   <div style={{
                     background: 'linear-gradient(135deg, rgba(255,215,0,0.1) 0%, rgba(255,165,0,0.1) 100%)',
                     borderRadius: '15px',
                     padding: '20px',
-                    marginBottom: '15px',
                     border: '1px solid rgba(255,215,0,0.3)',
-                    boxShadow: '0 8px 25px rgba(255,215,0,0.2)'
+                    boxShadow: '0 8px 25px rgba(255,215,0,0.2)',
+                    minWidth: '300px',
+                maxWidth: '600px',
+                width: '100%'
                   }}>
               <p style={{
                       background: 'linear-gradient(45deg, #FFD700, #FFA500)',
@@ -593,7 +625,10 @@ export default function ClientHomePage() {
                     borderRadius: '15px',
                     padding: '20px',
                     border: '1px solid rgba(255,215,0,0.3)',
-                    boxShadow: '0 8px 25px rgba(255,215,0,0.2)'
+                    boxShadow: '0 8px 25px rgba(255,215,0,0.2)',
+                    minWidth: '300px',
+                maxWidth: '600px',
+                width: '100%'
                   }}>
                     <p style={{
                       background: 'linear-gradient(45deg, #FFD700, #FFA500)',
@@ -619,9 +654,6 @@ export default function ClientHomePage() {
               </div>
             )}
             
-          </div>
-        )}
-        
         <div style={{
           display: 'flex',
           gap: '16px',
@@ -725,6 +757,8 @@ export default function ClientHomePage() {
             {showProjects ? 'Hide Projects' : 'Practice Trading'}
           </button>
         </div>
+
+
 
         <div style={{
           textAlign: 'center',
@@ -1628,6 +1662,141 @@ export default function ClientHomePage() {
             >
               Got it!
             </button>
+          </div>
+        </div>
+      )}
+
+      {/* Majority Holder Dashboard Popup */}
+      {showMajorityHolderPopup && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          backgroundColor: 'rgba(0, 0, 0, 0.8)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 1000
+        }}>
+          <div style={{
+            backgroundColor: '#1a1a2e',
+            border: '2px solid #FFD700',
+            borderRadius: '20px',
+            padding: window.innerWidth <= 768 ? '24px' : '40px',
+            maxWidth: window.innerWidth <= 768 ? '90vw' : '500px',
+            width: window.innerWidth <= 768 ? '90vw' : 'auto',
+            textAlign: 'center',
+            position: 'relative'
+          }}>
+            <div style={{
+              fontSize: window.innerWidth <= 768 ? '48px' : '60px',
+              marginBottom: window.innerWidth <= 768 ? '16px' : '20px'
+            }}>
+              👑
+            </div>
+            <h2 style={{
+              color: '#FFD700',
+              fontSize: '24px',
+              fontWeight: 'bold',
+              marginBottom: '16px',
+              fontFamily: 'Arial, sans-serif'
+            }}>
+              Would you like to view the majority holder dashboard?
+            </h2>
+                         <p style={{
+               color: '#ccc',
+               fontSize: '16px',
+               lineHeight: '1.5',
+               marginBottom: '24px',
+               fontFamily: 'Arial, sans-serif',
+               display: 'flex',
+               alignItems: 'center',
+               justifyContent: 'center',
+               gap: '8px',
+               flexWrap: 'wrap'
+             }}>
+               The top Majority Holder of locked{' '}
+               <img 
+                 src="/icons/The Mas Network.svg" 
+                 alt="MAS Sats" 
+                 style={{ 
+                   width: '24px', 
+                   height: '24px', 
+                   verticalAlign: 'middle'
+                 }} 
+               />
+               {' '}can claim the trading fee revenue of{' '}
+               <span style={{ color: '#FFD700', fontWeight: 'bold' }}>
+                 {mainnetTotals.totalProfitGenerated > 0 ? `${mainnetTotals.totalProfitGenerated.toLocaleString()} sats` : 'X sats'}
+               </span>{' '}
+               amount at any time.
+             </p>
+            
+            <div style={{
+              display: 'flex',
+              gap: '12px',
+              justifyContent: 'center',
+              flexWrap: 'wrap'
+            }}>
+              <button
+                onClick={() => {
+                  setShowMajorityHolderPopup(false);
+                  window.location.href = '/majority-holder-dashboard';
+                }}
+                style={{
+                  backgroundColor: '#FFD700',
+                  color: '#1a1a2e',
+                  border: 'none',
+                  borderRadius: '12px',
+                  padding: '12px 24px',
+                  fontSize: '16px',
+                  fontWeight: 'bold',
+                  cursor: 'pointer',
+                  transition: 'all 0.2s ease',
+                  minWidth: '120px'
+                }}
+                onMouseEnter={(e) => {
+                  e.target.style.backgroundColor = '#FFA500';
+                  e.target.style.transform = 'translateY(-2px)';
+                  e.target.style.boxShadow = '0 8px 20px rgba(255,215,0,0.4)';
+                }}
+                onMouseLeave={(e) => {
+                  e.target.style.backgroundColor = '#FFD700';
+                  e.target.style.transform = 'translateY(0)';
+                  e.target.style.boxShadow = 'none';
+                }}
+              >
+                Yes, View Dashboard
+              </button>
+              
+              <button
+                onClick={() => setShowMajorityHolderPopup(false)}
+                style={{
+                  backgroundColor: 'transparent',
+                  color: '#ccc',
+                  border: '2px solid #666',
+                  borderRadius: '12px',
+                  padding: '12px 24px',
+                  fontSize: '16px',
+                  fontWeight: 'bold',
+                  cursor: 'pointer',
+                  transition: 'all 0.2s ease',
+                  minWidth: '120px'
+                }}
+                onMouseEnter={(e) => {
+                  e.target.style.backgroundColor = '#374151';
+                  e.target.style.borderColor = '#999';
+                }}
+                onMouseLeave={(e) => {
+                  e.target.style.backgroundColor = 'transparent';
+                  e.target.style.borderColor = '#666';
+                }}
+              >
+                No, Thanks
+              </button>
+            </div>
           </div>
         </div>
       )}

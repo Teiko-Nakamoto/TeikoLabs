@@ -234,7 +234,7 @@ export default function EditHomePage() {
         });
         const symbolResult = await fetchCallReadOnlyFunction({
           contractAddress: dexAddress, // Use DEX address like fetchTokenData.js
-          contractName: tokenName, // Use token contract name (e.g., 'dear-cyan')
+          contractName: tokenName, // Use token contract name (e.g., 'mas-sats')
           functionName: 'get-symbol',
           functionArgs: [],
           network: network,

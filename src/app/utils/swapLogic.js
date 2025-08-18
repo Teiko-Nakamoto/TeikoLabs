@@ -1,6 +1,7 @@
 import { request } from '@stacks/connect';
 import { Cl } from '@stacks/transactions';
 
+
 // 🔧 Transaction queue to prevent broadcast conflicts
 let transactionQueue = [];
 let isProcessingQueue = false;
@@ -378,6 +379,8 @@ async function handleTransactionWithoutPostConditions(tab, amount, setErrorMessa
 
     createdAtISO = confirmedData.block_time_iso || null;
 
+
+
     let tokensTraded = 0;
     let satsReceived = 0;
 
@@ -385,7 +388,7 @@ async function handleTransactionWithoutPostConditions(tab, amount, setErrorMessa
       if (Array.isArray(confirmedData.events)) {
         const tokenTransferEvent = confirmedData.events.find(event => 
           event.event_type === 'ft_transfer_event' && 
-          event.asset?.asset_id === `${DEX_CONTRACT_ADDRESS}.${DEX_CONTRACT_NAME}::dear-cyan`
+          event.asset?.asset_id?.includes('mas-sats')
         );
         
         if (tokenTransferEvent) {
@@ -487,7 +490,7 @@ async function handleTransactionWithPostConditions(tab, amount, setErrorMessage,
         // 🛡️ CONDITION 2: DEX contract sends at least minimum mas sats to user (slippage protection!)
         const contractSendsMasSatsCondition = Pc.principal(`${DEX_CONTRACT_ADDRESS}.${DEX_CONTRACT_NAME}`)
           .willSendGte(minExpectedMasSats)
-          .ft(`${DEX_CONTRACT_ADDRESS}.dear-cyan`, 'dear-cyan');
+          .ft('SP1T0VY3DNXRVP6HBM75DFWW0199CR0X15PC1D81B.mas-sats', 'mas-sats');
         
         postConditions.push(
           postConditionToHex(userSendsSbtcCondition),
@@ -504,10 +507,10 @@ async function handleTransactionWithPostConditions(tab, amount, setErrorMessage,
         const slippagePercent = slippageProtection.tolerance / 100;
         const minExpectedSbtc = Math.floor(estimatedOutput * (1 - slippagePercent));
         
-        // 🛡️ CONDITION 1: User sends exact dear-cyan tokens
+        // 🛡️ CONDITION 1: User sends exact mas sats tokens
         const userSendsTokensCondition = Pc.principal(slippageProtection.userAddress)
           .willSendEq(satsTraded)
-          .ft(`${DEX_CONTRACT_ADDRESS}.dear-cyan`, 'dear-cyan');
+          .ft('SP1T0VY3DNXRVP6HBM75DFWW0199CR0X15PC1D81B.mas-sats', 'mas-sats');
         
         // 🛡️ CONDITION 2: DEX contract sends at least minimum SBTC to user (slippage protection!)
         const contractSendsSbtcCondition = Pc.principal(`${DEX_CONTRACT_ADDRESS}.${DEX_CONTRACT_NAME}`)
@@ -520,7 +523,7 @@ async function handleTransactionWithPostConditions(tab, amount, setErrorMessage,
         );
         
         console.log('🛡️ SELL post conditions:');
-        console.log('  1. User sends exactly', satsTraded, 'dear-cyan base units');
+        console.log('  1. User sends exactly', satsTraded, 'mas sats base units');
         console.log('  2. Contract sends at least', minExpectedSbtc, 'SBTC (with', slippageProtection.tolerance + '% slippage protection)');
         console.log('  3. UI estimated:', estimatedOutput, 'SBTC, protected minimum:', minExpectedSbtc, 'SBTC');
       }
@@ -623,7 +626,7 @@ async function handleTransactionWithPostConditions(tab, amount, setErrorMessage,
     // Parse transaction events to get actual amounts (FIXED: use .amount not .value)
     for (const event of confirmedData.events || []) {
       if (event.event_type === 'fungible_token_asset') {
-        if (event.asset?.asset_id?.includes('dear-cyan')) {
+        if (event.asset?.asset_id?.includes('mas-sats')) {
           tokensTraded = parseInt(event.asset.amount);
           console.log(`📊 MAS Sats ${tab === 'buy' ? 'received' : 'sent'}:`, tokensTraded / 1e8);
         } else if (event.asset?.asset_id?.includes('sbtc-token')) {
@@ -678,6 +681,8 @@ async function handleTransactionWithPostConditions(tab, amount, setErrorMessage,
       visible: true,
       status: 'success',
     });
+
+
 
     return {
       success: true,

@@ -56,12 +56,19 @@ export default function Header() {
       }
     };
 
+    // Listen for custom show how it works event from footer
+    const handleShowHowItWorks = () => {
+      setShowLearnAboutHowTo(true);
+    };
+
     window.addEventListener('storage', handleStorageChange);
     window.addEventListener('connectWallet', handleConnectWallet);
+    window.addEventListener('showHowItWorks', handleShowHowItWorks);
 
     return () => {
       window.removeEventListener('storage', handleStorageChange);
       window.removeEventListener('connectWallet', handleConnectWallet);
+      window.removeEventListener('showHowItWorks', handleShowHowItWorks);
     };
   }, []);
 
@@ -99,33 +106,52 @@ export default function Header() {
 
         <nav className="nav-links">
           <div className="center-link desktop-only">
-            {/* How It Works button - Desktop only */}
-            <button 
-              onClick={() => setShowLearnAboutHowTo(true)}
-              className="nav-link"
-              style={{ 
-                textDecoration: 'none',
-                background: 'none',
-                border: 'none',
-                cursor: 'pointer',
-                color: 'inherit',
-                font: 'inherit'
-              }}
-            >
-              How It Works
-            </button>
+            {/* How It Works button - Desktop only, hidden when mainnet wallet is connected */}
+            {(!connectedAddress || !connectedAddress.startsWith('SP')) && (
+              <button 
+                onClick={() => setShowLearnAboutHowTo(true)}
+                className="nav-link"
+                style={{ 
+                  textDecoration: 'none',
+                  background: 'none',
+                  border: 'none',
+                  cursor: 'pointer',
+                  color: 'inherit',
+                  font: 'inherit'
+                }}
+              >
+                How It Works
+              </button>
+            )}
+            
+            {/* Dashboard link - Desktop only, only visible for mainnet wallets */}
+            {connectedAddress && connectedAddress.startsWith('SP') && (
+              <Link 
+                href="/majority-holder-dashboard"
+                className="nav-link"
+                style={{ 
+                  textDecoration: 'none',
+                  color: 'inherit',
+                  font: 'inherit'
+                }}
+              >
+                Dashboard
+              </Link>
+            )}
           </div>
           
-          {/* Mobile menu button */}
-          <div className="mobile-menu-button">
-            <button 
-              onClick={() => setShowLearnAboutHowTo(true)}
-              className="mobile-menu-btn"
-              title="How It Works"
-            >
-              <span>ℹ️</span>
-            </button>
-          </div>
+          {/* Mobile menu button - hidden when mainnet wallet is connected */}
+          {(!connectedAddress || !connectedAddress.startsWith('SP')) && (
+            <div className="mobile-menu-button">
+              <button 
+                onClick={() => setShowLearnAboutHowTo(true)}
+                className="mobile-menu-btn"
+                title="How It Works"
+              >
+                <span>ℹ️</span>
+              </button>
+            </div>
+          )}
           {/* Language Profile - Only visible to admin */}
           {isAdmin && (
             <div className="language-profile">

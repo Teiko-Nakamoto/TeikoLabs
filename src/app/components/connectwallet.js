@@ -196,13 +196,14 @@ const ConnectWallet = forwardRef((props, ref) => {
   return (
     <>
       {userAddress ? (
-        // If someone is connected, show "Disconnect" with the first 6 characters of their wallet address
+        // If someone is connected, show "Disconnect" with abbreviated wallet address
         <button 
           onClick={handleDisconnect} 
           className="connect-button hover-underline"
           disabled={isConnecting}
+          title={userAddress}
         >
-          {t('disconnect')} ({userAddress.slice(0, 6)}…)
+          {t('disconnect')} ({userAddress.slice(0, 2)}...{userAddress.slice(-3)})
         </button>
       ) : (
         // If no one is connected, show a "Connect Wallet" button

@@ -3,9 +3,10 @@ import { NextResponse } from 'next/server';
 import { fetchCallReadOnlyFunction } from '@stacks/transactions';
 import { STACKS_TESTNET } from '@stacks/network';
 
-// Contract configuration
-const DEX_CONTRACT_ADDRESS = 'ST37918Q7NBZ52AMV133VTY5C864KVK0S2HZ3CGA4';
-const DEX_CONTRACT_NAME = 'dear-cyan-dex';
+// Contract configuration - This should be dynamic based on token data
+// For now using MAS sats treasury contract
+const DEX_CONTRACT_ADDRESS = 'SP1T0VY3DNXRVP6HBM75DFWW0199CR0X15PC1D81B';
+const DEX_CONTRACT_NAME = 'mas-sats-treasury';
 
 // Cache configuration
 let cachedFees = null;

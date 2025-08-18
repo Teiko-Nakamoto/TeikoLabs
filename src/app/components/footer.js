@@ -74,6 +74,23 @@ export default function Footer() {
               <a href="https://explorer.hiro.so" target="_blank" rel="noopener noreferrer">
                 Stacks Explorer
               </a>
+              <button 
+                onClick={() => {
+                  // Trigger the How It Works popup from the header
+                  window.dispatchEvent(new CustomEvent('showHowItWorks'));
+                }}
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  color: 'inherit',
+                  cursor: 'pointer',
+                  padding: 0,
+                  font: 'inherit',
+                  textDecoration: 'underline'
+                }}
+              >
+                How It Works
+              </button>
             </div>
           </div>
         </div>
