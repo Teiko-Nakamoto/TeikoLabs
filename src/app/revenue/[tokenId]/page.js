@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
 import Header from '../../components/header';
+import RevenueChart from '../../components/RevenueChart';
 
 import SmartContractButton from '../../components/SmartContractButton';
 import LockedWalletDisplay from '../../components/LockedWalletDisplay';
@@ -594,6 +595,9 @@ export default function RevenuePage() {
                 <span className="description">Available for claiming</span>
               </div>
             </div>
+
+            {/* Revenue Chart */}
+            <RevenueChart tokenId={tokenId} />
           </div>
 
           {/* Step Progress Indicator */}
