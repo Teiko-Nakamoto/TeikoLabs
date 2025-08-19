@@ -2,6 +2,7 @@
 
 import { useState, useEffect, forwardRef, useImperativeHandle } from 'react';
 import { useTranslation } from 'react-i18next';
+import { usePathname } from 'next/navigation';
 // We import tools from React:
 // - useState: lets us store things like the wallet address
 // - useEffect: lets us run code when the page loads
@@ -17,10 +18,14 @@ import { connect, disconnect, isConnected, getLocalStorage } from '@stacks/conne
 // This makes your wallet button a component that can be triggered from outside (like in Header.js)
 const ConnectWallet = forwardRef((props, ref) => {
   const { t } = useTranslation();
+  const pathname = usePathname();
   const [userAddress, setUserAddress] = useState(null); // This keeps track of whether someone is connected
   const [isConnecting, setIsConnecting] = useState(false); // Track connection state
   const [connectionRetries, setConnectionRetries] = useState(0); // Track retry attempts
   const { onConnect } = props; // Get the onConnect callback from props
+
+  // Check if we're on a trade page (any page with /trade/ in the path)
+  const isOnTradePage = pathname && pathname.includes('/trade/');
 
   // 🔧 Enhanced wallet readiness check
   const checkWalletReadiness = async () => {
@@ -136,6 +141,12 @@ const ConnectWallet = forwardRef((props, ref) => {
 
   // 🔧 Enhanced disconnect with cleanup
   const handleDisconnect = () => {
+    // Prevent disconnection on trade pages
+    if (isOnTradePage) {
+      alert('⚠️ Cannot disconnect wallet while on a trade page. Please navigate away from the trade page first.');
+      return;
+    }
+
     try {
       disconnect();
       localStorage.removeItem('connectedAddress');
@@ -200,10 +211,15 @@ const ConnectWallet = forwardRef((props, ref) => {
         <button 
           onClick={handleDisconnect} 
           className="connect-button hover-underline"
-          disabled={isConnecting}
-          title={userAddress}
+          disabled={isConnecting || isOnTradePage}
+          title={isOnTradePage ? 'Cannot disconnect on trade page' : userAddress}
+          style={{
+            opacity: isOnTradePage ? 0.6 : 1,
+            cursor: isOnTradePage ? 'not-allowed' : 'pointer'
+          }}
         >
           {t('disconnect')} ({userAddress.slice(0, 2)}...{userAddress.slice(-3)})
+          {isOnTradePage && ' 🔒'}
         </button>
       ) : (
         // If no one is connected, show a "Connect Wallet" button
