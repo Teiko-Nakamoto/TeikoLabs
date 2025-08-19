@@ -2,28 +2,35 @@
 .chart-wrapper {
   margin-top: 2rem;
   padding: 1rem;
-  background-color: #0e0e0e;
-  border-radius: 12px;
-  box-shadow: 0 0 12px rgba(0, 0, 0, 0.5);
+  background: linear-gradient(135deg, rgba(26, 26, 26, 0.9) 0%, rgba(28, 45, 78, 0.9) 100%);
+  border-radius: 20px;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(20px);
 }
 
-/* Chart box outer container - matches buy-sell-box structure */
+/* Chart box outer container - enhanced design */
 .chart-box-outer {
-  background: #1c2d4e;
-  border-radius: 12px;
-  padding: 8px;
+  background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+  border-radius: 16px;
+  padding: 12px;
   width: 100%;
   color: #eee;
-  font-family: Arial, sans-serif;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+  backdrop-filter: blur(10px);
 }
 
-/* Chart box inner container - matches buy-sell-content structure */
+/* Chart box inner container - enhanced styling */
 .chart-box-inner {
-  border-radius: 8px;
-  padding: 16px;
+  border-radius: 12px;
+  padding: 20px;
   height: 100%;
   display: flex;
   flex-direction: column;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 /* Chart header and dropdown */
@@ -31,86 +38,137 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 12px;
+  margin-bottom: 16px;
+  padding: 0 4px;
 }
 
 .chart-heading {
   color: #fff;
-  font-size: 20px;
-  font-weight: 600;
+  font-size: 22px;
+  font-weight: 700;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+  letter-spacing: -0.5px;
 }
 
 .dropdown-wrapper select {
-  background-color: #222;
+  background: linear-gradient(135deg, #2d3748 0%, #4a5568 100%);
   color: #fff;
-  border: 1px solid #444;
-  border-radius: 4px;
-  padding: 4px 8px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 8px;
+  padding: 8px 12px;
+  font-weight: 500;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+.dropdown-wrapper select:hover {
+  border-color: rgba(255, 255, 255, 0.3);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+.dropdown-wrapper select:focus {
+  outline: none;
+  border-color: #4299e1;
+  box-shadow: 0 0 0 3px rgba(66, 153, 225, 0.1);
 }
 
 /* Candlestick chart container */
 .chart-container {
   width: 100%;
-  height: 300px;
-  border-radius: 8px;
+  height: 350px;
+  border-radius: 12px;
   overflow: hidden;
+  background: linear-gradient(135deg, rgba(0, 0, 0, 0.3) 0%, rgba(26, 26, 26, 0.3) 100%);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: inset 0 2px 8px rgba(0, 0, 0, 0.2);
 }
 
 /* Trade history table styles */
 .trade-history-table {
   margin-top: 24px;
   overflow-x: auto;
+  border-radius: 12px;
+  background: linear-gradient(135deg, rgba(26, 26, 26, 0.8) 0%, rgba(28, 45, 78, 0.8) 100%);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+  backdrop-filter: blur(10px);
 }
 
 .trade-history-table table {
   width: 100%;
   border-collapse: collapse;
-  background-color: #111;
+  background: transparent;
 }
 
 .trade-history-table th,
 .trade-history-table td {
-  padding: 10px;
+  padding: 12px 16px;
   text-align: left;
-  border-bottom: 1px solid #333;
-  color: #ccc;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  color: #e2e8f0;
   font-size: 14px;
+  font-weight: 500;
 }
 
 .trade-history-table th {
-  background-color: #1c1c1c;
-  font-weight: bold;
+  background: linear-gradient(135deg, rgba(45, 55, 72, 0.8) 0%, rgba(74, 85, 104, 0.8) 100%);
+  font-weight: 700;
+  color: #f7fafc;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  font-size: 12px;
+}
+
+.trade-history-table tr:hover {
+  background: rgba(255, 255, 255, 0.05);
+  transition: background 0.2s ease;
 }
 
 /* Pagination buttons */
 .pagination-controls {
   display: flex;
   justify-content: space-between;
-  margin-top: 16px;
+  margin-top: 20px;
+  padding: 16px;
+  background: linear-gradient(135deg, rgba(26, 26, 26, 0.6) 0%, rgba(28, 45, 78, 0.6) 100%);
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 .pagination-controls button {
-  padding: 6px 12px;
-  background-color: #2d2d2d;
+  padding: 10px 20px;
+  background: linear-gradient(135deg, #2d3748 0%, #4a5568 100%);
   color: #fff;
-  border: 1px solid #444;
-  border-radius: 4px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 8px;
   cursor: pointer;
+  font-weight: 600;
+  font-size: 14px;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+  min-width: 100px;
+}
+
+.pagination-controls button:hover:not(:disabled) {
+  background: linear-gradient(135deg, #4a5568 0%, #718096 100%);
+  border-color: rgba(255, 255, 255, 0.3);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  transform: translateY(-1px);
+}
+
+.pagination-controls button:active:not(:disabled) {
+  transform: translateY(0);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
 }
 
 .pagination-controls button:disabled {
-  opacity: 0.4;
+  background: linear-gradient(135deg, #1a202c 0%, #2d3748 100%);
+  color: #718096;
+  border-color: rgba(255, 255, 255, 0.1);
   cursor: not-allowed;
-}
-
-.pagination-controls button:hover {
-  background-color: #3d3d3d;
-}
-
-.pagination-controls button:disabled {
-  background-color: #1d1d1d;
-  color: #666;
-  cursor: not-allowed;
+  opacity: 0.6;
+  transform: none;
+  box-shadow: none;
 }
 
 /* Pulse animation for bouncing price effect */
@@ -133,16 +191,35 @@
     padding: 0.75rem;
   }
   
+  .chart-box-outer {
+    padding: 8px;
+  }
+  
   .chart-box-inner {
-    padding: 12px;
+    padding: 16px;
   }
   
   .chart-heading {
-    font-size: 18px;
+    font-size: 20px;
   }
   
   .chart-container {
-    height: 250px;
+    height: 300px;
+  }
+  
+  .trade-history-table {
+    margin-top: 16px;
+  }
+  
+  .pagination-controls {
+    margin-top: 16px;
+    padding: 12px;
+  }
+  
+  .pagination-controls button {
+    padding: 8px 16px;
+    font-size: 13px;
+    min-width: 80px;
   }
 }
 

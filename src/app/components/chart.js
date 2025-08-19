@@ -241,8 +241,13 @@ export default function Chart({ trades, tradesPerCandle, setTradesPerCandle, tra
       <div 
         className="chart-box-inner"
         style={{
-          background: isCurrentlyGreen ? '#3776c6' : '#ec4899', // Blue for green candles, pink for red candles
-          transition: 'background 0.3s ease', // Smooth transition between colors
+          background: isCurrentlyGreen 
+            ? 'linear-gradient(135deg, rgba(55, 118, 198, 0.9) 0%, rgba(66, 153, 225, 0.9) 100%)' 
+            : 'linear-gradient(135deg, rgba(236, 72, 153, 0.9) 0%, rgba(244, 63, 94, 0.9) 100%)',
+          transition: 'all 0.3s ease',
+          boxShadow: isCurrentlyGreen 
+            ? '0 8px 32px rgba(55, 118, 198, 0.3)' 
+            : '0 8px 32px rgba(236, 72, 153, 0.3)',
         }}
       >
         <div style={{ 
@@ -324,14 +329,18 @@ export default function Chart({ trades, tradesPerCandle, setTradesPerCandle, tra
                 if (setTradesPerCandle) setTradesPerCandle(value);
               }}
               style={{ 
-                background: '#222', 
+                background: 'linear-gradient(135deg, #2d3748 0%, #4a5568 100%)', 
                 color: '#fff', 
-                border: '1px solid #444', 
-                padding: '4px 8px',
-                borderRadius: '4px',
+                border: '1px solid rgba(255, 255, 255, 0.2)', 
+                padding: '8px 12px',
+                borderRadius: '8px',
                 fontSize: 'clamp(12px, 2.5vw, 14px)',
-                minWidth: '80px',
-                flex: '0 0 auto'
+                minWidth: '100px',
+                flex: '0 0 auto',
+                fontWeight: '500',
+                transition: 'all 0.3s ease',
+                boxShadow: '0 2px 8px rgba(0, 0, 0, 0.2)',
+                cursor: 'pointer'
               }}
             >
               <option value={1}>1 Trade</option>
@@ -354,15 +363,18 @@ export default function Chart({ trades, tradesPerCandle, setTradesPerCandle, tra
             <button
               onClick={() => setIsHeaderVisible(!isHeaderVisible)}
               style={{ 
-                background: '#222', 
+                background: 'linear-gradient(135deg, #2d3748 0%, #4a5568 100%)', 
                 color: '#fff', 
-                border: '1px solid #444', 
-                padding: '4px 8px',
-                borderRadius: '4px',
+                border: '1px solid rgba(255, 255, 255, 0.2)', 
+                padding: '8px 12px',
+                borderRadius: '8px',
                 fontSize: 'clamp(12px, 2.5vw, 14px)',
-                minWidth: '80px',
+                minWidth: '100px',
                 cursor: 'pointer',
-                flex: '0 0 auto'
+                flex: '0 0 auto',
+                fontWeight: '500',
+                transition: 'all 0.3s ease',
+                boxShadow: '0 2px 8px rgba(0, 0, 0, 0.2)'
               }}
             >
               {isHeaderVisible ? 'Hide' : 'Show'}
