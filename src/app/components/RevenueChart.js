@@ -64,11 +64,11 @@ export default function RevenueChart({ tokenId }) {
       height: 400,
       layout: {
         background: { color: 'transparent' },
-        textColor: '#ffffff',
+        textColor: '#9ca3af',
       },
       grid: {
-        vertLines: { color: 'rgba(255, 255, 255, 0.1)' },
-        horzLines: { color: 'rgba(255, 255, 255, 0.1)' },
+        vertLines: { color: 'rgba(75, 85, 99, 0.2)' },
+        horzLines: { color: 'rgba(75, 85, 99, 0.2)' },
       },
       rightPriceScale: {
         visible: false, // Hide Y-axis
@@ -79,7 +79,7 @@ export default function RevenueChart({ tokenId }) {
         borderColor: 'transparent',
       },
       timeScale: {
-        borderColor: 'rgba(255, 255, 255, 0.2)',
+        borderColor: 'rgba(75, 85, 99, 0.3)',
         timeVisible: true,
         secondsVisible: false,
         tickMarkFormatter: (time) => {
@@ -90,7 +90,7 @@ export default function RevenueChart({ tokenId }) {
       crosshair: {
         mode: 1,
         vertLine: {
-          color: 'rgba(255, 255, 255, 0.3)',
+          color: 'rgba(59, 130, 246, 0.3)',
           width: 1,
           style: 0,
         },
@@ -102,8 +102,8 @@ export default function RevenueChart({ tokenId }) {
 
     // Add bar series
     const barSeries = chart.addBarSeries({
-      upColor: '#10b981',
-      downColor: '#10b981',
+      upColor: '#3b82f6',
+      downColor: '#3b82f6',
       borderVisible: false,
       wickVisible: false,
     });
