@@ -70,14 +70,16 @@ export default function RevenueChart({ tokenId }) {
         vertLines: { color: 'rgba(75, 85, 99, 0.2)' },
         horzLines: { color: 'rgba(75, 85, 99, 0.2)' },
       },
-      rightPriceScale: {
-        visible: false, // Hide Y-axis
-        borderColor: 'transparent',
-      },
-      leftPriceScale: {
-        visible: false, // Hide Y-axis
-        borderColor: 'transparent',
-      },
+             rightPriceScale: {
+         visible: false, // Hide Y-axis
+         borderColor: 'transparent',
+         drawTicks: false,
+       },
+       leftPriceScale: {
+         visible: false, // Hide Y-axis
+         borderColor: 'transparent',
+         drawTicks: false,
+       },
       timeScale: {
         borderColor: 'rgba(75, 85, 99, 0.3)',
         timeVisible: true,
@@ -126,25 +128,24 @@ export default function RevenueChart({ tokenId }) {
           label.textContent = chartData[index].value.toLocaleString();
           label.style.cssText = `
             position: absolute;
-            top: ${bar.offsetTop - 25}px;
+            top: ${bar.offsetTop - 30}px;
             left: ${bar.offsetLeft + bar.offsetWidth / 2}px;
             transform: translateX(-50%);
-            background: rgba(0, 0, 0, 0.9);
-            color: white;
-            padding: 4px 8px;
-            border-radius: 6px;
-            font-size: 11px;
-            font-weight: 600;
+            background: rgba(17, 24, 39, 0.95);
+            color: #f3f4f6;
+            padding: 3px 6px;
+            border-radius: 4px;
+            font-size: 10px;
+            font-weight: 500;
             z-index: 10;
             pointer-events: none;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
-            border: 1px solid rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(75, 85, 99, 0.5);
             white-space: nowrap;
           `;
           chartRef.current.appendChild(label);
         }
       });
-    }, 100);
+    }, 200);
 
     // Handle resize
     const handleResize = () => {
@@ -218,8 +219,8 @@ export default function RevenueChart({ tokenId }) {
 
   return (
     <div className="revenue-chart-container">
-      <div className="chart-header">
-        <h3>Daily Revenue Chart</h3>
+             <div className="chart-header">
+         <h3>Profit Growth Over Time</h3>
         {isAdmin && (
           <button
             onClick={() => setShowAddRevenue(!showAddRevenue)}
