@@ -54,8 +54,8 @@ export default function ProfitGrowthChart() {
 
   const processChartData = (history, days) => {
     if (!history || history.length === 0) {
-      console.log('⚠️ No history data available, generating fallback data');
-      return generateFallbackData(days);
+      console.log('⚠️ No history data available');
+      return [];
     }
 
     // Sort by date (oldest first)
@@ -76,20 +76,31 @@ export default function ProfitGrowthChart() {
 
     console.log(`📅 Filtered data for ${days} days:`, filteredData.length, 'records');
 
-    // Group by day and get the latest value for each day
-    const dailyData = {};
+    // If we have no real data, return empty array
+    if (filteredData.length === 0) {
+      console.log('⚠️ No real data in the selected time range');
+      return [];
+    }
+
+    // Group by 6-hour intervals and get the maximum value for each interval
+    const sixHourData = {};
     filteredData.forEach(record => {
       const date = new Date(record.recorded_at);
-      const dayKey = date.toISOString().split('T')[0]; // YYYY-MM-DD format
       
-      // Keep the latest value for each day
-      if (!dailyData[dayKey] || new Date(record.recorded_at) > new Date(dailyData[dayKey].recorded_at)) {
-        dailyData[dayKey] = record;
+      // Create 6-hour interval key (4 intervals per day: 00-06, 06-12, 12-18, 18-24)
+      const hour = date.getHours();
+      const intervalIndex = Math.floor(hour / 6);
+      const dayKey = date.toISOString().split('T')[0]; // YYYY-MM-DD format
+      const intervalKey = `${dayKey}-${intervalIndex}`; // e.g., "2024-01-15-2" for 12-18 hours
+      
+      // Keep the maximum value for each 6-hour interval
+      if (!sixHourData[intervalKey] || record.fee_pool_amount > sixHourData[intervalKey].fee_pool_amount) {
+        sixHourData[intervalKey] = record;
       }
     });
 
     // Convert to array and sort by date
-    const processedData = Object.values(dailyData)
+    const processedData = Object.values(sixHourData)
       .sort((a, b) => new Date(a.recorded_at) - new Date(b.recorded_at))
       .map((record, index) => ({
         date: new Date(record.recorded_at),
@@ -97,39 +108,12 @@ export default function ProfitGrowthChart() {
         day: index + 1
       }));
 
-    console.log('📊 Final processed data:', processedData);
+    // Limit to maximum 7 data points
+    const limitedData = processedData.slice(-7);
 
-    // If we have very little data, add some fallback data
-    if (processedData.length < 3) {
-      console.log('⚠️ Limited data, adding fallback data');
-      const fallbackData = generateFallbackData(days);
-      return fallbackData;
-    }
+    console.log('📊 Final processed data (max 7 points):', limitedData);
 
-    return processedData;
-  };
-
-  const generateFallbackData = (days) => {
-    const data = [];
-    const baseRevenue = 15000; // Base revenue in sats
-    
-    for (let i = 0; i < days; i++) {
-      const date = new Date();
-      date.setDate(date.getDate() - (days - 1 - i));
-      
-      // Generate some variation in the data
-      const variation = Math.random() * 0.4 - 0.2; // ±20% variation
-      const revenue = Math.floor(baseRevenue * (1 + variation));
-      
-      data.push({
-        date: date,
-        revenue: revenue,
-        day: i + 1
-      });
-    }
-    
-    console.log('🎲 Generated fallback data:', data);
-    return data;
+    return limitedData;
   };
 
   const formatDate = (date) => {
@@ -207,6 +191,11 @@ export default function ProfitGrowthChart() {
     );
   }
 
+  // If no data available, don't render the chart at all
+  if (chartData.length === 0) {
+    return null;
+  }
+
   return (
     <div className="profit-growth-chart">
       <div className="chart-header">
@@ -227,57 +216,51 @@ export default function ProfitGrowthChart() {
         </div>
       </div>
 
-      {chartData.length === 0 ? (
-        <div className="chart-empty">
-          <p>No revenue data available for the selected time range.</p>
-        </div>
-      ) : (
-        <div className="chart-container">
-          <div className="chart-bars">
-            {chartData.map((dataPoint, index) => {
-              const height = maxRevenue > 0 ? (dataPoint.revenue / maxRevenue) * 100 : 0;
-              const isLatest = index === chartData.length - 1;
-              
-              return (
-                <div key={index} className="chart-bar-container">
-                  <div 
-                    className={`chart-bar ${isLatest ? 'latest' : ''}`}
-                    style={{ height: `${height}%` }}
-                    title={`${formatDate(dataPoint.date)}: ${dataPoint.revenue.toLocaleString()} sats`}
-                  >
-                    <span className="bar-value">{formatRevenue(dataPoint.revenue)}</span>
-                  </div>
-                  <span className="bar-label">{formatDate(dataPoint.date)}</span>
+      <div className="chart-container">
+        <div className="chart-bars">
+          {chartData.map((dataPoint, index) => {
+            const height = maxRevenue > 0 ? (dataPoint.revenue / maxRevenue) * 100 : 0;
+            const isLatest = index === chartData.length - 1;
+            
+            return (
+              <div key={index} className="chart-bar-container">
+                <div 
+                  className={`chart-bar ${isLatest ? 'latest' : ''}`}
+                  style={{ height: `${height}%` }}
+                  title={`${formatDate(dataPoint.date)}: ${dataPoint.revenue.toLocaleString()} sats`}
+                >
+                  <span className="bar-value">{formatRevenue(dataPoint.revenue)}</span>
                 </div>
-              );
-            })}
+                <span className="bar-label">{formatDate(dataPoint.date)}</span>
+              </div>
+            );
+          })}
+        </div>
+
+        <div className="chart-stats">
+          <div className="stat-item">
+            <span className="stat-label">Current Revenue:</span>
+            <span className="stat-value">
+              {chartData.length > 0 ? chartData[chartData.length - 1].revenue.toLocaleString() : 0} sats
+            </span>
           </div>
-          
-          <div className="chart-stats">
-            <div className="stat-item">
-              <span className="stat-label">Current Revenue:</span>
-              <span className="stat-value">
-                {chartData.length > 0 ? chartData[chartData.length - 1].revenue.toLocaleString() : 0} sats
-              </span>
-            </div>
-            <div className="stat-item">
-              <span className="stat-label">Peak Revenue:</span>
-              <span className="stat-value">
-                {maxRevenue.toLocaleString()} sats
-              </span>
-            </div>
-            <div className="stat-item">
-              <span className="stat-label">Growth:</span>
-              <span className={`stat-value ${chartData.length > 1 ? 
-                (chartData[chartData.length - 1].revenue > chartData[0].revenue ? 'positive' : 'negative') : 'neutral'}`}>
-                {chartData.length > 1 ? 
-                  `${((chartData[chartData.length - 1].revenue - chartData[0].revenue) / chartData[0].revenue * 100).toFixed(1)}%` : 
-                  'N/A'}
-              </span>
-            </div>
+          <div className="stat-item">
+            <span className="stat-label">Peak Revenue:</span>
+            <span className="stat-value">
+              {maxRevenue.toLocaleString()} sats
+            </span>
+          </div>
+          <div className="stat-item">
+            <span className="stat-label">Growth:</span>
+            <span className={`stat-value ${chartData.length > 1 ? 
+              (chartData[chartData.length - 1].revenue > chartData[0].revenue ? 'positive' : 'negative') : 'neutral'}`}>
+              {chartData.length > 1 ? 
+                `${((chartData[chartData.length - 1].revenue - chartData[0].revenue) / chartData[0].revenue * 100).toFixed(1)}%` : 
+                'N/A'}
+            </span>
           </div>
         </div>
-      )}
+      </div>
     </div>
   );
 }
