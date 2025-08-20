@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Header from '../../../components/header';
 import Footer from '../../../components/footer';
-import '../quiz.css';
+import '../../quiz.css';
 
 export default function QuizGame() {
   const { quizId } = useParams();
