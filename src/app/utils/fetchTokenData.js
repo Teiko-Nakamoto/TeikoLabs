@@ -5,7 +5,7 @@ import { fetchCallReadOnlyFunction, Cl, principalCV, cvToValue } from '@stacks/t
 import { getLocalStorage } from '@stacks/connect';
 import { logCacheActivity, loggedBlockchainCall } from './cacheLogger';
 import { getCachedBlockchainData } from './hiro-config';
-import { SATS_CONTRACT_ADDRESS } from './constants-test';
+import { SATS_CONTRACT_ADDRESS, DEX_CONTRACT_NAME } from './constants-test';
 import { MAINNET_SBTC_CONTRACT_ADDRESS } from './mainnetTokenData';
 
 // Custom JSON replacer to handle BigInt serialization
@@ -93,7 +93,8 @@ export async function getRevenueBalance(contractInfo = null) {
     // Use provided contract info or fall back to defaults
     const contractAddress = contractInfo?.address || DEX_CONTRACT_ADDRESS;
     const contractName = contractInfo?.name || DEX_CONTRACT_NAME;
-    const network = contractInfo?.network || STACKS_TESTNET;
+    // Use mainnet for SP addresses, testnet for ST addresses
+    const network = contractInfo?.network || (contractAddress?.startsWith('SP') ? STACKS_MAINNET : STACKS_TESTNET);
     
     console.log('🔍 getRevenueBalance using contract:', { contractAddress, contractName, network: network.name || 'testnet' });
     

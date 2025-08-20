@@ -158,7 +158,7 @@ export default function CreateTokenPage() {
                     className="primary-button"
                     onClick={handleGetButtonClick}
                   >
-                    Get <img src="/mas-sats-icon.png" alt="MAS Sats" className="mas-icon" />
+                    Trade <img src="/mas-sats-icon.png" alt="MAS Sats" className="mas-icon" />
                   </button>
                   <Link href="/" className="secondary-button">
                     Back to Home

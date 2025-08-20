@@ -1,13 +1,35 @@
 'use client';
 
 import { useTranslation } from 'react-i18next';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 
 export default function Footer() {
   const { t } = useTranslation();
   const [showPopup, setShowPopup] = useState(false);
-
+  const [connectedAddress, setConnectedAddress] = useState('');
   const [copied, setCopied] = useState(false);
+
+  // Check wallet connection
+  useEffect(() => {
+    const checkWalletConnection = () => {
+      const savedAddress = localStorage.getItem('connectedAddress');
+      setConnectedAddress(savedAddress || '');
+    };
+
+    checkWalletConnection();
+    
+    // Listen for storage changes
+    const handleStorageChange = (e) => {
+      if (e.key === 'connectedAddress') {
+        checkWalletConnection();
+      }
+    };
+
+    window.addEventListener('storage', handleStorageChange);
+    return () => window.removeEventListener('storage', handleStorageChange);
+  }, []);
+
+  const isMainnet = connectedAddress && connectedAddress.startsWith('SP');
 
   const handleCopy = async () => {
     try {
@@ -58,7 +80,6 @@ export default function Footer() {
                 <img src="/icons/github.svg" alt="GitHub" className="invert-icon" style={{ width: '16px', height: '16px', marginRight: '8px' }} />
                 GitHub
               </a>
-
             </div>
           </div>
           
@@ -74,23 +95,22 @@ export default function Footer() {
               <a href="https://explorer.hiro.so" target="_blank" rel="noopener noreferrer">
                 Stacks Explorer
               </a>
-              <button 
-                onClick={() => {
+              <a 
+                href="#"
+                onClick={(e) => {
+                  e.preventDefault();
                   // Trigger the How It Works popup from the header
                   window.dispatchEvent(new CustomEvent('showHowItWorks'));
                 }}
-                style={{
-                  background: 'none',
-                  border: 'none',
-                  color: 'inherit',
-                  cursor: 'pointer',
-                  padding: 0,
-                  font: 'inherit',
-                  textDecoration: 'underline'
-                }}
+                className="footer-link"
               >
                 How It Works
-              </button>
+              </a>
+              {isMainnet && (
+                <a href="/majority-holder-dashboard" className="footer-link">
+                  Dashboard
+                </a>
+              )}
             </div>
           </div>
         </div>
@@ -125,8 +145,6 @@ export default function Footer() {
           </div>
         </div>
       )}
-
-
     </>
   );
 }

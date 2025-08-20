@@ -433,6 +433,36 @@ export default function ClientHomePage() {
         }
       }));
       
+      // Debug: Log the revenue value
+      console.log(`🏠 Home page - Token ${tokenCard.id} revenue:`, revenue, 'sats');
+      
+      // Clear the specific cache that might be causing issues
+      if (typeof window !== 'undefined') {
+        localStorage.removeItem('cache_get-sbtc-fee-pool');
+        console.log('🗑️ Cleared cache_get-sbtc-fee-pool');
+      }
+      
+      // Save fee pool data to backend ONLY for mainnet/featured cards (not practice cards)
+      if (revenue > 0 && revenue < 1000000 && tokenCard.tabType === 'featured') {
+        try {
+          console.log(`💾 Saving fee pool data from featured card: ${revenue} sats`);
+          await fetch('/api/quiz/track-fee-pool', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              feePoolAmount: revenue,
+              source: 'homepage-fetch'
+            })
+          });
+        } catch (error) {
+          console.warn('Failed to save fee pool data to backend:', error);
+        }
+      } else if (tokenCard.tabType === 'practice') {
+        console.log(`⏭️ Skipping practice card fee pool save: ${revenue} sats`);
+      } else if (revenue > 1000000) {
+        console.warn('⚠️ Skipping save - revenue seems to be cached dummy data:', revenue);
+      }
+      
     } catch (error) {
       console.error('Error fetching token real-time data:', error);
     }
@@ -710,17 +740,7 @@ export default function ClientHomePage() {
               e.target.style.boxShadow = '0 4px 6px rgba(29, 78, 216, 0.3)';
             }}
           >
-            Get
-                          <img 
-                src="/icons/The Mas Network.svg" 
-                alt="MAS Sats" 
-                style={{ 
-                  width: '28px', 
-                  height: '28px', 
-                  verticalAlign: 'middle',
-                  marginLeft: '8px'
-                }} 
-              />
+            Trade
           </button>
           
           <button

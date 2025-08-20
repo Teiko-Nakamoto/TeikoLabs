@@ -5,6 +5,7 @@ import { useTranslation } from 'react-i18next';
 import Header from '../components/header';
 import Footer from '../components/footer';
 import Link from 'next/link';
+import ProfitGrowthChart from '../components/ProfitGrowthChart';
 import './dashboard.css';
 
 export default function MajorityHolderDashboard() {
@@ -12,8 +13,6 @@ export default function MajorityHolderDashboard() {
   const [connectedAddress, setConnectedAddress] = useState('');
   const [copied, setCopied] = useState(false);
   const [activeTab, setActiveTab] = useState('analytics');
-  const [revenueData, setRevenueData] = useState([]);
-  const [loadingRevenue, setLoadingRevenue] = useState(false);
   const [airdropType, setAirdropType] = useState('');
   const [airdropAmount, setAirdropAmount] = useState('');
   const [showSupportModal, setShowSupportModal] = useState(false);
@@ -22,12 +21,47 @@ export default function MajorityHolderDashboard() {
   const [isCallingFunction, setIsCallingFunction] = useState(false);
   const [globalAmount, setGlobalAmount] = useState('');
   const [bulkAddresses, setBulkAddresses] = useState('');
-  const [revenueSummary, setRevenueSummary] = useState({
-    totalRevenue: 0,
-    avgDailyRevenue: 0,
-    maxDailyRevenue: 0,
-    daysTracked: 0
+  
+  // Quiz state variables
+  const [quizzes, setQuizzes] = useState([]);
+  const [quizQuestions, setQuizQuestions] = useState([]);
+  const [currentQuestion, setCurrentQuestion] = useState(0);
+  const [timeLeft, setTimeLeft] = useState(10);
+  const [score, setScore] = useState(0);
+  const [gameState, setGameState] = useState('loading'); // loading, playing, failed, completed
+  const [selectedQuiz, setSelectedQuiz] = useState(null);
+  const [leaderboard, setLeaderboard] = useState([]);
+  const [competitionActive, setCompetitionActive] = useState(true);
+  const [totalPointsEarned, setTotalPointsEarned] = useState(0);
+  const [totalParticipants, setTotalParticipants] = useState(0);
+  const [dynamicReward, setDynamicReward] = useState(0);
+  const [sbtcFeePool, setSbtcFeePool] = useState(0);
+  const [rewardLoading, setRewardLoading] = useState(true);
+  const [feePoolHistory, setFeePoolHistory] = useState([]);
+  const [historyLoading, setHistoryLoading] = useState(false);
+  
+  // Quiz management state
+  const [quizForm, setQuizForm] = useState({
+    title: '',
+    maxQuestions: 6
   });
+  const [questionForm, setQuestionForm] = useState({
+    quizId: '',
+    questionText: '',
+    correctAnswer: '',
+    wrongAnswer1: '',
+    wrongAnswer2: '',
+    wrongAnswer3: '',
+    questionOrder: 1
+  });
+  const [showQuizForm, setShowQuizForm] = useState(false);
+  const [showQuestionForm, setShowQuestionForm] = useState(false);
+
+  // Admin wallet addresses (comma-separated)
+  const ADMIN_ADDRESSES = process.env.NEXT_PUBLIC_ADMIN_ADDRESSES?.split(',') || [
+    'ST37918Q7NBZ52AMV133VTY5C864KVK0S2HZ3CGA4',
+    'SP1T0VY3DNXRVP6HBM75DFWW0199CR0X15PC1D81B' // Majority holder admin access
+  ];
 
   const dashboardData = {
     currentMajorityHolder: {
@@ -57,35 +91,44 @@ export default function MajorityHolderDashboard() {
     return () => window.removeEventListener('storage', handleStorageChange);
   }, []);
 
+  // Load quiz data when quiz tab is active
   useEffect(() => {
-    fetchRevenueData();
-  }, []);
-
-  const fetchRevenueData = async () => {
-    setLoadingRevenue(true);
-    try {
-      const response = await fetch('/api/get-daily-revenue');
-      const data = await response.json();
-      setRevenueData(data.data || []);
-      setRevenueSummary(data.summary || {
-        totalRevenue: 0,
-        avgDailyRevenue: 0,
-        maxDailyRevenue: 0,
-        daysTracked: 0
-      });
-    } catch (error) {
-      console.error('Error fetching revenue data:', error);
-      setRevenueData([]);
-      setRevenueSummary({
-        totalRevenue: 0,
-        avgDailyRevenue: 0,
-        maxDailyRevenue: 0,
-        daysTracked: 0
-      });
-    } finally {
-      setLoadingRevenue(false);
+    if (activeTab === 'quiz') {
+      loadQuizzes();
+      loadDynamicReward();
     }
-  };
+  }, [activeTab]);
+
+  // Load leaderboard data when leaderboard tab is active
+  useEffect(() => {
+    if (activeTab === 'leaderboard') {
+      loadLeaderboard();
+    }
+  }, [activeTab]);
+
+  // Load quiz management data when quiz-management tab is active
+  useEffect(() => {
+    if (activeTab === 'quiz-management') {
+      loadQuizzes();
+      loadFeePoolHistory();
+    }
+  }, [activeTab]);
+
+  // Timer effect for quiz game
+  useEffect(() => {
+    let timer;
+    if (gameState === 'playing' && timeLeft > 0) {
+      timer = setTimeout(() => {
+        setTimeLeft(timeLeft - 1);
+      }, 1000);
+    } else if (gameState === 'playing' && timeLeft === 0) {
+      // Time's up - quiz failed
+      completeQuiz(false);
+    }
+    return () => clearTimeout(timer);
+  }, [timeLeft, gameState]);
+
+
 
   const copyToClipboard = async () => {
     try {
@@ -100,6 +143,291 @@ export default function MajorityHolderDashboard() {
   const formatAddress = (address) => {
     if (!address) return '';
     return `${address.slice(0, 6)}...${address.slice(-4)}`;
+  };
+
+  // Quiz functions
+  const loadQuizzes = async () => {
+    try {
+      const response = await fetch('/api/quizzes/list');
+      const data = await response.json();
+      
+      if (data.success) {
+        setQuizzes(data.quizzes);
+      } else {
+        console.error('Failed to load quizzes:', data.error);
+      }
+    } catch (error) {
+      console.error('Error loading quizzes:', error);
+    }
+  };
+
+  const loadDynamicReward = async () => {
+    setRewardLoading(true);
+    try {
+      // Clear blockchain cache to get fresh data
+      if (typeof window !== 'undefined') {
+        // Clear all possible cache keys for fee pool data
+        localStorage.removeItem('cache_get-sbtc-fee-pool');
+        localStorage.removeItem('cache_get-fee-pool');
+        localStorage.removeItem('cache_get-revenue');
+        localStorage.removeItem('cache_get-total-fees');
+        localStorage.removeItem('cache_get-sbtc-balance');
+        console.log('🗑️ Cleared all blockchain cache for fresh data');
+      }
+      
+      const response = await fetch('/api/quiz/get-dynamic-reward');
+      if (response.ok) {
+        const data = await response.json();
+        if (data.success) {
+          setDynamicReward(data.reward);
+          setSbtcFeePool(data.sbtcFeePool);
+          console.log('🎯 Loaded dynamic reward:', data.reward, 'based on sBTC fee pool:', data.sbtcFeePool);
+        } else {
+          console.error('Failed to load dynamic reward:', data.error);
+          setDynamicReward(0);
+          setSbtcFeePool(0);
+        }
+      } else {
+        console.error('Failed to load dynamic reward');
+        setDynamicReward(0);
+        setSbtcFeePool(0);
+      }
+    } catch (error) {
+      console.error('Error loading dynamic reward:', error);
+      setDynamicReward(0);
+      setSbtcFeePool(0);
+    } finally {
+      setRewardLoading(false);
+    }
+  };
+
+  const loadFeePoolHistory = async () => {
+    setHistoryLoading(true);
+    try {
+      const response = await fetch('/api/quiz/track-fee-pool');
+      if (response.ok) {
+        const data = await response.json();
+        if (data.success) {
+          setFeePoolHistory(data.history || []);
+          console.log('📊 Loaded fee pool history:', data.history?.length || 0, 'records');
+        } else {
+          console.error('Failed to load fee pool history:', data.error);
+          setFeePoolHistory([]);
+        }
+      } else {
+        console.error('Failed to load fee pool history');
+        setFeePoolHistory([]);
+      }
+    } catch (error) {
+      console.error('Error loading fee pool history:', error);
+      setFeePoolHistory([]);
+    } finally {
+      setHistoryLoading(false);
+    }
+  };
+
+  const saveCurrentFeePool = async () => {
+    try {
+      const response = await fetch('/api/quiz/save-current-fee-pool', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' }
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        if (data.success) {
+          alert(`✅ Saved current fee pool: ${data.feePool.toLocaleString()} sats`);
+          loadFeePoolHistory(); // Refresh the history
+        } else {
+          alert('❌ Failed to save fee pool: ' + data.error);
+        }
+      } else {
+        alert('❌ Failed to save fee pool data');
+      }
+    } catch (error) {
+      console.error('Error saving current fee pool:', error);
+      alert('❌ Error saving fee pool data');
+    }
+  };
+
+  const loadLeaderboard = async () => {
+    try {
+      const response = await fetch('/api/leaderboard');
+      const data = await response.json();
+      
+      if (data.success) {
+        setLeaderboard(data.leaderboard);
+        setCompetitionActive(data.competitionActive);
+        setTotalPointsEarned(data.totalPointsEarned);
+        setTotalParticipants(data.totalParticipants);
+      } else {
+        console.error('Failed to load leaderboard:', data.error);
+      }
+    } catch (error) {
+      console.error('Error loading leaderboard:', error);
+    }
+  };
+
+  const startQuiz = async (quizId) => {
+    try {
+      setGameState('loading');
+      const response = await fetch(`/api/quiz/questions/${quizId}`);
+      const data = await response.json();
+      
+      if (data.success) {
+        setSelectedQuiz(data.quiz);
+        setQuizQuestions(data.questions);
+        setCurrentQuestion(0);
+        setScore(0);
+        setTimeLeft(data.quiz.timePerQuestion);
+        setGameState('playing');
+      } else {
+        alert('Failed to load quiz: ' + data.error);
+        setGameState('loading');
+      }
+    } catch (error) {
+      console.error('Error starting quiz:', error);
+      setGameState('loading');
+    }
+  };
+
+  const handleAnswer = async (selectedAnswer) => {
+    const currentQ = quizQuestions[currentQuestion];
+    const isCorrect = selectedAnswer === currentQ.correctAnswer;
+    
+    if (isCorrect) {
+      setScore(score + selectedQuiz.pointsPerCorrectAnswer);
+      
+      if (currentQuestion + 1 < quizQuestions.length) {
+        setCurrentQuestion(currentQuestion + 1);
+        setTimeLeft(selectedQuiz.timePerQuestion);
+      } else {
+        // Quiz completed successfully
+        await completeQuiz(true);
+      }
+    } else {
+      // Quiz failed
+      await completeQuiz(false);
+    }
+  };
+
+  const completeQuiz = async (success) => {
+    try {
+      const response = await fetch('/api/quiz/end-attempt', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          quizId: selectedQuiz.id,
+          walletAddress: connectedAddress,
+          questionsAnswered: currentQuestion + 1,
+          correctAnswers: success ? currentQuestion + 1 : currentQuestion,
+          failedAtQuestion: success ? null : currentQuestion + 1
+        })
+      });
+      
+      const data = await response.json();
+      
+      if (data.success) {
+        setGameState(success ? 'completed' : 'failed');
+      } else {
+        alert('Failed to record quiz attempt: ' + data.error);
+        setGameState('loading');
+      }
+    } catch (error) {
+      console.error('Error completing quiz:', error);
+      setGameState('loading');
+    }
+  };
+
+  const resetQuiz = () => {
+    setGameState('loading');
+    setCurrentQuestion(0);
+    setScore(0);
+    setTimeLeft(10);
+    setSelectedQuiz(null);
+    setQuizQuestions([]);
+  };
+
+  // Quiz management functions
+  const createQuiz = async (e) => {
+    e.preventDefault();
+    
+    try {
+      const response = await fetch('/api/quizzes/create', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(quizForm)
+      });
+      
+      const data = await response.json();
+      
+      if (data.success) {
+        alert('Quiz created successfully!');
+        setQuizForm({
+          title: '',
+          maxQuestions: 6
+        });
+        setShowQuizForm(false);
+        loadQuizzes();
+      } else {
+        alert('Error creating quiz: ' + data.error);
+      }
+    } catch (error) {
+      console.error('Error creating quiz:', error);
+      alert('Failed to create quiz');
+    }
+  };
+
+  const addQuestion = async (e) => {
+    e.preventDefault();
+    
+    try {
+      const response = await fetch('/api/quizzes/add-question', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(questionForm)
+      });
+      
+      const data = await response.json();
+      
+      if (data.success) {
+        alert('Question added successfully!');
+        setQuestionForm({
+          quizId: questionForm.quizId,
+          questionText: '',
+          correctAnswer: '',
+          wrongAnswer1: '',
+          wrongAnswer2: '',
+          wrongAnswer3: '',
+          questionOrder: questionForm.questionOrder + 1
+        });
+        setShowQuestionForm(false);
+      } else {
+        alert('Error adding question: ' + data.error);
+      }
+    } catch (error) {
+      console.error('Error adding question:', error);
+      alert('Failed to add question');
+    }
+  };
+
+  const loadQuizQuestions = async (quizId) => {
+    try {
+      const response = await fetch(`/api/quiz/questions/${quizId}`);
+      const data = await response.json();
+      
+      if (data.success) {
+        setQuizQuestions(data.questions);
+      }
+    } catch (error) {
+      console.error('Error loading quiz questions:', error);
+    }
+  };
+
+  const selectQuiz = (quiz) => {
+    setSelectedQuiz(quiz);
+    setQuestionForm(prev => ({ ...prev, quizId: quiz.id }));
+    loadQuizQuestions(quiz.id);
   };
 
   return (
@@ -144,12 +472,36 @@ export default function MajorityHolderDashboard() {
             </Link>
             
             {/* Airdrop - Only visible to admin users */}
-            {(connectedAddress === 'ST37918Q7NBZ52AMV133VTY5C864KVK0S2HZ3CGA4' || connectedAddress === 'SP1T0VY3DNXRVP6HBM75DFWW0199CR0X15PC1D81B') && (
+            {ADMIN_ADDRESSES.includes(connectedAddress) && (
               <button
                 onClick={() => setActiveTab('airdrop')}
                 className={`tab-button ${activeTab === 'airdrop' ? 'active' : ''}`}
               >
                 Airdrop
+              </button>
+            )}
+            
+            {/* Quiz and Leaderboard - Available to all users */}
+            <button
+              onClick={() => setActiveTab('quiz')}
+              className={`tab-button ${activeTab === 'quiz' ? 'active' : ''}`}
+            >
+              🎯 Play Quiz
+            </button>
+            <button
+              onClick={() => setActiveTab('leaderboard')}
+              className={`tab-button ${activeTab === 'leaderboard' ? 'active' : ''}`}
+            >
+              🏆 Leaderboard
+            </button>
+            
+            {/* Quiz Management - Only visible to admin users */}
+            {ADMIN_ADDRESSES.includes(connectedAddress) && (
+              <button
+                onClick={() => setActiveTab('quiz-management')}
+                className={`tab-button ${activeTab === 'quiz-management' ? 'active' : ''}`}
+              >
+                ⚙️ Quiz Management
               </button>
             )}
             
@@ -195,104 +547,10 @@ export default function MajorityHolderDashboard() {
                 </div>
               </div>
 
-              {/* Revenue Chart */}
-              <div className="chart-container">
-                <div className="chart-header">
-                  <h3 className="chart-title">Profit Growth Over Time</h3>
-                  <button className="chart-filter">All ▼</button>
-                </div>
-                
-                <div className="chart-area">
-                  {loadingRevenue ? (
-                    <div className="chart-loading">
-                      <div className="loading-icon">⏳</div>
-                      <p>Loading revenue data...</p>
-                    </div>
-                  ) : revenueData && revenueData.length > 0 ? (
-                    <div className="chart-bars-container">
-                      <svg className="chart-bars" viewBox="0 0 400 300" preserveAspectRatio="xMidYMid meet">
-                        {/* Y-axis grid lines and labels */}
-                        {(() => {
-                          const maxRevenue = Math.max(...revenueData.map(d => d.revenue_sats));
-                          const yMax = Math.ceil(maxRevenue / 300) * 300;
-                          const ticks = [];
-                          for (let i = 0; i <= yMax; i += 300) {
-                            const y = 250 - (i / yMax) * 200;
-                            ticks.push({ value: i, y: y });
-                          }
-                          return ticks.map((tick, index) => (
-                            <g key={index}>
-                              <line 
-                                x1="60" y1={tick.y} x2="380" y2={tick.y} 
-                                stroke="#e5e7eb" strokeWidth="1"
-                              />
-                              <text x="50" y={tick.y + 4} textAnchor="end" fontSize="10" fill="#6b7280">
-                                {tick.value}
-                              </text>
-                            </g>
-                          ));
-                        })()}
-                        
-                        {/* Chart bars */}
-                        {revenueData.map((data, index) => {
-                          const barHeight = (data.revenue_sats / Math.max(...revenueData.map(d => d.revenue_sats))) * 200;
-                          const x = 80 + (index * 40);
-                          const y = 250 - barHeight;
-                          
-                          return (
-                            <g key={index}>
-                              <rect
-                                x={x}
-                                y={y}
-                                width="30"
-                                height={barHeight}
-                                fill="#3b82f6"
-                                rx="2"
-                              />
-                              <text
-                                x={x + 15}
-                                y="270"
-                                textAnchor="middle"
-                                fontSize="8"
-                                fill="#6b7280"
-                              >
-                                {new Date(data.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
-                              </text>
-                            </g>
-                          );
-                        })}
-                      </svg>
-                    </div>
-                  ) : (
-                    <div className="chart-empty">
-                      <p>No revenue data available</p>
-                    </div>
-                  )}
-                </div>
-              </div>
+              {/* Profit Growth Chart */}
+              <ProfitGrowthChart />
 
-              {/* Revenue Summary */}
-              <div className="revenue-summary">
-                <h3>Revenue Summary</h3>
-                <div className="summary-grid">
-                  <div className="summary-item">
-                    <span className="summary-label">Total Revenue</span>
-                    <span className="summary-value">{revenueSummary.totalRevenue.toLocaleString()} sats</span>
-                  </div>
-                  <div className="summary-item">
-                    <span className="summary-label">Average Daily</span>
-                    <span className="summary-value">{revenueSummary.avgDailyRevenue.toLocaleString()} sats</span>
-                  </div>
-                  <div className="summary-item">
-                    <span className="summary-label">Max Daily</span>
-                    <span className="summary-value">{revenueSummary.maxDailyRevenue.toLocaleString()} sats</span>
-                  </div>
-                  <div className="summary-item">
-                    <span className="summary-label">Days Tracked</span>
-                    <span className="summary-value">{revenueSummary.daysTracked}</span>
-                  </div>
-                </div>
-              </div>
+
             </div>
           )}
 
@@ -301,7 +559,7 @@ export default function MajorityHolderDashboard() {
           {activeTab === 'airdrop' && (
             <>
               {/* Admin access check */}
-              {(connectedAddress === 'ST37918Q7NBZ52AMV133VTY5C864KVK0S2HZ3CGA4' || connectedAddress === 'SP1T0VY3DNXRVP6HBM75DFWW0199CR0X15PC1D81B') ? (
+              {ADMIN_ADDRESSES.includes(connectedAddress) ? (
                 <div className="airdrop-content">
                   <div className="airdrop-header">
                     <h2>🎁 Airdrop</h2>
@@ -518,9 +776,474 @@ export default function MajorityHolderDashboard() {
             </>
           )}
 
+          {/* Quiz Tab Content */}
+          {activeTab === 'quiz' && (
+            <div className="quiz-content">
+              <div className="quiz-header">
+                <h2>🎯 Quiz Competition</h2>
+                <div className="dynamic-reward-info">
+                  <span>Current Protocol Revenue: {rewardLoading ? 'Updating...' : `${sbtcFeePool.toLocaleString()} sats`}</span>
+                  <button 
+                    onClick={loadDynamicReward}
+                    disabled={rewardLoading}
+                    className="refresh-reward-button"
+                  >
+                    {rewardLoading ? '🔄 Updating...' : '🔄 Refresh'}
+                  </button>
+                </div>
+              </div>
+
+              {!connectedAddress ? (
+                <div className="wallet-warning">
+                  <h3>🔗 Connect Your Wallet</h3>
+                  <p>Please connect your wallet to participate in the quiz competition.</p>
+                </div>
+              ) : gameState === 'loading' ? (
+                <div className="quiz-selection">
+                  <h3>Available Quizzes</h3>
+                  {quizzes.length === 0 ? (
+                    <div className="no-quizzes">
+                      <p>No quizzes available yet. Check back later!</p>
+                    </div>
+                  ) : (
+                    <div className="quizzes-grid">
+                      {quizzes.map((quiz) => (
+                        <div key={quiz.id} className="quiz-card">
+                          <h4>{quiz.title}</h4>
+                          {quiz.description && <p>{quiz.description}</p>}
+                          <div className="quiz-stats">
+                            <span>Questions: {quiz.max_questions}</span>
+                            <span>Time: {quiz.time_per_question}s</span>
+                            <span>Revenue: {rewardLoading ? 'Updating...' : `${sbtcFeePool.toLocaleString()} sats`}</span>
+                          </div>
+                          <button 
+                            onClick={() => startQuiz(quiz.id)}
+                            className="start-quiz-button"
+                          >
+                            Start Quiz
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              ) : gameState === 'playing' ? (
+                <div className="quiz-game">
+                  <div className="game-header">
+                    <h3>{selectedQuiz.title}</h3>
+                    <div className="game-stats">
+                      <span>Question {currentQuestion + 1} of {quizQuestions.length}</span>
+                      <span>Score: {score}</span>
+                      <span className="timer">Time: {timeLeft}s</span>
+                    </div>
+                  </div>
+                  
+                  <div className="question-container">
+                    <h4>{quizQuestions[currentQuestion].questionText}</h4>
+                    <div className="answers-grid">
+                      {quizQuestions[currentQuestion].answers.map((answer, index) => (
+                        <button
+                          key={index}
+                          onClick={() => handleAnswer(answer)}
+                          className="answer-button"
+                        >
+                          {answer}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              ) : gameState === 'failed' ? (
+                <div className="quiz-result failed">
+                  <h3>❌ Quiz Failed</h3>
+                  <p>You missed the last question. Try again!</p>
+                  <div className="result-actions">
+                    <button onClick={resetQuiz} className="try-again-button">
+                      Try Again
+                    </button>
+                    <button onClick={() => setActiveTab('leaderboard')} className="view-leaderboard-button">
+                      View Leaderboard
+                    </button>
+                  </div>
+                </div>
+              ) : gameState === 'completed' ? (
+                <div className="quiz-result completed">
+                  <h3>🎉 Perfect Score!</h3>
+                  <p>Congratulations! You earned {sbtcFeePool.toLocaleString()} sats in revenue!</p>
+                  <div className="result-actions">
+                    <button onClick={resetQuiz} className="play-again-button">
+                      Play Again
+                    </button>
+                    <button onClick={() => setActiveTab('leaderboard')} className="view-leaderboard-button">
+                      View Leaderboard
+                    </button>
+                  </div>
+                </div>
+              ) : null}
+            </div>
+          )}
+
+          {/* Leaderboard Tab Content */}
+          {activeTab === 'leaderboard' && (
+            <div className="leaderboard-content">
+              <div className="leaderboard-header">
+                <h2>🏆 Quiz Leaderboard</h2>
+                <div className="competition-status">
+                  <span className={`status ${competitionActive ? 'active' : 'ended'}`}>
+                    {competitionActive ? 'Competition Active' : 'Competition Ended'}
+                  </span>
+                  <span>Total Points: {totalPointsEarned.toLocaleString()}</span>
+                  <span>Participants: {totalParticipants}</span>
+                </div>
+              </div>
+
+              <div className="leaderboard-table">
+                <div className="table-header">
+                  <span>Rank</span>
+                  <span>Wallet Address</span>
+                  <span>Points</span>
+                  <span>Quizzes</span>
+                  <span>Perfect Scores</span>
+                </div>
+                {leaderboard.length === 0 ? (
+                  <div className="no-leaderboard">
+                    <p>No participants yet. Be the first to play!</p>
+                  </div>
+                ) : (
+                  leaderboard.map((user, index) => (
+                    <div key={index} className="leaderboard-row">
+                      <span className="rank">#{user.rank}</span>
+                      <span className="address">{formatAddress(user.walletAddress)}</span>
+                      <span className="points">{user.totalPoints}</span>
+                      <span className="quizzes">{user.totalQuizzesCompleted}</span>
+                      <span className="perfect">{user.perfectScores}</span>
+                    </div>
+                  ))
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* Quiz Management Tab Content */}
+          {activeTab === 'quiz-management' && (
+            <>
+              {/* Admin access check */}
+              {ADMIN_ADDRESSES.includes(connectedAddress) ? (
+                <div className="quiz-management-content">
+                  <div className="management-header">
+                    <h2>⚙️ Quiz Management</h2>
+                    <p>Create and manage quizzes for the competition</p>
+                  </div>
+
+                  <div className="management-actions">
+                    <button 
+                      onClick={() => setShowQuizForm(true)} 
+                      className="create-quiz-button"
+                    >
+                      ➕ Create New Quiz
+                    </button>
+                  </div>
+
+                  {/* Quiz Creation Form */}
+                  {showQuizForm && (
+                    <div className="form-modal">
+                      <div className="form-content">
+                        <div className="form-header">
+                          <h3>Create New Quiz</h3>
+                          <button 
+                            onClick={() => setShowQuizForm(false)}
+                            className="close-button"
+                          >
+                            ×
+                          </button>
+                        </div>
+                        
+                        <form onSubmit={createQuiz} className="quiz-form">
+                          <div className="form-group">
+                            <label>Quiz Title *</label>
+                            <input
+                              type="text"
+                              value={quizForm.title}
+                              onChange={(e) => setQuizForm({...quizForm, title: e.target.value})}
+                              required
+                              placeholder="Enter quiz title"
+                            />
+                          </div>
+                          
+                          <div className="form-group">
+                            <label>Max Questions</label>
+                            <input
+                              type="number"
+                              value={quizForm.maxQuestions}
+                              onChange={(e) => setQuizForm({...quizForm, maxQuestions: parseInt(e.target.value)})}
+                              min="1"
+                              max="10"
+                            />
+                          </div>
+                          
+                          <div className="form-actions">
+                            <button type="submit" className="submit-button">
+                              Create Quiz
+                            </button>
+                            <button 
+                              type="button" 
+                              onClick={() => setShowQuizForm(false)}
+                              className="cancel-button"
+                            >
+                              Cancel
+                            </button>
+                          </div>
+                        </form>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Question Addition Form */}
+                  {showQuestionForm && selectedQuiz && (
+                    <div className="form-modal">
+                      <div className="form-content">
+                        <div className="form-header">
+                          <h3>Add Question to: {selectedQuiz.title}</h3>
+                          <button 
+                            onClick={() => setShowQuestionForm(false)}
+                            className="close-button"
+                          >
+                            ×
+                          </button>
+                        </div>
+                        
+                        <form onSubmit={addQuestion} className="question-form">
+                          <div className="form-group">
+                            <label>Question Text *</label>
+                            <textarea
+                              value={questionForm.questionText}
+                              onChange={(e) => setQuestionForm({...questionForm, questionText: e.target.value})}
+                              required
+                              placeholder="Enter the question"
+                              rows="3"
+                            />
+                          </div>
+                          
+                          <div className="form-group">
+                            <label>Correct Answer *</label>
+                            <input
+                              type="text"
+                              value={questionForm.correctAnswer}
+                              onChange={(e) => setQuestionForm({...questionForm, correctAnswer: e.target.value})}
+                              required
+                              placeholder="Enter correct answer"
+                            />
+                          </div>
+                          
+                          <div className="form-group">
+                            <label>Wrong Answer 1 *</label>
+                            <input
+                              type="text"
+                              value={questionForm.wrongAnswer1}
+                              onChange={(e) => setQuestionForm({...questionForm, wrongAnswer1: e.target.value})}
+                              required
+                              placeholder="Enter wrong answer 1"
+                            />
+                          </div>
+                          
+                          <div className="form-group">
+                            <label>Wrong Answer 2 *</label>
+                            <input
+                              type="text"
+                              value={questionForm.wrongAnswer2}
+                              onChange={(e) => setQuestionForm({...questionForm, wrongAnswer2: e.target.value})}
+                              required
+                              placeholder="Enter wrong answer 2"
+                            />
+                          </div>
+                          
+                          <div className="form-group">
+                            <label>Wrong Answer 3 *</label>
+                            <input
+                              type="text"
+                              value={questionForm.wrongAnswer3}
+                              onChange={(e) => setQuestionForm({...questionForm, wrongAnswer3: e.target.value})}
+                              required
+                              placeholder="Enter wrong answer 3"
+                            />
+                          </div>
+                          
+                          <div className="form-group">
+                            <label>Question Order</label>
+                            <input
+                              type="number"
+                              value={questionForm.questionOrder}
+                              onChange={(e) => setQuestionForm({...questionForm, questionOrder: parseInt(e.target.value)})}
+                              min="1"
+                            />
+                          </div>
+                          
+                          <div className="form-actions">
+                            <button type="submit" className="submit-button">
+                              Add Question
+                            </button>
+                            <button 
+                              type="button" 
+                              onClick={() => setShowQuestionForm(false)}
+                              className="cancel-button"
+                            >
+                              Cancel
+                            </button>
+                          </div>
+                        </form>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Quizzes List */}
+                  <div className="quizzes-section">
+                    <h3>Existing Quizzes</h3>
+                    
+                    {quizzes.length === 0 ? (
+                      <div className="no-quizzes">
+                        <p>No quizzes created yet. Create your first quiz!</p>
+                      </div>
+                    ) : (
+                      <div className="quizzes-grid">
+                        {quizzes.map((quiz) => (
+                          <div key={quiz.id} className="quiz-card">
+                            <div className="quiz-header">
+                              <h4>{quiz.title}</h4>
+                              <span className={`status ${quiz.is_active ? 'active' : 'inactive'}`}>
+                                {quiz.is_active ? 'Active' : 'Inactive'}
+                              </span>
+                            </div>
+                            
+                            {quiz.description && (
+                              <p className="quiz-description">{quiz.description}</p>
+                            )}
+                            
+                            <div className="quiz-stats">
+                              <span>Questions: {quiz.max_questions}</span>
+                              <span>Time: {quiz.time_per_question}s</span>
+                              <span>Points: {quiz.points_per_correct_answer * quiz.max_questions}</span>
+                            </div>
+                            
+                            <div className="quiz-actions">
+                              <button 
+                                onClick={() => selectQuiz(quiz)}
+                                className="manage-button"
+                              >
+                                Manage Questions
+                              </button>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Fee Pool History Section */}
+                  <div className="fee-pool-history-section">
+                    <div className="section-header">
+                      <h3>📊 sBTC Fee Pool History</h3>
+                      <div className="history-actions">
+                        <button 
+                          onClick={saveCurrentFeePool}
+                          className="save-current-button"
+                        >
+                          💾 Save Current
+                        </button>
+                        <button 
+                          onClick={loadFeePoolHistory}
+                          className="refresh-button"
+                          disabled={historyLoading}
+                        >
+                          {historyLoading ? 'Loading...' : '🔄 Refresh'}
+                        </button>
+                      </div>
+                    </div>
+                    
+                    {historyLoading ? (
+                      <div className="loading-history">
+                        <p>Loading fee pool history...</p>
+                      </div>
+                    ) : feePoolHistory.length === 0 ? (
+                      <div className="no-history">
+                        <p>No fee pool history available yet.</p>
+                      </div>
+                    ) : (
+                                          <div className="history-table">
+                        <div className="table-header">
+                          <span>Date</span>
+                          <span>Fee Pool</span>
+                        </div>
+                        {feePoolHistory.slice(0, 10).map((record, index) => (
+                          <div key={index} className="history-row">
+                            <span className="date">
+                              {new Date(record.recorded_at).toLocaleDateString()}
+                            </span>
+                            <span className="fee-pool">
+                              {record.fee_pool_amount.toLocaleString()} sats
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Selected Quiz Questions */}
+                  {selectedQuiz && (
+                    <div className="questions-section">
+                      <div className="section-header">
+                        <h3>Questions for: {selectedQuiz.title}</h3>
+                        <button 
+                          onClick={() => setShowQuestionForm(true)}
+                          className="add-question-button"
+                        >
+                          ➕ Add Question
+                        </button>
+                      </div>
+                      
+                      {quizQuestions.length === 0 ? (
+                        <div className="no-questions">
+                          <p>No questions added yet. Add your first question!</p>
+                        </div>
+                      ) : (
+                        <div className="questions-list">
+                          {quizQuestions.map((question, index) => (
+                            <div key={index} className="question-item">
+                              <div className="question-header">
+                                <span className="question-number">Q{index + 1}</span>
+                                <span className="question-text">{question.questionText}</span>
+                              </div>
+                              <div className="answers-list">
+                                <div className="answer correct">
+                                  <span className="answer-label">✓</span>
+                                  {question.correctAnswer}
+                                </div>
+                                {question.answers.filter(a => a !== question.correctAnswer).map((answer, i) => (
+                                  <div key={i} className="answer wrong">
+                                    <span className="answer-label">✗</span>
+                                    {answer}
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <div className="access-denied">
+                  <h2>🔒 Access Denied</h2>
+                  <p>You need admin privileges to access the quiz management functionality.</p>
+                </div>
+              )}
+            </>
+          )}
+
 
         </div>
       </main>
+      <Footer />
     </div>
   );
 }
