@@ -24,6 +24,17 @@ export async function POST(request) {
     
     console.log('💰 Current sBTC fee pool:', currentFeePool, 'sats');
     
+    // Validate the fee pool amount - don't save invalid data
+    if (!currentFeePool || currentFeePool <= 0 || currentFeePool > 100000) {
+      console.log('⚠️ Invalid fee pool amount detected, skipping save:', currentFeePool);
+      return NextResponse.json({
+        success: true,
+        saved: false,
+        currentFeePool,
+        message: 'Invalid fee pool amount, no data saved'
+      });
+    }
+    
     // Get the last recorded fee pool amount to check for changes
     const { data: lastRecord, error: fetchError } = await supabaseServer
       .from('sbtc_fee_pool_history')

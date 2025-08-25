@@ -16,6 +16,7 @@ export default function MajorityHolderDashboard() {
   const [airdropType, setAirdropType] = useState('');
   const [airdropAmount, setAirdropAmount] = useState('');
   const [showSupportModal, setShowSupportModal] = useState(false);
+  const [competitionStatus, setCompetitionStatus] = useState('active');
   const [recipients, setRecipients] = useState([{ to: '' }]);
   const [allowMode, setAllowMode] = useState(true);
   const [isCallingFunction, setIsCallingFunction] = useState(false);
@@ -39,6 +40,14 @@ export default function MajorityHolderDashboard() {
   const [rewardLoading, setRewardLoading] = useState(true);
   const [feePoolHistory, setFeePoolHistory] = useState([]);
   const [historyLoading, setHistoryLoading] = useState(false);
+  const [userQuizPoints, setUserQuizPoints] = useState(0);
+  const [userLevel, setUserLevel] = useState(1);
+  const [pointsToNextLevel, setPointsToNextLevel] = useState(0);
+  const [levelProgress, setLevelProgress] = useState(0);
+  const [progressMode, setProgressMode] = useState('competition'); // 'competition' or 'level'
+  const [userRank, setUserRank] = useState(null);
+  const [levelName, setLevelName] = useState('Novice');
+  const [tiedUsers, setTiedUsers] = useState(0);
   
   // Quiz management state
   const [quizForm, setQuizForm] = useState({
@@ -51,11 +60,15 @@ export default function MajorityHolderDashboard() {
     correctAnswer: '',
     wrongAnswer1: '',
     wrongAnswer2: '',
-    wrongAnswer3: '',
-    questionOrder: 1
+    wrongAnswer3: ''
   });
   const [showQuizForm, setShowQuizForm] = useState(false);
   const [showQuestionForm, setShowQuestionForm] = useState(false);
+  
+  // End goal configuration state
+  const [endGoalPoints, setEndGoalPoints] = useState(21000000);
+  const [showEndGoalForm, setShowEndGoalForm] = useState(false);
+  const [endGoalLoading, setEndGoalLoading] = useState(false);
 
   // Admin wallet addresses (comma-separated)
   const ADMIN_ADDRESSES = process.env.NEXT_PUBLIC_ADMIN_ADDRESSES?.split(',') || [
@@ -80,29 +93,211 @@ export default function MajorityHolderDashboard() {
     const address = localStorage.getItem('connectedAddress');
     if (address) {
       setConnectedAddress(address);
+      loadUserQuizPoints(address);
+      loadLeaderboard(); // Load leaderboard on initial load to get rank
     }
 
     const handleStorageChange = () => {
       const newAddress = localStorage.getItem('connectedAddress');
       setConnectedAddress(newAddress || '');
+      if (newAddress) {
+        loadUserQuizPoints(newAddress);
+        loadLeaderboard(); // Load leaderboard when address changes
+      }
     };
 
     window.addEventListener('storage', handleStorageChange);
     return () => window.removeEventListener('storage', handleStorageChange);
   }, []);
 
+  // Load end goal on component mount
+  useEffect(() => {
+    loadEndGoal(); // Load for all users, not just admins
+  }, [connectedAddress]);
+
+  const loadUserQuizPoints = async (address) => {
+    if (!address) return;
+    
+    try {
+      console.log('🔄 Loading user quiz points for:', address);
+      const response = await fetch(`/api/user-tokens/quiz-points?address=${address}`);
+      const data = await response.json();
+      
+      console.log('📊 User points response:', data);
+      
+      if (data.success) {
+        const points = data.points || 0;
+        setUserQuizPoints(points);
+        
+        console.log('✅ User has points:', points);
+        
+        // Calculate level information
+        calculateLevelInfo(points);
+      } else {
+        console.error('❌ Failed to load user quiz points:', data.error);
+        setUserQuizPoints(0);
+        calculateLevelInfo(0);
+      }
+    } catch (error) {
+      console.error('❌ Error loading user quiz points:', error);
+      setUserQuizPoints(0);
+      calculateLevelInfo(0);
+    }
+  };
+
+  const calculateLevelInfo = (points) => {
+    // Level system based on leaderboard ranking
+    // Level 1: Rank 1 (Champion)
+    // Level 2: Rank 2-3 (Elite)
+    // Level 3: Rank 4-6 (Advanced)
+    // Level 4: Rank 7-10 (Intermediate)
+    // Level 5: Rank 11-20 (Beginner)
+    // Level 6: Rank 21+ (Novice)
+    
+    // We need to get the user's rank from the leaderboard
+    // This will be calculated when the leaderboard is loaded
+    setUserLevel(1); // Default level
+    setPointsToNextLevel(0);
+    setLevelProgress(0);
+  };
+
+  const calculateUserRank = (leaderboardData, userAddress) => {
+    if (!leaderboardData || !userAddress || leaderboardData.length === 0) {
+      console.log('❌ Cannot calculate rank: missing data or empty leaderboard');
+      return null;
+    }
+    
+    console.log('🔍 Calculating rank for:', userAddress);
+    console.log('📊 Leaderboard has', leaderboardData.length, 'users');
+    
+    // Find user's position in leaderboard
+    const userIndex = leaderboardData.findIndex(user => 
+      user.walletAddress === userAddress // Changed from wallet_address to walletAddress
+    );
+    
+    console.log('🔍 User found at index:', userIndex);
+    
+    if (userIndex === -1) {
+      console.log('❌ User not found in leaderboard');
+      console.log('🔍 Available addresses:', leaderboardData.map(u => u.walletAddress));
+      return null; // User not found in leaderboard
+    }
+    
+    const userRank = userIndex + 1;
+    const userPoints = leaderboardData[userIndex].totalPoints; // Changed from total_points to totalPoints
+    
+    console.log('✅ User rank calculated:', { rank: userRank, points: userPoints });
+    
+    // Count how many users have the same points (for ties)
+    const tiedUsers = leaderboardData.filter(user => 
+      user.totalPoints === userPoints // Changed from total_points to totalPoints
+    ).length;
+    
+    // Calculate points needed to surpass the person above you
+    let pointsToSurpass = 0;
+    if (userRank > 1) {
+      // Find the person above you (lower index = higher rank)
+      const personAbove = leaderboardData[userIndex - 1];
+      pointsToSurpass = personAbove.totalPoints - userPoints + 1; // Changed from total_points to totalPoints
+    }
+    
+    // Determine level based on rank
+    let level = 6; // Default: Novice
+    let levelName = 'Novice';
+    let nextLevelPoints = 0;
+    let progress = 0;
+    
+    if (userRank === 1) {
+      level = 1;
+      levelName = 'Champion';
+      progress = 100; // Max level reached
+    } else if (userRank <= 3) {
+      level = 2;
+      levelName = 'Elite';
+      // Progress toward rank 1
+      const rank1Points = leaderboardData[0].totalPoints; // Changed from total_points to totalPoints
+      nextLevelPoints = rank1Points - userPoints;
+      progress = Math.max(0, Math.min(100, ((rank1Points - userPoints) / rank1Points) * 100));
+    } else if (userRank <= 6) {
+      level = 3;
+      levelName = 'Advanced';
+      // Progress toward top 3
+      const top3Points = leaderboardData[2].totalPoints; // Changed from total_points to totalPoints
+      nextLevelPoints = top3Points - userPoints;
+      progress = Math.max(0, Math.min(100, ((top3Points - userPoints) / top3Points) * 100));
+    } else if (userRank <= 10) {
+      level = 4;
+      levelName = 'Intermediate';
+      // Progress toward top 6
+      const top6Points = leaderboardData[5].totalPoints; // Changed from total_points to totalPoints
+      nextLevelPoints = top6Points - userPoints;
+      progress = Math.max(0, Math.min(100, ((top6Points - userPoints) / top6Points) * 100));
+    } else if (userRank <= 20) {
+      level = 5;
+      levelName = 'Beginner';
+      // Progress toward top 10
+      const top10Points = leaderboardData[9].totalPoints; // Changed from total_points to totalPoints
+      nextLevelPoints = top10Points - userPoints;
+      progress = Math.max(0, Math.min(100, ((top10Points - userPoints) / top10Points) * 100));
+    } else {
+      level = 6;
+      levelName = 'Novice';
+      // Progress toward top 20
+      const top20Points = leaderboardData[19]?.totalPoints || 0; // Changed from total_points to totalPoints
+      nextLevelPoints = top20Points - userPoints;
+      progress = Math.max(0, Math.min(100, ((top20Points - userPoints) / top20Points) * 100));
+    }
+    
+    console.log('✅ Final rank info:', { rank: userRank, level: level, levelName: levelName, pointsToSurpass });
+    
+    setUserLevel(level);
+    setPointsToNextLevel(pointsToSurpass); // Use points to surpass instead of next level points
+    setLevelProgress(progress);
+    setUserRank(userRank);
+    setLevelName(levelName);
+    setTiedUsers(tiedUsers);
+    
+    return {
+      rank: userRank,
+      level: level,
+      levelName: levelName,
+      points: userPoints,
+      tiedUsers: tiedUsers,
+      nextLevelPoints: pointsToSurpass,
+      progress: progress
+    };
+  };
+
   // Load quiz data when quiz tab is active
   useEffect(() => {
     if (activeTab === 'quiz') {
       loadQuizzes();
       loadDynamicReward();
+      
+      // Refresh user's quiz points when quiz tab is loaded
+      if (connectedAddress) {
+        loadUserQuizPoints(connectedAddress);
+      }
+    }
+  }, [activeTab]);
+
+  // Show coming soon popup on first load
+  useEffect(() => {
+    showComingSoonModal();
+  }, []);
+
+  // Load rewards data when rewards tab is active
+  useEffect(() => {
+    if (activeTab === 'rewards') {
+      loadDynamicReward();
+      loadLeaderboard();
     }
   }, [activeTab]);
 
   // Load leaderboard data when leaderboard tab is active
   useEffect(() => {
     if (activeTab === 'leaderboard') {
-      loadLeaderboard();
+      loadLeaderboard(); // Always refresh when viewing leaderboard
     }
   }, [activeTab]);
 
@@ -113,6 +308,14 @@ export default function MajorityHolderDashboard() {
       loadFeePoolHistory();
     }
   }, [activeTab]);
+
+  // Load leaderboard once on component mount and when address changes
+  useEffect(() => {
+    if (connectedAddress) {
+      loadLeaderboard();
+      loadCompetitionStatus();
+    }
+  }, [connectedAddress]); // Only depend on connectedAddress, not activeTab
 
   // Timer effect for quiz game
   useEffect(() => {
@@ -176,6 +379,7 @@ export default function MajorityHolderDashboard() {
       }
       
       const response = await fetch('/api/quiz/get-dynamic-reward');
+      
       if (response.ok) {
         const data = await response.json();
         if (data.success) {
@@ -200,6 +404,21 @@ export default function MajorityHolderDashboard() {
       setRewardLoading(false);
     }
   };
+
+  const loadCompetitionStatus = async () => {
+    try {
+      const response = await fetch('/api/quiz/status');
+      const data = await response.json();
+      if (data.success) {
+        setCompetitionStatus(data.status);
+        console.log('🏆 Competition status loaded:', data.status);
+      }
+    } catch (error) {
+      console.error('Error loading competition status:', error);
+    }
+  };
+
+
 
   const loadFeePoolHistory = async () => {
     setHistoryLoading(true);
@@ -252,14 +471,58 @@ export default function MajorityHolderDashboard() {
 
   const loadLeaderboard = async () => {
     try {
+      console.log('🔄 Loading leaderboard...');
       const response = await fetch('/api/leaderboard');
       const data = await response.json();
       
-      if (data.success) {
+      console.log('📊 Full leaderboard response:', data);
+      
+      if (data.success && data.leaderboard && data.leaderboard.length > 0) {
         setLeaderboard(data.leaderboard);
         setCompetitionActive(data.competitionActive);
         setTotalPointsEarned(data.totalPointsEarned);
         setTotalParticipants(data.totalParticipants);
+        
+        console.log('📊 Leaderboard data:', data.leaderboard);
+        console.log('👤 Current user address:', connectedAddress);
+        console.log('🔍 Looking for user in leaderboard...');
+        
+        // Calculate user rank and level information
+        if (connectedAddress && data.leaderboard) {
+          // Log each user to see the structure
+          data.leaderboard.forEach((user, index) => {
+            console.log(`User ${index + 1}:`, {
+              walletAddress: user.walletAddress,
+              totalPoints: user.totalPoints,
+              matches: user.walletAddress === connectedAddress
+            });
+          });
+          
+          const rankInfo = calculateUserRank(data.leaderboard, connectedAddress);
+          if (rankInfo) {
+            console.log('✅ User rank info:', rankInfo);
+            setUserRank(rankInfo.rank);
+            setLevelName(rankInfo.levelName);
+            setTiedUsers(rankInfo.tiedUsers);
+          } else {
+            console.log('❌ User not found in leaderboard or rank calculation failed');
+            console.log('🔍 Available addresses:', data.leaderboard.map(u => u.walletAddress));
+            // Only reset if we don't already have a valid rank
+            if (userRank === null) {
+              setUserRank(null);
+              setLevelName('Novice');
+              setTiedUsers(0);
+              setUserLevel(6);
+              setPointsToNextLevel(0);
+              setLevelProgress(0);
+            }
+          }
+        }
+        
+        // Refresh user's quiz points when leaderboard is loaded
+        if (connectedAddress) {
+          loadUserQuizPoints(connectedAddress);
+        }
       } else {
         console.error('Failed to load leaderboard:', data.error);
       }
@@ -271,10 +534,14 @@ export default function MajorityHolderDashboard() {
   const startQuiz = async (quizId) => {
     try {
       setGameState('loading');
-      const response = await fetch(`/api/quiz/questions/${quizId}`);
+      // Add timestamp to prevent caching and ensure fresh randomization
+      const timestamp = Date.now();
+      const response = await fetch(`/api/quiz/questions/${quizId}?t=${timestamp}`);
       const data = await response.json();
       
       if (data.success) {
+        console.log('🎲 Quiz questions loaded and randomized:', data.questions.length, 'questions');
+        console.log('🎲 First question:', data.questions[0]?.questionText?.substring(0, 50) + '...');
         setSelectedQuiz(data.quiz);
         setQuizQuestions(data.questions);
         setCurrentQuestion(0);
@@ -326,12 +593,32 @@ export default function MajorityHolderDashboard() {
       });
       
       const data = await response.json();
+      console.log('📊 Quiz completion response:', data);
       
-      if (data.success) {
-        setGameState(success ? 'completed' : 'failed');
+      if (response.ok && data.success) {
+        // Check if user got 100% correct (all questions answered correctly)
+        const isPerfectScore = success && (currentQuestion + 1 === quizQuestions.length);
+        setGameState(isPerfectScore ? 'perfect' : (success ? 'completed' : 'failed'));
+        
+        // Refresh user's quiz points and leaderboard after completion
+        if (connectedAddress) {
+          loadUserQuizPoints(connectedAddress);
+          // Reload leaderboard to update rank immediately
+          setTimeout(() => {
+            loadLeaderboard();
+          }, 1000); // Small delay to ensure points are saved
+        }
       } else {
-        alert('Failed to record quiz attempt: ' + data.error);
-        setGameState('loading');
+        console.error('❌ Quiz completion failed:', data);
+        
+        // Handle competition ended error specifically
+        if (data.error && data.error.includes('Competition has ended')) {
+          showCompetitionEndedModal();
+          setGameState('competition-ended');
+        } else {
+          alert('Failed to record quiz attempt: ' + (data.error || 'Unknown error') + '\n\nDetails: ' + (data.message || 'No additional details'));
+          setGameState('loading');
+        }
       }
     } catch (error) {
       console.error('Error completing quiz:', error);
@@ -343,9 +630,35 @@ export default function MajorityHolderDashboard() {
     setGameState('loading');
     setCurrentQuestion(0);
     setScore(0);
+    setTimeLeft(selectedQuiz ? selectedQuiz.timePerQuestion : 10);
+    
+    // Keep the same quiz and reload questions (they will be randomized again)
+    if (selectedQuiz) {
+      // Use the same endpoint as startQuiz to ensure randomization
+      startQuiz(selectedQuiz.id);
+    } else {
+      setSelectedQuiz(null);
+      setQuizQuestions([]);
+    }
+    
+    // Refresh user's quiz points after reset
+    if (connectedAddress) {
+      loadUserQuizPoints(connectedAddress);
+    }
+  };
+
+  const goToQuizSelection = () => {
+    setGameState('loading');
+    setCurrentQuestion(0);
+    setScore(0);
     setTimeLeft(10);
     setSelectedQuiz(null);
     setQuizQuestions([]);
+    
+    // Refresh user's quiz points
+    if (connectedAddress) {
+      loadUserQuizPoints(connectedAddress);
+    }
   };
 
   // Quiz management functions
@@ -398,8 +711,7 @@ export default function MajorityHolderDashboard() {
           correctAnswer: '',
           wrongAnswer1: '',
           wrongAnswer2: '',
-          wrongAnswer3: '',
-          questionOrder: questionForm.questionOrder + 1
+          wrongAnswer3: ''
         });
         setShowQuestionForm(false);
       } else {
@@ -413,21 +725,854 @@ export default function MajorityHolderDashboard() {
 
   const loadQuizQuestions = async (quizId) => {
     try {
-      const response = await fetch(`/api/quiz/questions/${quizId}`);
+      console.log('🔍 Loading questions for quiz ID:', quizId);
+      const response = await fetch(`/api/quiz/questions/${quizId}/manage`);
       const data = await response.json();
       
+      console.log('🔍 API response:', data);
+      
       if (data.success) {
+        console.log('🔍 Setting quiz questions:', data.questions);
         setQuizQuestions(data.questions);
+      } else {
+        console.error('❌ API returned error:', data.error);
+        setQuizQuestions([]);
       }
     } catch (error) {
       console.error('Error loading quiz questions:', error);
+      setQuizQuestions([]);
     }
   };
 
   const selectQuiz = (quiz) => {
+    console.log('🔍 Selecting quiz:', quiz);
     setSelectedQuiz(quiz);
     setQuestionForm(prev => ({ ...prev, quizId: quiz.id }));
     loadQuizQuestions(quiz.id);
+  };
+
+  const testDatabase = async () => {
+    try {
+      console.log('🧪 Testing database...');
+      const response = await fetch('/api/test-database');
+      const data = await response.json();
+      
+      if (data.success) {
+        console.log('📊 Database test results:', data);
+        alert(`Database has ${data.count} users. Check console for details.`);
+      } else {
+        console.error('❌ Database test failed:', data.error);
+        alert('Database test failed: ' + data.error);
+      }
+    } catch (error) {
+      console.error('❌ Error testing database:', error);
+      alert('Error testing database: ' + error.message);
+    }
+  };
+
+
+
+  const resetAllPoints = async () => {
+    if (!confirm('⚠️ WARNING: This will permanently delete ALL user points and quiz history. This action cannot be undone. Are you absolutely sure?')) {
+      return;
+    }
+
+    if (!confirm('⚠️ FINAL CONFIRMATION: This will reset ALL user points to 0 and clear all quiz history. Continue?')) {
+      return;
+    }
+
+    try {
+      // Try API first
+      const response = await fetch('/api/quiz/reset-points', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' }
+      });
+
+      const data = await response.json();
+      
+      if (data.success) {
+        alert('✅ All user points and quiz history have been reset successfully!');
+        loadLeaderboard(); // Refresh the leaderboard
+        loadUserQuizPoints(connectedAddress); // Refresh user's own points
+      } else {
+        // If API fails, try frontend reset
+        if (confirm('❌ API reset failed. Try frontend-only reset?')) {
+          await frontendReset();
+        }
+      }
+    } catch (error) {
+      console.error('Error resetting points:', error);
+      // If API fails, try frontend reset
+      if (confirm('❌ API reset failed. Try frontend-only reset?')) {
+        await frontendReset();
+      }
+    }
+  };
+
+  const backendReset = async () => {
+    if (!confirm('⚠️ WARNING: This will reset ALL user points in the database. Continue?')) {
+      return;
+    }
+    try {
+      console.log('🔄 Backend reset: Resetting database...');
+      
+      const response = await fetch('/api/quiz/reset-points-backend', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' }
+      });
+      
+      const data = await response.json();
+      
+      if (data.success) {
+        alert(`✅ Backend reset successful! Reset ${data.updatedRecords || 0} user records.`);
+        loadLeaderboard(); // Refresh the leaderboard
+        loadUserQuizPoints(connectedAddress); // Refresh user's own points
+      } else {
+        alert('❌ Backend reset failed: ' + data.message);
+      }
+    } catch (error) {
+      console.error('Error in backend reset:', error);
+      alert('❌ Backend reset failed: ' + error.message);
+    }
+  };
+
+
+
+  const cleanupFeePool = async () => {
+    if (!confirm('⚠️ WARNING: This will remove suspicious fee pool data (like the 494.4K value). This action cannot be undone. Continue?')) {
+      return;
+    }
+    try {
+      const response = await fetch('/api/cleanup-fee-pool', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' }
+      });
+      const data = await response.json();
+      if (data.success) {
+        alert(`✅ Cleaned up fee pool data! Removed ${data.deletedCount} suspicious records.`);
+        loadFeePoolHistory(); // Refresh the chart
+      } else {
+        alert('❌ Failed to cleanup fee pool data: ' + data.error);
+      }
+    } catch (error) {
+      console.error('Error cleaning up fee pool:', error);
+      alert('❌ Error cleaning up fee pool data');
+    }
+  };
+
+
+
+  const refreshLeaderboard = async () => {
+    console.log('🔄 Manually refreshing leaderboard...');
+    await loadLeaderboard();
+  };
+
+  // Load current end goal from database
+  const loadEndGoal = async () => {
+    try {
+      console.log('🔄 Loading end goal from database...');
+      const response = await fetch('/api/quiz/end-goal');
+      const data = await response.json();
+      console.log('📊 End goal API response:', data);
+      
+      if (data.success) {
+        console.log('✅ Setting end goal to:', data.endGoal);
+        setEndGoalPoints(data.endGoal);
+      } else {
+        console.error('❌ Failed to load end goal:', data.error);
+      }
+    } catch (error) {
+      console.error('❌ Error loading end goal:', error);
+    }
+  };
+
+  // Update end goal
+  const updateEndGoal = async (e) => {
+    e.preventDefault();
+    setEndGoalLoading(true);
+    
+    try {
+      console.log('🔄 Updating end goal to:', endGoalPoints);
+      
+      const response = await fetch('/api/quiz/end-goal', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ endGoal: endGoalPoints })
+      });
+      
+      const data = await response.json();
+      console.log('📊 Update response:', data);
+      
+      if (data.success) {
+        alert('✅ End goal updated successfully!');
+        setShowEndGoalForm(false);
+        loadEndGoal(); // Refresh the current end goal
+      } else {
+        alert('❌ Failed to update end goal: ' + data.error);
+      }
+    } catch (error) {
+      console.error('❌ Error updating end goal:', error);
+      alert('❌ Error updating end goal');
+    } finally {
+      setEndGoalLoading(false);
+    }
+  };
+
+  // Debug end goal setting
+  const debugEndGoal = async () => {
+    try {
+      console.log('🔍 Debugging end goal setting...');
+      const response = await fetch('/api/quiz/debug-end-goal');
+      const data = await response.json();
+      
+      console.log('🔍 Debug response:', data);
+      
+      if (data.success) {
+        alert(`✅ Debug successful!\n\nCurrent end goal: ${data.endGoal.toLocaleString()}\n\nCheck console for full details.`);
+        if (data.created) {
+          loadEndGoal(); // Refresh if setting was created
+        }
+      } else {
+        alert('❌ Debug failed: ' + data.error);
+      }
+    } catch (error) {
+      console.error('Error debugging end goal:', error);
+      alert('❌ Error debugging end goal');
+    }
+  };
+
+  const updateCompetitionStatus = async () => {
+    try {
+      console.log('🔄 Updating competition status...');
+      const response = await fetch('/api/quiz/auto-update-status', {
+        method: 'POST'
+      });
+      const data = await response.json();
+      
+      console.log('📊 Update response:', data);
+      
+      if (data.success) {
+        console.log('✅ Competition status updated!');
+        await loadCompetitionStatus();
+        alert(`Competition status updated!\n\n${data.message}\n\nPrevious: ${data.previousStatus}\nNew: ${data.newStatus}\n\nStatus changed: ${data.statusChanged ? 'Yes' : 'No'}`);
+      } else {
+        alert('Error updating competition status: ' + data.error);
+      }
+    } catch (error) {
+      console.error('Error updating competition status:', error);
+      alert('Error updating competition status');
+    }
+  };
+
+  const checkSettings = async () => {
+    try {
+      console.log('🔍 Checking quiz settings...');
+      const response = await fetch('/api/quiz/check-settings');
+      const data = await response.json();
+      
+      console.log('📊 Settings response:', data);
+      
+      if (data.success) {
+        const settings = data.settings;
+        const message = `Quiz Settings:\n\nCompetition Active: ${settings.competitionActive}\nEnd Goal Threshold: ${settings.endGoalThreshold}\nCompetition Status: ${settings.competitionStatus}\n\nLast Updated: ${settings.statusUpdatedAt || 'Never'}\n\nCurrent Points: 221,230\nThreshold: 220,000\nStatus: ${settings.competitionActive === 'true' ? 'ACTIVE' : 'PAUSED'}`;
+        alert(message);
+      } else {
+        alert('Error checking settings: ' + data.error);
+      }
+    } catch (error) {
+      console.error('Error checking settings:', error);
+      alert('Error checking settings');
+    }
+  };
+
+  const initCompetitionStatus = async () => {
+    try {
+      console.log('🔧 Initializing competition status...');
+      const response = await fetch('/api/quiz/init-competition-status', {
+        method: 'POST'
+      });
+      const data = await response.json();
+      
+      console.log('📊 Init response:', data);
+      
+      if (data.success) {
+        console.log('✅ Competition status initialized!');
+        alert(`Competition status initialized!\n\n${data.message}`);
+      } else {
+        alert('Error initializing competition status: ' + data.error);
+      }
+    } catch (error) {
+      console.error('Error initializing competition status:', error);
+      alert('Error initializing competition status');
+    }
+  };
+
+  const fixCompetitionActive = async () => {
+    try {
+      console.log('🔧 Fixing competition active setting...');
+      const response = await fetch('/api/quiz/fix-competition-active', {
+        method: 'POST'
+      });
+      const data = await response.json();
+      
+      console.log('📊 Fix response:', data);
+      
+      if (data.success) {
+        console.log('✅ Competition active setting fixed!');
+        alert(`Competition active setting fixed!\n\n${data.message}\n\nPrevious: ${data.previousActive}\nNew: ${data.newActive}\n\nStatus changed: ${data.statusChanged ? 'Yes' : 'No'}`);
+      } else {
+        alert('Error fixing competition active setting: ' + data.error);
+      }
+    } catch (error) {
+      console.error('Error fixing competition active setting:', error);
+      alert('Error fixing competition active setting');
+    }
+  };
+
+  const fixSchema = async () => {
+    try {
+      console.log('🔧 Fixing database schema...');
+      const response = await fetch('/api/quiz/fix-schema', {
+        method: 'POST'
+      });
+      const data = await response.json();
+      
+      console.log('📊 Schema fix response:', data);
+      
+      if (data.success) {
+        console.log('✅ Database schema fixed!');
+        alert(`Database schema fixed!\n\n${data.message}`);
+      } else {
+        alert('Error fixing database schema: ' + data.error);
+      }
+    } catch (error) {
+      console.error('Error fixing database schema:', error);
+      alert('Error fixing database schema');
+    }
+  };
+
+  const setStatusActive = async () => {
+    try {
+      console.log('🔧 Setting competition status to active...');
+      const response = await fetch('/api/quiz/set-status-active', {
+        method: 'POST'
+      });
+      const data = await response.json();
+      
+      console.log('📊 Set status response:', data);
+      
+      if (data.success) {
+        console.log('✅ Competition status set to active!');
+        alert(`Competition status set to active!\n\n${data.message}`);
+      } else {
+        alert('Error setting competition status: ' + data.error);
+      }
+    } catch (error) {
+      console.error('Error setting competition status:', error);
+      alert('Error setting competition status');
+    }
+  };
+
+  const debugDatabase = async () => {
+    try {
+      console.log('🔍 Debugging database...');
+      const response = await fetch('/api/quiz/debug-database');
+      const data = await response.json();
+      
+      console.log('📊 Debug response:', data);
+      
+      if (data.success) {
+        console.log('✅ Database debugged!');
+        const results = data.results;
+        let message = 'Database Debug Results:\n\n';
+        
+        Object.keys(results).forEach(table => {
+          const result = results[table];
+          message += `${table}:\n`;
+          message += `  Exists: ${result.exists}\n`;
+          if (result.exists) {
+            message += `  Count: ${result.count}\n`;
+            if (result.data && result.data.length > 0) {
+              message += `  Sample: ${JSON.stringify(result.data[0])}\n`;
+            }
+          } else {
+            message += `  Error: ${result.error}\n`;
+          }
+          message += '\n';
+        });
+        
+        // Create a custom popup with copy button
+        const popup = document.createElement('div');
+        popup.style.cssText = `
+          position: fixed;
+          top: 50%;
+          left: 50%;
+          transform: translate(-50%, -50%);
+          background: #1a1a1a;
+          color: white;
+          padding: 20px;
+          border-radius: 10px;
+          border: 1px solid #333;
+          z-index: 10000;
+          max-width: 80vw;
+          max-height: 80vh;
+          overflow-y: auto;
+          font-family: monospace;
+          white-space: pre-wrap;
+        `;
+        
+        const text = document.createElement('div');
+        text.textContent = message;
+        text.style.marginBottom = '15px';
+        
+        const copyButton = document.createElement('button');
+        copyButton.textContent = '📋 Copy to Clipboard';
+        copyButton.style.cssText = `
+          background: #007bff;
+          color: white;
+          border: none;
+          padding: 10px 20px;
+          border-radius: 5px;
+          cursor: pointer;
+          margin-right: 10px;
+        `;
+        
+        const closeButton = document.createElement('button');
+        closeButton.textContent = '❌ Close';
+        closeButton.style.cssText = `
+          background: #dc3545;
+          color: white;
+          border: none;
+          padding: 10px 20px;
+          border-radius: 5px;
+          cursor: pointer;
+        `;
+        
+        const buttonContainer = document.createElement('div');
+        buttonContainer.appendChild(copyButton);
+        buttonContainer.appendChild(closeButton);
+        
+        popup.appendChild(text);
+        popup.appendChild(buttonContainer);
+        
+        // Add overlay
+        const overlay = document.createElement('div');
+        overlay.style.cssText = `
+          position: fixed;
+          top: 0;
+          left: 0;
+          width: 100%;
+          height: 100%;
+          background: rgba(0, 0, 0, 0.5);
+          z-index: 9999;
+        `;
+        
+        document.body.appendChild(overlay);
+        document.body.appendChild(popup);
+        
+        // Copy functionality
+        copyButton.onclick = () => {
+          navigator.clipboard.writeText(message).then(() => {
+            copyButton.textContent = '✅ Copied!';
+            setTimeout(() => {
+              copyButton.textContent = '📋 Copy to Clipboard';
+            }, 2000);
+          }).catch(err => {
+            console.error('Failed to copy:', err);
+            copyButton.textContent = '❌ Copy Failed';
+            setTimeout(() => {
+              copyButton.textContent = '📋 Copy to Clipboard';
+            }, 2000);
+          });
+        };
+        
+        // Close functionality
+        const closePopup = () => {
+          document.body.removeChild(overlay);
+          document.body.removeChild(popup);
+        };
+        
+        closeButton.onclick = closePopup;
+        overlay.onclick = closePopup;
+        
+      } else {
+        alert('Error debugging database: ' + data.error);
+      }
+    } catch (error) {
+      console.error('Error debugging database:', error);
+      alert('Error debugging database');
+    }
+  };
+
+  const showCompetitionEndedModal = () => {
+    // Create a beautiful competition ended modal
+    const modal = document.createElement('div');
+    modal.style.cssText = `
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background: linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%);
+      color: white;
+      padding: 0;
+      border-radius: 20px;
+      border: 2px solid #22c55e;
+      z-index: 10000;
+      max-width: 500px;
+      width: 90vw;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.8);
+      overflow: hidden;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    `;
+    
+    // Header with trophy icon
+    const header = document.createElement('div');
+    header.style.cssText = `
+      background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%);
+      padding: 30px 20px 20px;
+      text-align: center;
+      position: relative;
+    `;
+    
+    const trophyIcon = document.createElement('div');
+    trophyIcon.style.cssText = `
+      font-size: 4rem;
+      margin-bottom: 15px;
+      filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.3));
+    `;
+    trophyIcon.textContent = '🏆';
+    
+    const title = document.createElement('h2');
+    title.style.cssText = `
+      margin: 0;
+      font-size: 1.8rem;
+      font-weight: bold;
+      color: white;
+      text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+    `;
+    title.textContent = 'Competition Ended!';
+    
+    header.appendChild(trophyIcon);
+    header.appendChild(title);
+    
+    // Content
+    const content = document.createElement('div');
+    content.style.cssText = `
+      padding: 30px 25px;
+      text-align: center;
+    `;
+    
+    const message = document.createElement('p');
+    message.style.cssText = `
+      margin: 0 0 20px 0;
+      font-size: 1.1rem;
+      color: #e5e7eb;
+      line-height: 1.6;
+    `;
+    message.textContent = 'The quiz competition has reached its goal and is now closed. No more quiz attempts are allowed.';
+    
+    const rewardMessage = document.createElement('p');
+    rewardMessage.style.cssText = `
+      margin: 0 0 25px 0;
+      font-size: 1rem;
+      color: #22c55e;
+      font-weight: bold;
+      padding: 15px;
+      background: rgba(34, 197, 94, 0.1);
+      border-radius: 10px;
+      border: 1px solid rgba(34, 197, 94, 0.3);
+    `;
+    rewardMessage.textContent = '🎉 Rewards will be airdropped soon to the winners!';
+    
+    const rocketIcon = document.createElement('div');
+    rocketIcon.style.cssText = `
+      font-size: 2rem;
+      margin-bottom: 20px;
+      animation: bounce 2s infinite;
+    `;
+    rocketIcon.textContent = '🚀';
+    
+    // Add bounce animation
+    const style = document.createElement('style');
+    style.textContent = `
+      @keyframes bounce {
+        0%, 20%, 50%, 80%, 100% { transform: translateY(0); }
+        40% { transform: translateY(-10px); }
+        60% { transform: translateY(-5px); }
+      }
+    `;
+    document.head.appendChild(style);
+    
+    content.appendChild(message);
+    content.appendChild(rewardMessage);
+    content.appendChild(rocketIcon);
+    
+    // Button
+    const buttonContainer = document.createElement('div');
+    buttonContainer.style.cssText = `
+      padding: 0 25px 25px;
+      text-align: center;
+    `;
+    
+    const okButton = document.createElement('button');
+    okButton.style.cssText = `
+      background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+      color: white;
+      border: none;
+      padding: 15px 40px;
+      border-radius: 12px;
+      font-size: 1.1rem;
+      font-weight: bold;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+    `;
+    okButton.textContent = '🎯 View Leaderboard';
+    
+    // Button hover effects
+    okButton.onmouseenter = () => {
+      okButton.style.transform = 'translateY(-2px)';
+      okButton.style.boxShadow = '0 6px 20px rgba(59, 130, 246, 0.4)';
+    };
+    
+    okButton.onmouseleave = () => {
+      okButton.style.transform = 'translateY(0)';
+      okButton.style.boxShadow = '0 4px 12px rgba(59, 130, 246, 0.3)';
+    };
+    
+    okButton.onclick = () => {
+      closeModal();
+      setActiveTab('leaderboard');
+    };
+    
+    buttonContainer.appendChild(okButton);
+    
+    // Assemble modal
+    modal.appendChild(header);
+    modal.appendChild(content);
+    modal.appendChild(buttonContainer);
+    
+    // Add overlay
+    const overlay = document.createElement('div');
+    overlay.style.cssText = `
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.7);
+      z-index: 9999;
+      backdrop-filter: blur(5px);
+    `;
+    
+    document.body.appendChild(overlay);
+    document.body.appendChild(modal);
+    
+    // Close functionality
+    const closeModal = () => {
+      document.body.removeChild(overlay);
+      document.body.removeChild(modal);
+      if (document.head.contains(style)) {
+        document.head.removeChild(style);
+      }
+    };
+    
+    overlay.onclick = closeModal;
+    
+    // Auto-close after 10 seconds
+    setTimeout(() => {
+      if (document.body.contains(modal)) {
+        closeModal();
+      }
+    }, 10000);
+  };
+
+  const showComingSoonModal = () => {
+    // Create a beautiful coming soon modal
+    const modal = document.createElement('div');
+    modal.style.cssText = `
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background: linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%);
+      color: white;
+      padding: 0;
+      border-radius: 20px;
+      border: 2px solid #3b82f6;
+      z-index: 10000;
+      max-width: 500px;
+      width: 90vw;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.8);
+      overflow: hidden;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    `;
+    
+    // Header with rocket icon
+    const header = document.createElement('div');
+    header.style.cssText = `
+      background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+      padding: 30px 20px 20px;
+      text-align: center;
+      position: relative;
+    `;
+    
+    const rocketIcon = document.createElement('div');
+    rocketIcon.style.cssText = `
+      font-size: 4rem;
+      margin-bottom: 15px;
+      filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.3));
+      animation: rocket 3s infinite;
+    `;
+    rocketIcon.textContent = '🚀';
+    
+    const title = document.createElement('h2');
+    title.style.cssText = `
+      margin: 0;
+      font-size: 1.8rem;
+      font-weight: bold;
+      color: white;
+      text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+    `;
+    title.textContent = 'Coming Soon!';
+    
+    header.appendChild(rocketIcon);
+    header.appendChild(title);
+    
+    // Content
+    const content = document.createElement('div');
+    content.style.cssText = `
+      padding: 30px 25px;
+      text-align: center;
+    `;
+    
+    const message = document.createElement('p');
+    message.style.cssText = `
+      margin: 0 0 20px 0;
+      font-size: 1.1rem;
+      color: #e5e7eb;
+      line-height: 1.6;
+    `;
+    message.textContent = 'We\'re working on something amazing! New features and improvements are on the way.';
+    
+    const featureMessage = document.createElement('p');
+    featureMessage.style.cssText = `
+      margin: 0 0 25px 0;
+      font-size: 1rem;
+      color: #3b82f6;
+      font-weight: bold;
+      padding: 15px;
+      background: rgba(59, 130, 246, 0.1);
+      border-radius: 10px;
+      border: 1px solid rgba(59, 130, 246, 0.3);
+    `;
+    featureMessage.textContent = '🎯 Enhanced quiz system, better rewards, and more exciting features!';
+    
+    const sparkleIcon = document.createElement('div');
+    sparkleIcon.style.cssText = `
+      font-size: 2rem;
+      margin-bottom: 20px;
+      animation: sparkle 2s infinite;
+    `;
+    sparkleIcon.textContent = '✨';
+    
+    // Add animations
+    const style = document.createElement('style');
+    style.textContent = `
+      @keyframes rocket {
+        0%, 100% { transform: translateY(0) rotate(0deg); }
+        25% { transform: translateY(-5px) rotate(5deg); }
+        50% { transform: translateY(-10px) rotate(0deg); }
+        75% { transform: translateY(-5px) rotate(-5deg); }
+      }
+      @keyframes sparkle {
+        0%, 100% { transform: scale(1) rotate(0deg); opacity: 1; }
+        50% { transform: scale(1.2) rotate(180deg); opacity: 0.8; }
+      }
+    `;
+    document.head.appendChild(style);
+    
+    content.appendChild(message);
+    content.appendChild(featureMessage);
+    content.appendChild(sparkleIcon);
+    
+    // Button
+    const buttonContainer = document.createElement('div');
+    buttonContainer.style.cssText = `
+      padding: 0 25px 25px;
+      text-align: center;
+    `;
+    
+    const okButton = document.createElement('button');
+    okButton.style.cssText = `
+      background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+      color: white;
+      border: none;
+      padding: 15px 40px;
+      border-radius: 12px;
+      font-size: 1.1rem;
+      font-weight: bold;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+    `;
+    okButton.textContent = '🎉 Get Excited!';
+    
+    // Button hover effects
+    okButton.onmouseenter = () => {
+      okButton.style.transform = 'translateY(-2px)';
+      okButton.style.boxShadow = '0 6px 20px rgba(16, 185, 129, 0.4)';
+    };
+    
+    okButton.onmouseleave = () => {
+      okButton.style.transform = 'translateY(0)';
+      okButton.style.boxShadow = '0 4px 12px rgba(16, 185, 129, 0.3)';
+    };
+    
+    okButton.onclick = () => {
+      closeModal();
+    };
+    
+    buttonContainer.appendChild(okButton);
+    
+    // Assemble modal
+    modal.appendChild(header);
+    modal.appendChild(content);
+    modal.appendChild(buttonContainer);
+    
+    // Add overlay
+    const overlay = document.createElement('div');
+    overlay.style.cssText = `
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.7);
+      z-index: 9999;
+      backdrop-filter: blur(5px);
+    `;
+    
+    document.body.appendChild(overlay);
+    document.body.appendChild(modal);
+    
+    // Close functionality
+    const closeModal = () => {
+      document.body.removeChild(overlay);
+      document.body.removeChild(modal);
+      if (document.head.contains(style)) {
+        document.head.removeChild(style);
+      }
+    };
+    
+    overlay.onclick = closeModal;
+    
+    // Auto-close after 8 seconds
+    setTimeout(() => {
+      if (document.body.contains(modal)) {
+        closeModal();
+      }
+    }, 8000);
   };
 
   return (
@@ -450,14 +1595,144 @@ export default function MajorityHolderDashboard() {
                     {copied ? '✓' : '📋'}
                   </button>
                 </div>
+                
+                {/* Admin Functions - Only visible to admin users */}
+                {ADMIN_ADDRESSES.includes(connectedAddress) && (
+                  <div className="admin-buttons">
+                    <button
+                      onClick={() => setActiveTab('airdrop')}
+                      className={`admin-button ${activeTab === 'airdrop' ? 'active' : ''}`}
+                    >
+                      🎁 Airdrop
+                    </button>
+                    <button
+                      onClick={() => setActiveTab('quiz-management')}
+                      className={`admin-button ${activeTab === 'quiz-management' ? 'active' : ''}`}
+                    >
+                      ⚙️ Quiz Management
+                    </button>
+                  </div>
+                )}
               </div>
             </div>
           </div>
         </div>
 
         <div className="dashboard-content">
+          {/* Progress Bar */}
+          <div className="progress-bar-container">
+            {/* Progress Mode Toggle */}
+            <div className="progress-toggle" style={{
+              display: 'flex',
+              justifyContent: 'center',
+              marginBottom: '1rem',
+              gap: '0.5rem'
+            }}>
+              <button
+                onClick={() => setProgressMode('competition')}
+                style={{
+                  background: progressMode === 'competition' ? '#10b981' : '#374151',
+                  color: 'white',
+                  border: 'none',
+                  padding: '0.5rem 1rem',
+                  borderRadius: '6px',
+                  cursor: 'pointer',
+                  fontSize: '0.875rem',
+                  fontWeight: '500'
+                }}
+              >
+                🏆 Competition Progress
+              </button>
+              <button
+                onClick={() => setProgressMode('level')}
+                style={{
+                  background: progressMode === 'level' ? '#10b981' : '#374151',
+                  color: 'white',
+                  border: 'none',
+                  padding: '0.5rem 1rem',
+                  borderRadius: '6px',
+                  cursor: 'pointer',
+                  fontSize: '0.875rem',
+                  fontWeight: '500'
+                }}
+              >
+                🥇 Rank Progress
+              </button>
+            </div>
+
+            <div className="progress-bar">
+              <div 
+                className="progress-fill"
+                style={{ 
+                  width: progressMode === 'competition' 
+                    ? `${Math.min((userQuizPoints || 0) / endGoalPoints * 100, 100)}%`
+                    : userRank === 1 
+                      ? '100%'
+                      : userRank === 2
+                        ? '95%'
+                        : userRank === 3
+                          ? '90%'
+                          : userRank <= 10
+                            ? `${Math.max(10, 100 - (userRank * 5))}%`
+                            : `${Math.max(5, 100 - (userRank * 2))}%`
+                }}
+              ></div>
+            </div>
+            
+            <div className="progress-label">
+              {progressMode === 'competition' ? (
+                <>
+                  <span>🏆 Competition Progress: {((userQuizPoints || 0) / endGoalPoints * 100).toFixed(2)}%</span>
+                  <span>{(userQuizPoints || 0).toLocaleString()} / {endGoalPoints.toLocaleString()} points</span>
+                </>
+              ) : (
+                <>
+                  <span>⭐ Rank #{userRank || '?'} | {levelName}</span>
+                  <span>
+                    {userRank === 1 
+                      ? '🥇 First Place!'
+                      : userRank === 2
+                        ? '🥈 Second Place!'
+                        : userRank === 3
+                          ? '🥉 Third Place!'
+                          : pointsToNextLevel > 0 
+                            ? `${pointsToNextLevel.toLocaleString()} points to surpass rank #${userRank - 1}`
+                            : 'Ranking up! 🎉'
+                    }
+                  </span>
+                </>
+              )}
+            </div>
+            
+            {/* Level Info Display */}
+            <div className="level-info" style={{
+              textAlign: 'center',
+              marginTop: '0.5rem',
+              padding: '0.5rem',
+              background: 'rgba(16, 185, 129, 0.1)',
+              borderRadius: '6px',
+              border: '1px solid rgba(16, 185, 129, 0.2)'
+            }}>
+              <span style={{ 
+                color: '#10b981', 
+                fontWeight: '600',
+                fontSize: '0.875rem'
+              }}>
+                {progressMode === 'competition' 
+                  ? `Rank #${userRank || '?'} | ${levelName} | ${(userQuizPoints || 0).toLocaleString()} points`
+                  : userRank === 1 
+                    ? '🥇 First Place - Champion!'
+                    : tiedUsers > 1 
+                      ? `Rank #${userRank} (tied with ${tiedUsers} users) | ${levelName}`
+                      : `Rank #${userRank} | ${levelName} | ${(userQuizPoints || 0).toLocaleString()} points`
+                }
+              </span>
+            </div>
+          </div>
+
           {/* Tab Navigation */}
           <div className="tab-navigation">
+            {/* Main Functions - Available to all users */}
             <button
               onClick={() => setActiveTab('analytics')}
               className={`tab-button ${activeTab === 'analytics' ? 'active' : ''}`}
@@ -471,17 +1746,6 @@ export default function MajorityHolderDashboard() {
               </button>
             </Link>
             
-            {/* Airdrop - Only visible to admin users */}
-            {ADMIN_ADDRESSES.includes(connectedAddress) && (
-              <button
-                onClick={() => setActiveTab('airdrop')}
-                className={`tab-button ${activeTab === 'airdrop' ? 'active' : ''}`}
-              >
-                Airdrop
-              </button>
-            )}
-            
-            {/* Quiz and Leaderboard - Available to all users */}
             <button
               onClick={() => setActiveTab('quiz')}
               className={`tab-button ${activeTab === 'quiz' ? 'active' : ''}`}
@@ -494,18 +1758,12 @@ export default function MajorityHolderDashboard() {
             >
               🏆 Leaderboard
             </button>
-            
-            {/* Quiz Management - Only visible to admin users */}
-            {ADMIN_ADDRESSES.includes(connectedAddress) && (
-              <button
-                onClick={() => setActiveTab('quiz-management')}
-                className={`tab-button ${activeTab === 'quiz-management' ? 'active' : ''}`}
-              >
-                ⚙️ Quiz Management
-              </button>
-            )}
-            
-
+            <button
+              onClick={() => setActiveTab('rewards')}
+              className={`tab-button ${activeTab === 'rewards' ? 'active' : ''}`}
+            >
+              💰 Rewards
+            </button>
           </div>
 
           {/* Tab Content */}
@@ -567,24 +1825,24 @@ export default function MajorityHolderDashboard() {
                   </div>
 
                   <div className="airdrop-selection">
-                    <div className="airdrop-dropdown-container">
-                      <label className="airdrop-label">Select Airdrop Type:</label>
-                      <div className="airdrop-options">
-                        <div 
-                          className={`airdrop-option ${airdropType === 'mas-sats' ? 'selected' : ''}`}
-                          onClick={() => setAirdropType('mas-sats')}
-                        >
-                          <img src="/icons/mas_sats.png" alt="MAS Sats" className="mas-sats-logo" />
-                          <span>MAS Sats</span>
-                        </div>
-                        <div 
-                          className={`airdrop-option ${airdropType === 'request' ? 'selected' : ''}`}
-                          onClick={() => setAirdropType('request')}
-                        >
-                          <span>Add Your Coin</span>
+                      <div className="airdrop-dropdown-container">
+                        <label className="airdrop-label">Select Airdrop Type:</label>
+                        <div className="airdrop-options">
+                          <div 
+                            className={`airdrop-option ${airdropType === 'mas-sats' ? 'selected' : ''}`}
+                            onClick={() => setAirdropType('mas-sats')}
+                          >
+                            <img src="/icons/mas_sats.png" alt="MAS Sats" className="mas-sats-logo" />
+                            <span>MAS Sats</span>
+                          </div>
+                          <div 
+                            className={`airdrop-option ${airdropType === 'request' ? 'selected' : ''}`}
+                            onClick={() => setAirdropType('request')}
+                          >
+                            <span>Add Your Coin</span>
+                          </div>
                         </div>
                       </div>
-                    </div>
 
                     {airdropType === 'mas-sats' && (
                       <div className="mas-sats-section">
@@ -780,18 +2038,9 @@ export default function MajorityHolderDashboard() {
           {activeTab === 'quiz' && (
             <div className="quiz-content">
               <div className="quiz-header">
-                <h2>🎯 Quiz Competition</h2>
-                <div className="dynamic-reward-info">
-                  <span>Current Protocol Revenue: {rewardLoading ? 'Updating...' : `${sbtcFeePool.toLocaleString()} sats`}</span>
-                  <button 
-                    onClick={loadDynamicReward}
-                    disabled={rewardLoading}
-                    className="refresh-reward-button"
-                  >
-                    {rewardLoading ? '🔄 Updating...' : '🔄 Refresh'}
-                  </button>
-                </div>
               </div>
+
+
 
               {!connectedAddress ? (
                 <div className="wallet-warning">
@@ -812,9 +2061,8 @@ export default function MajorityHolderDashboard() {
                           <h4>{quiz.title}</h4>
                           {quiz.description && <p>{quiz.description}</p>}
                           <div className="quiz-stats">
-                            <span>Questions: {quiz.max_questions}</span>
                             <span>Time: {quiz.time_per_question}s</span>
-                            <span>Revenue: {rewardLoading ? 'Updating...' : `${sbtcFeePool.toLocaleString()} sats`}</span>
+                            <span>Points: {rewardLoading ? 'Updating...' : sbtcFeePool.toLocaleString()}</span>
                           </div>
                           <button 
                             onClick={() => startQuiz(quiz.id)}
@@ -826,6 +2074,19 @@ export default function MajorityHolderDashboard() {
                       ))}
                     </div>
                   )}
+                  
+                  <div style={{
+                    textAlign: 'center',
+                    marginTop: '20px',
+                    padding: '10px',
+                    background: 'rgba(255, 255, 255, 0.05)',
+                    borderRadius: '8px',
+                    border: '1px solid rgba(255, 255, 255, 0.1)'
+                  }}>
+                    <span style={{ color: '#9ca3af', fontSize: '14px' }}>
+                      Current Protocol Revenue: {rewardLoading ? 'Updating...' : `${sbtcFeePool.toLocaleString()} sats`}
+                    </span>
+                  </div>
                 </div>
               ) : gameState === 'playing' ? (
                 <div className="quiz-game">
@@ -858,8 +2119,21 @@ export default function MajorityHolderDashboard() {
                   <h3>❌ Quiz Failed</h3>
                   <p>You missed the last question. Try again!</p>
                   <div className="result-actions">
-                    <button onClick={resetQuiz} className="try-again-button">
+                    <button onClick={goToQuizSelection} className="try-again-button">
                       Try Again
+                    </button>
+                    <button onClick={() => setActiveTab('leaderboard')} className="view-leaderboard-button">
+                      View Leaderboard
+                    </button>
+                  </div>
+                </div>
+              ) : gameState === 'perfect' ? (
+                <div className="quiz-result perfect">
+                  <h3>🎉 Perfect Score!</h3>
+                  <p>Congratulations! You got 100% correct and earned {sbtcFeePool.toLocaleString()} sats in revenue!</p>
+                  <div className="result-actions">
+                    <button onClick={resetQuiz} className="play-again-button">
+                      Play Again
                     </button>
                     <button onClick={() => setActiveTab('leaderboard')} className="view-leaderboard-button">
                       View Leaderboard
@@ -868,14 +2142,37 @@ export default function MajorityHolderDashboard() {
                 </div>
               ) : gameState === 'completed' ? (
                 <div className="quiz-result completed">
-                  <h3>🎉 Perfect Score!</h3>
-                  <p>Congratulations! You earned {sbtcFeePool.toLocaleString()} sats in revenue!</p>
+                  <h3>✅ Quiz Completed!</h3>
+                  <p>Good job! You earned {sbtcFeePool.toLocaleString()} sats in revenue!</p>
                   <div className="result-actions">
-                    <button onClick={resetQuiz} className="play-again-button">
-                      Play Again
+                    <button onClick={goToQuizSelection} className="try-again-button">
+                      Try Again
                     </button>
                     <button onClick={() => setActiveTab('leaderboard')} className="view-leaderboard-button">
                       View Leaderboard
+                    </button>
+                  </div>
+                </div>
+              ) : gameState === 'competition-ended' ? (
+                <div className="quiz-result competition-ended" style={{
+                  background: 'linear-gradient(135deg, rgba(34, 197, 94, 0.1) 0%, rgba(59, 130, 246, 0.1) 100%)',
+                  border: '2px solid #22c55e',
+                  borderRadius: '12px',
+                  padding: '2rem',
+                  textAlign: 'center'
+                }}>
+                  <h3 style={{ color: '#22c55e', fontSize: '1.8rem', marginBottom: '1rem' }}>
+                    🏆 Competition Ended!
+                  </h3>
+                  <p style={{ color: '#6b7280', fontSize: '1.1rem', marginBottom: '1rem' }}>
+                    The quiz competition has reached its goal and is now closed.
+                  </p>
+                  <p style={{ color: '#059669', fontSize: '1rem', fontWeight: 'bold', marginBottom: '1.5rem' }}>
+                    No more quiz attempts are allowed. Winners will be announced soon!
+                  </p>
+                  <div className="result-actions">
+                    <button onClick={() => setActiveTab('leaderboard')} className="view-leaderboard-button">
+                      🏆 View Final Leaderboard
                     </button>
                   </div>
                 </div>
@@ -924,6 +2221,105 @@ export default function MajorityHolderDashboard() {
             </div>
           )}
 
+          {/* Rewards Tab Content */}
+          {activeTab === 'rewards' && (
+            <div className="rewards-content">
+              <div className="rewards-header">
+                <h2>💰 Expected Rewards</h2>
+                <p>Current reward: {rewardLoading ? 'Updating...' : `${Math.floor((sbtcFeePool || 0) * 0.21).toLocaleString()} sats`} (21% of {rewardLoading ? '...' : `${(sbtcFeePool || 0).toLocaleString()} sats`} fee pool)</p>
+                
+                {/* Airdrop Notice */}
+                <div className="airdrop-notice">
+                  <div className="airdrop-notice-content">
+                    <span className="airdrop-icon">🚀</span>
+                    <div className="airdrop-text">
+                      <strong>Rewards will be airdropped soon!</strong>
+                      <p>Winners will receive their sBTC rewards directly to their wallets once the competition ends.</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+                            <div className="rewards-table">
+                <div className="table-header">
+                  <span>Rank</span>
+                  <span>Wallet Address</span>
+                  <span>Share of Rewards</span>
+                  <span>Expected Reward</span>
+                </div>
+                {leaderboard.length === 0 ? (
+                  <div className="no-rewards">
+                    <p>No participants yet. Be the first to play!</p>
+                  </div>
+                ) : (
+                  // Always show 10 rows to indicate 10 winners, even if empty
+                  Array.from({ length: 10 }, (_, index) => {
+                    const user = leaderboard[index];
+                    const top10Players = leaderboard.slice(0, 10);
+                    const top10TotalPoints = top10Players.reduce((sum, u) => sum + u.totalPoints, 0);
+                    
+                    // Calculate user's share of top 10 points (capped at 10th place)
+                    const userShare = user && top10TotalPoints > 0 ? (user.totalPoints / top10TotalPoints * 100) : 0;
+                    
+                    // Calculate expected reward based on their share of the prize pot (21% of fee pool)
+                    const prizePot = Math.floor((sbtcFeePool || 0) * 0.21); // 21% of fee pool
+                    const expectedReward = Math.floor(prizePot * (userShare / 100));
+                    
+                    return (
+                      <div key={index} className={`rewards-row ${!user ? 'empty-row' : ''}`}>
+                        <span className="rank">#{index + 1}</span>
+                        <span className="address">
+                          {user ? (
+                            <>
+                              {formatAddress(user.walletAddress)}
+                              <button 
+                                className="copy-address-button"
+                                onClick={() => {
+                                  navigator.clipboard.writeText(user.walletAddress);
+                                  // You could add a toast notification here
+                                }}
+                                title="Copy address"
+                              >
+                                📋
+                              </button>
+                              <a 
+                                href={`https://explorer.stacks.co/address/${user.walletAddress}`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="explorer-link"
+                                title="View on Stacks Explorer"
+                              >
+                                🔗
+                              </a>
+                            </>
+                          ) : (
+                            <span className="empty-placeholder">No player yet</span>
+                          )}
+                        </span>
+                        <span className="reward-share">
+                          {user ? `${userShare.toFixed(1)}%` : '0%'}
+                        </span>
+                        <span className="expected-reward">
+                          {rewardLoading ? 'Calculating...' : user ? `${expectedReward.toLocaleString()} sats` : '0 sats'}
+                        </span>
+                      </div>
+                    );
+                  })
+                )}
+              </div>
+
+              <div className="rewards-footer">
+                <button 
+                  onClick={loadDynamicReward}
+                  disabled={rewardLoading}
+                  className="refresh-rewards-button"
+                >
+                  {rewardLoading ? '🔄 Updating...' : '🔄 Refresh Rewards'}
+                </button>
+              </div>
+            </div>
+          )}
+
           {/* Quiz Management Tab Content */}
           {activeTab === 'quiz-management' && (
             <>
@@ -942,7 +2338,130 @@ export default function MajorityHolderDashboard() {
                     >
                       ➕ Create New Quiz
                     </button>
+                    
+                    <button 
+                      onClick={() => setShowEndGoalForm(true)} 
+                      className="end-goal-button"
+                    >
+                      🎯 Set End Goal
+                    </button>
+                    
+                    <button 
+                      onClick={debugEndGoal} 
+                      className="debug-button"
+                    >
+                      🔍 Debug End Goal
+                    </button>
+                    
+                    <button 
+                      onClick={updateCompetitionStatus} 
+                      className="update-status-button"
+                    >
+                      🔄 Update Competition Status
+                    </button>
+                    
+                    <button 
+                      onClick={checkSettings} 
+                      className="check-settings-button"
+                    >
+                      🔍 Check Settings
+                    </button>
+                    
+                    <button 
+                      onClick={initCompetitionStatus} 
+                      className="init-status-button"
+                    >
+                      🔧 Init Status
+                    </button>
+                    
+                    <button 
+                      onClick={fixCompetitionActive} 
+                      className="fix-active-button"
+                    >
+                      🔧 Fix Active
+                    </button>
+                    
+                    <button 
+                      onClick={fixSchema} 
+                      className="fix-schema-button"
+                    >
+                      🔧 Fix Schema
+                    </button>
+                    
+                    <button 
+                      onClick={setStatusActive} 
+                      className="set-status-button"
+                    >
+                      ✅ Set Active
+                    </button>
+                    
+                    <button 
+                      onClick={debugDatabase} 
+                      className="debug-database-button"
+                    >
+                      🔍 Debug DB
+                    </button>
                   </div>
+
+                  {/* End Goal Configuration */}
+                  {showEndGoalForm && (
+                    <div className="form-modal">
+                      <div className="form-content">
+                        <div className="form-header">
+                          <h3>Set Competition End Goal</h3>
+                          <button 
+                            onClick={() => setShowEndGoalForm(false)}
+                            className="close-button"
+                          >
+                            ×
+                          </button>
+                        </div>
+                        
+                        <form onSubmit={updateEndGoal} className="end-goal-form">
+                          <div className="form-group">
+                            <label>End Goal Points *</label>
+                            <div style={{ 
+                              background: '#f3f4f6', 
+                              padding: '0.5rem', 
+                              borderRadius: '4px', 
+                              marginBottom: '0.5rem',
+                              fontSize: '0.9rem',
+                              color: '#6b7280'
+                            }}>
+                              Current value: {endGoalPoints.toLocaleString()} points
+                            </div>
+                            <input
+                              type="number"
+                              value={endGoalPoints}
+                              onChange={(e) => setEndGoalPoints(parseInt(e.target.value))}
+                              required
+                              min="210000"
+                              max="100000000"
+                              placeholder="Enter end goal points"
+                            />
+                            <small>When any user reaches this many points, the competition will end.</small>
+                          </div>
+                          
+                          <div className="form-actions">
+                            <button 
+                              type="submit" 
+                              className="submit-button"
+                              disabled={endGoalLoading}
+                            >
+                              {endGoalLoading ? '🔄 Updating...' : 'Update End Goal'}
+                            </button>
+                            <button 
+                              type="button" 
+                              onClick={() => setShowEndGoalForm(false)}
+                              className="cancel-button"
+                            >
+                              Cancel
+                            </button>
+                          </div>
+                        </form>
+                      </div>
+                    </div>
+                  )}
 
                   {/* Quiz Creation Form */}
                   {showQuizForm && (
@@ -1068,15 +2587,7 @@ export default function MajorityHolderDashboard() {
                             />
                           </div>
                           
-                          <div className="form-group">
-                            <label>Question Order</label>
-                            <input
-                              type="number"
-                              value={questionForm.questionOrder}
-                              onChange={(e) => setQuestionForm({...questionForm, questionOrder: parseInt(e.target.value)})}
-                              min="1"
-                            />
-                          </div>
+
                           
                           <div className="form-actions">
                             <button type="submit" className="submit-button">
@@ -1138,54 +2649,7 @@ export default function MajorityHolderDashboard() {
                     )}
                   </div>
 
-                  {/* Fee Pool History Section */}
-                  <div className="fee-pool-history-section">
-                    <div className="section-header">
-                      <h3>📊 sBTC Fee Pool History</h3>
-                      <div className="history-actions">
-                        <button 
-                          onClick={saveCurrentFeePool}
-                          className="save-current-button"
-                        >
-                          💾 Save Current
-                        </button>
-                        <button 
-                          onClick={loadFeePoolHistory}
-                          className="refresh-button"
-                          disabled={historyLoading}
-                        >
-                          {historyLoading ? 'Loading...' : '🔄 Refresh'}
-                        </button>
-                      </div>
-                    </div>
-                    
-                    {historyLoading ? (
-                      <div className="loading-history">
-                        <p>Loading fee pool history...</p>
-                      </div>
-                    ) : feePoolHistory.length === 0 ? (
-                      <div className="no-history">
-                        <p>No fee pool history available yet.</p>
-                      </div>
-                    ) : (
-                                          <div className="history-table">
-                        <div className="table-header">
-                          <span>Date</span>
-                          <span>Fee Pool</span>
-                        </div>
-                        {feePoolHistory.slice(0, 10).map((record, index) => (
-                          <div key={index} className="history-row">
-                            <span className="date">
-                              {new Date(record.recorded_at).toLocaleDateString()}
-                            </span>
-                            <span className="fee-pool">
-                              {record.fee_pool_amount.toLocaleString()} sats
-                            </span>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </div>
+
 
                   {/* Selected Quiz Questions */}
                   {selectedQuiz && (

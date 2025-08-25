@@ -47,7 +47,9 @@ export default function QuizGame() {
   const loadQuizQuestions = async () => {
     try {
       setLoading(true);
-      const response = await fetch(`/api/quiz/questions/${quizId}`);
+      // Add timestamp to prevent caching and ensure fresh randomization
+      const timestamp = Date.now();
+      const response = await fetch(`/api/quiz/questions/${quizId}?t=${timestamp}`);
       const data = await response.json();
       
       if (data.success) {
@@ -94,7 +96,9 @@ export default function QuizGame() {
   };
 
   const completeQuiz = async (success) => {
-    setGameState(success ? 'completed' : 'failed');
+    // Check if user got 100% correct (all questions answered correctly)
+    const isPerfectScore = success && (currentQuestion + 1 === questions.length);
+    setGameState(isPerfectScore ? 'perfect' : (success ? 'completed' : 'failed'));
     
     const pointsEarned = success ? 21 : 0;
     
@@ -117,6 +121,10 @@ export default function QuizGame() {
       
       if (!data.success) {
         console.error('Failed to submit quiz results:', data.error);
+        // Check if it's an end goal exceeded error
+        if (data.error && data.error.includes('exceed the end goal')) {
+          alert('🏆 Congratulations! You\'re very close to the end goal. The competition will end when someone reaches the target points.');
+        }
       }
     } catch (error) {
       console.error('Error submitting quiz results:', error);
@@ -124,6 +132,10 @@ export default function QuizGame() {
   };
 
   const tryAgain = () => {
+    router.push('/quiz');
+  };
+
+  const playAgain = () => {
     window.location.reload();
   };
 
@@ -197,26 +209,55 @@ export default function QuizGame() {
     );
   }
 
-  if (gameState === 'completed') {
+  if (gameState === 'perfect') {
     return (
       <div className="quiz-game-page">
         <Header />
         <main className="quiz-game-main">
-          <div className="quiz-result completed">
+          <div className="quiz-result perfect">
             <div className="result-icon">🎉</div>
-            <h2>Quiz Completed!</h2>
-            <p>Perfect score! You earned 21 points!</p>
+            <h2>Perfect Score!</h2>
+            <p>Congratulations! You got 100% correct and earned 21 points!</p>
             <div className="result-stats">
               <p>Questions answered: {questions.length}</p>
               <p>Correct answers: {score}</p>
               <p>Points earned: 21</p>
             </div>
             <div className="result-actions">
+              <button onClick={playAgain} className="play-again-button">
+                Play Again
+              </button>
               <button onClick={goToLeaderboard} className="leaderboard-button">
                 View Leaderboard
               </button>
-              <button onClick={goBackToQuizzes} className="back-button">
-                Play Another Quiz
+            </div>
+          </div>
+        </main>
+        <Footer />
+      </div>
+    );
+  }
+
+  if (gameState === 'completed') {
+    return (
+      <div className="quiz-game-page">
+        <Header />
+        <main className="quiz-game-main">
+          <div className="quiz-result completed">
+            <div className="result-icon">✅</div>
+            <h2>Quiz Completed!</h2>
+            <p>Good job! You earned 21 points!</p>
+            <div className="result-stats">
+              <p>Questions answered: {questions.length}</p>
+              <p>Correct answers: {score}</p>
+              <p>Points earned: 21</p>
+            </div>
+            <div className="result-actions">
+              <button onClick={tryAgain} className="try-again-button">
+                Try Again
+              </button>
+              <button onClick={goToLeaderboard} className="leaderboard-button">
+                View Leaderboard
               </button>
             </div>
           </div>

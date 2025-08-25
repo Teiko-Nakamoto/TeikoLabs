@@ -26,14 +26,14 @@ export default function QuizManagement() {
     correctAnswer: '',
     wrongAnswer1: '',
     wrongAnswer2: '',
-    wrongAnswer3: '',
-    questionOrder: 1
+    wrongAnswer3: ''
   });
   
   const [showQuizForm, setShowQuizForm] = useState(false);
   const [showQuestionForm, setShowQuestionForm] = useState(false);
   const [selectedQuiz, setSelectedQuiz] = useState(null);
   const [quizQuestions, setQuizQuestions] = useState([]);
+  const [quizStatus, setQuizStatus] = useState('active'); // active, paused, completed
 
   useEffect(() => {
     const address = localStorage.getItem('connectedAddress');
@@ -41,8 +41,47 @@ export default function QuizManagement() {
     
     if (address) {
       loadQuizzes();
+      loadQuizStatus();
     }
   }, []);
+
+  const loadQuizStatus = async () => {
+    try {
+      const response = await fetch('/api/quiz/status');
+      const data = await response.json();
+      
+      if (data.success) {
+        setQuizStatus(data.status);
+      }
+    } catch (error) {
+      console.error('Error loading quiz status:', error);
+    }
+  };
+
+  const resetQuizCompetition = async () => {
+    if (!confirm('Are you sure you want to reset the quiz competition? This will clear all user points and restart the competition.')) {
+      return;
+    }
+    
+    try {
+      const response = await fetch('/api/quiz/reset-competition', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' }
+      });
+      
+      const data = await response.json();
+      
+      if (data.success) {
+        alert('Quiz competition reset successfully!');
+        setQuizStatus('active');
+      } else {
+        alert('Error resetting quiz competition: ' + data.error);
+      }
+    } catch (error) {
+      console.error('Error resetting quiz competition:', error);
+      alert('Failed to reset quiz competition');
+    }
+  };
 
   const loadQuizzes = async () => {
     try {
@@ -114,8 +153,7 @@ export default function QuizManagement() {
           correctAnswer: '',
           wrongAnswer1: '',
           wrongAnswer2: '',
-          wrongAnswer3: '',
-          questionOrder: questionForm.questionOrder + 1
+          wrongAnswer3: ''
         });
         loadQuizQuestions(questionForm.quizId);
       } else {
@@ -129,7 +167,7 @@ export default function QuizManagement() {
 
   const loadQuizQuestions = async (quizId) => {
     try {
-      const response = await fetch(`/api/quiz/questions/${quizId}`);
+      const response = await fetch(`/api/quiz/questions/${quizId}/manage`);
       const data = await response.json();
       
       if (data.success) {
@@ -197,6 +235,46 @@ export default function QuizManagement() {
           >
             ➕ Create New Quiz
           </button>
+          
+          <button 
+            onClick={resetQuizCompetition} 
+            className="reset-competition-button"
+            style={{
+              background: 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)',
+              color: 'white',
+              border: 'none',
+              padding: '0.75rem 1.5rem',
+              borderRadius: '8px',
+              cursor: 'pointer',
+              fontWeight: '600',
+              marginLeft: '1rem'
+            }}
+          >
+            🔄 Reset Competition
+          </button>
+        </div>
+
+        {/* Quiz Status Display */}
+        <div className="quiz-status-display" style={{
+          background: quizStatus === 'active' ? 'rgba(34, 197, 94, 0.1)' : 'rgba(239, 68, 68, 0.1)',
+          border: `1px solid ${quizStatus === 'active' ? '#22c55e' : '#ef4444'}`,
+          borderRadius: '8px',
+          padding: '1rem',
+          marginBottom: '1.5rem',
+          textAlign: 'center'
+        }}>
+          <h3 style={{ 
+            color: quizStatus === 'active' ? '#22c55e' : '#ef4444',
+            margin: '0 0 0.5rem 0'
+          }}>
+            {quizStatus === 'active' ? '🟢 Quiz Competition Active' : '🔴 Quiz Competition Paused'}
+          </h3>
+          <p style={{ margin: 0, color: '#9ca3af' }}>
+            {quizStatus === 'active' 
+              ? 'Users can play quizzes and earn points toward the 21 million goal.'
+              : 'Quiz competition is paused. Reset to allow users to play again.'
+            }
+          </p>
         </div>
 
         {/* Quiz Creation Form */}
@@ -346,15 +424,7 @@ export default function QuizManagement() {
                   />
                 </div>
                 
-                <div className="form-group">
-                  <label>Question Order</label>
-                  <input
-                    type="number"
-                    value={questionForm.questionOrder}
-                    onChange={(e) => setQuestionForm({...questionForm, questionOrder: parseInt(e.target.value)})}
-                    min="1"
-                  />
-                </div>
+
                 
                 <div className="form-actions">
                   <button type="submit" className="submit-button">

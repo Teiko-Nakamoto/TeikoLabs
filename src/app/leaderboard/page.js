@@ -14,6 +14,7 @@ export default function LeaderboardPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [connectedAddress, setConnectedAddress] = useState('');
+  const [endGoalPoints, setEndGoalPoints] = useState(21000000);
   const router = useRouter();
 
   useEffect(() => {
@@ -21,8 +22,9 @@ export default function LeaderboardPage() {
     const address = localStorage.getItem('connectedAddress');
     setConnectedAddress(address || '');
 
-    // Load leaderboard data
+    // Load leaderboard data and end goal
     loadLeaderboard();
+    loadEndGoal();
   }, []);
 
   const loadLeaderboard = async () => {
@@ -36,6 +38,9 @@ export default function LeaderboardPage() {
         setCompetitionActive(data.competitionActive);
         setTotalPointsEarned(data.totalPointsEarned);
         setTotalParticipants(data.totalParticipants);
+        if (data.endGoal) {
+          setEndGoalPoints(data.endGoal);
+        }
       } else {
         setError(data.error || 'Failed to load leaderboard');
       }
@@ -44,6 +49,18 @@ export default function LeaderboardPage() {
       setError('Failed to load leaderboard');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const loadEndGoal = async () => {
+    try {
+      const response = await fetch('/api/quiz/end-goal');
+      const data = await response.json();
+      if (data.success) {
+        setEndGoalPoints(data.endGoal);
+      }
+    } catch (error) {
+      console.error('Error loading end goal:', error);
     }
   };
 
@@ -127,12 +144,12 @@ export default function LeaderboardPage() {
             <div className="stat-label">Total Participants</div>
           </div>
           <div className="stat-card">
-            <div className="stat-value">21,000,000</div>
+                            <div className="stat-value">{endGoalPoints ? endGoalPoints.toLocaleString() : '21,000,000'}</div>
             <div className="stat-label">Target Points</div>
           </div>
           <div className="stat-card">
             <div className="stat-value">
-              {Math.round((totalPointsEarned / 21000000) * 100)}%
+                              {Math.round((totalPointsEarned / (endGoalPoints || 21000000)) * 100)}%
             </div>
             <div className="stat-label">Progress</div>
           </div>
@@ -164,8 +181,7 @@ export default function LeaderboardPage() {
                 <div className="header-rank">Rank</div>
                 <div className="header-wallet">Wallet Address</div>
                 <div className="header-points">Points</div>
-                <div className="header-quizzes">Quizzes</div>
-                <div className="header-perfect">Perfect</div>
+                <div className="header-perfect">Perfect Scores</div>
                 <div className="header-joined">Joined</div>
               </div>
               
@@ -187,7 +203,6 @@ export default function LeaderboardPage() {
                     )}
                   </div>
                   <div className="cell-points">{player.totalPoints.toLocaleString()}</div>
-                  <div className="cell-quizzes">{player.totalQuizzesCompleted}</div>
                   <div className="cell-perfect">{player.perfectScores}</div>
                   <div className="cell-joined">{formatDate(player.joinedAt)}</div>
                 </div>
@@ -200,7 +215,7 @@ export default function LeaderboardPage() {
           <div className="competition-ended">
             <h3>🏁 Competition Ended</h3>
             <p>The quiz competition has ended. The leaderboard is now final.</p>
-            <p>Total points earned: {totalPointsEarned.toLocaleString()} / 21,000,000</p>
+            <p>Total points earned: {totalPointsEarned.toLocaleString()} / {endGoalPoints ? endGoalPoints.toLocaleString() : '21,000,000'}</p>
           </div>
         )}
       </main>

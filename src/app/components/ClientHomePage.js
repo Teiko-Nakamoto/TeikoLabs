@@ -101,7 +101,7 @@ export default function ClientHomePage() {
   const [showMajorityHolderPopup, setShowMajorityHolderPopup] = useState(false);
   const [accessSettings, setAccessSettings] = useState({
 
-    claimRevenue: true,
+    
     tokenTrading: {
       featured: false,
       practice: false
@@ -681,6 +681,8 @@ export default function ClientHomePage() {
                     </p>
             </div>
                 )}
+                
+
               </div>
             )}
             

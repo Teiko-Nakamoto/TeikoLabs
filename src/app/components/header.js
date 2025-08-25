@@ -17,11 +17,8 @@ export default function Header() {
   const [connectedAddress, setConnectedAddress] = useState('');
   const [isAdmin, setIsAdmin] = useState(false);
   
-  // Admin wallet addresses (comma-separated)
-  const ADMIN_ADDRESSES = process.env.NEXT_PUBLIC_ADMIN_ADDRESSES?.split(',') || [
-    'ST37918Q7NBZ52AMV133VTY5C864KVK0S2HZ3CGA4',
-    'SP1T0VY3DNXRVP6HBM75DFWW0199CR0X15PC1D81B' // Majority holder admin access
-  ];
+  // Admin wallet address
+  const ADMIN_ADDRESS = 'ST37918Q7NBZ52AMV133VTY5C864KVK0S2HZ3CGA4';
 
   useEffect(() => {
     if (open && dropdownRef.current) {
@@ -35,7 +32,7 @@ export default function Header() {
       const savedAddress = localStorage.getItem('connectedAddress');
       if (savedAddress) {
         setConnectedAddress(savedAddress);
-        setIsAdmin(ADMIN_ADDRESSES.includes(savedAddress));
+        setIsAdmin(savedAddress === ADMIN_ADDRESS);
       } else {
         setConnectedAddress('');
         setIsAdmin(false);

@@ -131,7 +131,7 @@ export async function getRevenueBalance(contractInfo = null) {
     return satsValue;
   } catch (err) {
     console.error('❌ Failed to fetch revenue balance:', err);
-    return 0;
+    throw err; // Don't return fallback value, let the error propagate
   }
 }
 

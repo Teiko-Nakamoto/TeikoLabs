@@ -6,3 +6,4 @@ ALTER SEQUENCE sbtc_fee_pool_history_id_seq RESTART WITH 1;
 
 -- Verify the table is empty
 SELECT COUNT(*) as remaining_records FROM sbtc_fee_pool_history;
+

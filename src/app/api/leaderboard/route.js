@@ -24,17 +24,20 @@ export async function GET() {
       throw error;
     }
 
-    // Get competition status
-    const { data: competitionStatus, error: statusError } = await supabaseServer
+    // Get competition status and end goal
+    const { data: settings, error: settingsError } = await supabaseServer
       .from('quiz_settings')
-      .select('setting_value')
-      .eq('setting_key', 'competition_active')
-      .single();
+      .select('setting_key, setting_value')
+      .in('setting_key', ['competition_active', 'competition_end_threshold']);
 
-    if (statusError) {
-      console.error('❌ Error checking competition status:', statusError);
-      throw statusError;
+    if (settingsError) {
+      console.error('❌ Error checking competition settings:', settingsError);
+      throw settingsError;
     }
+
+    const competitionStatus = settings.find(s => s.setting_key === 'competition_active');
+    const endGoalSetting = settings.find(s => s.setting_key === 'competition_end_threshold');
+    const endGoal = parseInt(endGoalSetting?.setting_value || '21000000');
 
     // Get total points earned globally
     const { data: totalPoints, error: totalError } = await supabaseServer
@@ -66,7 +69,8 @@ export async function GET() {
       leaderboard: formattedLeaderboard,
       competitionActive: competitionStatus?.setting_value === 'true',
       totalPointsEarned: globalTotal,
-      totalParticipants: leaderboard.length
+      totalParticipants: leaderboard.length,
+      endGoal: endGoal
     });
     
   } catch (error) {

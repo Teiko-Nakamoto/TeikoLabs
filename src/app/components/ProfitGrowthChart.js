@@ -219,7 +219,10 @@ export default function ProfitGrowthChart() {
       <div className="chart-container">
         <div className="chart-bars">
           {chartData.map((dataPoint, index) => {
-            const height = maxRevenue > 0 ? (dataPoint.revenue / maxRevenue) * 100 : 0;
+            // Use a much more sensitive scale: calculate height based on range from min to max
+            const minRevenue = Math.min(...chartData.map(d => d.revenue));
+            const revenueRange = maxRevenue - minRevenue;
+            const height = revenueRange > 0 ? ((dataPoint.revenue - minRevenue) / revenueRange) * 60 + 40 : 40;
             const isLatest = index === chartData.length - 1;
             
             return (
@@ -248,15 +251,6 @@ export default function ProfitGrowthChart() {
             <span className="stat-label">Peak Revenue:</span>
             <span className="stat-value">
               {maxRevenue.toLocaleString()} sats
-            </span>
-          </div>
-          <div className="stat-item">
-            <span className="stat-label">Growth:</span>
-            <span className={`stat-value ${chartData.length > 1 ? 
-              (chartData[chartData.length - 1].revenue > chartData[0].revenue ? 'positive' : 'negative') : 'neutral'}`}>
-              {chartData.length > 1 ? 
-                `${((chartData[chartData.length - 1].revenue - chartData[0].revenue) / chartData[0].revenue * 100).toFixed(1)}%` : 
-                'N/A'}
             </span>
           </div>
         </div>

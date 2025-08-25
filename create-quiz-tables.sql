@@ -71,6 +71,17 @@ CREATE TABLE IF NOT EXISTS sbtc_fee_pool_history (
     recorded_at TIMESTAMP DEFAULT NOW()
 );
 
+-- Create quiz_competition_status table to track competition state
+CREATE TABLE IF NOT EXISTS quiz_competition_status (
+    id SERIAL PRIMARY KEY,
+    status VARCHAR(50) NOT NULL DEFAULT 'active',
+    updated_at TIMESTAMP DEFAULT NOW()
+);
+
+-- Insert initial competition status
+INSERT INTO quiz_competition_status (status) VALUES ('active')
+ON CONFLICT DO NOTHING;
+
 -- Insert default competition settings
 INSERT INTO quiz_settings (setting_key, setting_value) VALUES
     ('competition_active', 'true'),
@@ -92,6 +103,7 @@ ALTER TABLE user_points ENABLE ROW LEVEL SECURITY;
 ALTER TABLE quiz_attempts ENABLE ROW LEVEL SECURITY;
 ALTER TABLE quiz_settings ENABLE ROW LEVEL SECURITY;
 ALTER TABLE sbtc_fee_pool_history ENABLE ROW LEVEL SECURITY;
+ALTER TABLE quiz_competition_status ENABLE ROW LEVEL SECURITY;
 
 -- Drop existing policies if they exist
 DROP POLICY IF EXISTS "Allow public read access to quizzes" ON quizzes;
@@ -100,6 +112,7 @@ DROP POLICY IF EXISTS "Allow public read access to user_points" ON user_points;
 DROP POLICY IF EXISTS "Allow public read access to quiz_attempts" ON quiz_attempts;
 DROP POLICY IF EXISTS "Allow public read access to quiz_settings" ON quiz_settings;
 DROP POLICY IF EXISTS "Allow public read access to sbtc_fee_pool_history" ON sbtc_fee_pool_history;
+DROP POLICY IF EXISTS "Allow public read access to quiz_competition_status" ON quiz_competition_status;
 
 -- Create policies for public read access
 CREATE POLICY "Allow public read access to quizzes" ON quizzes
@@ -120,12 +133,16 @@ CREATE POLICY "Allow public read access to quiz_settings" ON quiz_settings
 CREATE POLICY "Allow public read access to sbtc_fee_pool_history" ON sbtc_fee_pool_history
     FOR SELECT USING (true);
 
+CREATE POLICY "Allow public read access to quiz_competition_status" ON quiz_competition_status
+    FOR SELECT USING (true);
+
 -- Drop existing authenticated policies if they exist
 DROP POLICY IF EXISTS "Allow authenticated insert to quiz_attempts" ON quiz_attempts;
 DROP POLICY IF EXISTS "Allow authenticated update to quiz_attempts" ON quiz_attempts;
 DROP POLICY IF EXISTS "Allow authenticated insert to user_points" ON user_points;
 DROP POLICY IF EXISTS "Allow authenticated update to user_points" ON user_points;
 DROP POLICY IF EXISTS "Allow authenticated insert to sbtc_fee_pool_history" ON sbtc_fee_pool_history;
+DROP POLICY IF EXISTS "Allow authenticated update to quiz_competition_status" ON quiz_competition_status;
 
 -- Create policies for authenticated insert/update
 CREATE POLICY "Allow authenticated insert to quiz_attempts" ON quiz_attempts
@@ -143,6 +160,9 @@ CREATE POLICY "Allow authenticated update to user_points" ON user_points
 CREATE POLICY "Allow authenticated insert to sbtc_fee_pool_history" ON sbtc_fee_pool_history
     FOR INSERT WITH CHECK (true);
 
+CREATE POLICY "Allow authenticated update to quiz_competition_status" ON quiz_competition_status
+    FOR UPDATE USING (true);
+
 -- Drop existing admin policies if they exist
 DROP POLICY IF EXISTS "Allow admin access to all tables" ON quizzes;
 DROP POLICY IF EXISTS "Allow admin access to all tables" ON quiz_questions;
@@ -150,6 +170,7 @@ DROP POLICY IF EXISTS "Allow admin access to all tables" ON user_points;
 DROP POLICY IF EXISTS "Allow admin access to all tables" ON quiz_attempts;
 DROP POLICY IF EXISTS "Allow admin access to all tables" ON quiz_settings;
 DROP POLICY IF EXISTS "Allow admin access to all tables" ON sbtc_fee_pool_history;
+DROP POLICY IF EXISTS "Allow admin access to all tables" ON quiz_competition_status;
 
 -- Create policies for admin access (you can modify these based on your admin requirements)
 CREATE POLICY "Allow admin access to all tables" ON quizzes
@@ -170,6 +191,9 @@ CREATE POLICY "Allow admin access to all tables" ON quiz_settings
 CREATE POLICY "Allow admin access to all tables" ON sbtc_fee_pool_history
     FOR ALL USING (true);
 
+CREATE POLICY "Allow admin access to all tables" ON quiz_competition_status
+    FOR ALL USING (true);
+
 -- Verify tables were created
 SELECT 
     table_name,
@@ -178,5 +202,5 @@ SELECT
     is_nullable
 FROM information_schema.columns 
 WHERE table_schema = 'public' 
-    AND table_name IN ('quizzes', 'quiz_questions', 'user_points', 'quiz_attempts', 'quiz_settings', 'sbtc_fee_pool_history')
+    AND table_name IN ('quizzes', 'quiz_questions', 'user_points', 'quiz_attempts', 'quiz_settings', 'sbtc_fee_pool_history', 'quiz_competition_status')
 ORDER BY table_name, ordinal_position;

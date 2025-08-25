@@ -130,7 +130,7 @@
   align-items: end;
   justify-content: space-between;
   gap: 0.5rem;
-  min-height: 200px;
+  min-height: 400px; /* Increased height for better bar visibility */
   padding: 1rem 0;
   position: relative;
 }
@@ -160,6 +160,7 @@
   background: linear-gradient(180deg, #60a5fa 0%, #3b82f6 100%);
   border-radius: 4px 4px 0 0;
   min-width: 80px;
+  min-height: 8px; /* Small minimum to ensure visibility */
   position: relative;
   transition: all 0.3s ease;
   cursor: pointer;
@@ -322,11 +323,12 @@
   
   .chart-bars {
     gap: 0.25rem;
-    min-height: 150px;
+    min-height: 250px;
   }
   
   .chart-bar {
     min-width: 40px;
+    min-height: 6px; /* Small minimum for mobile */
   }
   
   .bar-value {
@@ -350,6 +352,7 @@
   
   .chart-bar {
     min-width: 24px;
+    min-height: 4px; /* Small minimum for small mobile */
   }
   
   .bar-value {

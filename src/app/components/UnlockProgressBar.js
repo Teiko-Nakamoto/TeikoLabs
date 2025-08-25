@@ -22,7 +22,7 @@ import { MAINNET_SBTC_CONTRACT_ADDRESS } from '../utils/mainnetTokenData';
  * @param {string} props.liquidity - Current liquidity amount (formatted string with commas)
  * @param {boolean} props.showButtons - Whether to show action buttons (default: true)
  * @param {Function} props.onShowContracts - Callback for showing contract addresses
- * @param {Function} props.onClaimRevenue - Callback for claiming revenue
+
  * @param {string} props.tokenId - The token ID for lock/unlock functionality
  * @param {Component} props.LockUnlockButton - The LockUnlockButton component to use
  * 
@@ -33,7 +33,7 @@ import { MAINNET_SBTC_CONTRACT_ADDRESS } from '../utils/mainnetTokenData';
  *   revenue="1,000,000"
  *   liquidity="2,000,000"
  *   onShowContracts={() => setShowContracts(true)}
- *   onClaimRevenue={handleClaimRevenue}
+
  *   tokenId="1"
  *   LockUnlockButton={LockUnlockButton}
  * />
@@ -52,7 +52,7 @@ const UnlockProgressBar = React.memo(function UnlockProgressBar({
   liquidity = '0',
   showButtons = true,
   onShowContracts,
-  onClaimRevenue,
+
   tokenId,
   LockUnlockButton,
   dexInfo,
@@ -67,7 +67,7 @@ const UnlockProgressBar = React.memo(function UnlockProgressBar({
   const [showWhaleAccessPopup, setShowWhaleAccessPopup] = useState(false);
   const [showWhaleRestrictionPopup, setShowWhaleRestrictionPopup] = useState(false);
   const [activeSection, setActiveSection] = useState(null);
-  const [accessSettings, setAccessSettings] = useState({ claimRevenue: true });
+  const [accessSettings, setAccessSettings] = useState({});
   const [showBuySellPanel, setShowBuySellPanel] = useState(false);
   const [buySellMode, setBuySellMode] = useState('buy'); // 'buy' or 'sell'
   const [buyAmount, setBuyAmount] = useState('');
@@ -86,6 +86,8 @@ const UnlockProgressBar = React.memo(function UnlockProgressBar({
   const [teikoTokenBalance, setTeikoTokenBalance] = useState(0);
   const [loadingTeikoBalance, setLoadingTeikoBalance] = useState(false);
   const [showRestrictionPopup, setShowRestrictionPopup] = useState(false);
+  const [showLockModal, setShowLockModal] = useState(false);
+  const [lockRiskAcknowledged, setLockRiskAcknowledged] = useState(false);
   
 
   
@@ -1282,130 +1284,7 @@ const UnlockProgressBar = React.memo(function UnlockProgressBar({
             minWidth: window.innerWidth <= 768 ? '100%' : '200px',
             width: window.innerWidth <= 768 ? '100%' : 'auto'
           }}>
-            <div style={{ 
-              fontSize: window.innerWidth <= 768 ? '12px' : '14px', 
-              color: '#ffa500', 
-              fontWeight: '600', 
-              marginBottom: window.innerWidth <= 768 ? '8px' : '12px',
-              textAlign: 'center',
-              width: '100%',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              gap: '6px'
-            }}>
-              Progress to Unlock {tokenSymbol === 'MAS' ? (
-                <img 
-                  src="/icons/The Mas Network.svg" 
-                  alt="MAS Sats" 
-                  style={{ 
-                    width: window.innerWidth <= 768 ? '14px' : '16px', 
-                    height: window.innerWidth <= 768 ? '14px' : '16px'
-                  }} 
-                />
-              ) : tokenSymbol}
-            </div>
-            <div style={{ 
-              display: 'flex', 
-              alignItems: 'flex-start', 
-              gap: window.innerWidth <= 768 ? '6px' : '8px',
-              flexDirection: window.innerWidth <= 768 ? 'column' : 'row'
-            }}>
-              <div style={{
-                width: '100%',
-                height: window.innerWidth <= 768 ? '16px' : '20px',
-                backgroundColor: 'rgba(255, 255, 255, 0.1)',
-                borderRadius: '10px',
-                overflow: 'hidden',
-                border: '1px solid rgba(255, 255, 255, 0.2)',
-                position: 'relative'
-              }}>
-                <div style={{
-                  width: `${progressPercentage}%`,
-                  height: '100%',
-                  background: 'linear-gradient(90deg, #ffa500, #ff8c00)',
-                  borderRadius: '10px',
-                  transition: 'width 0.3s ease'
-                }}></div>
-              </div>
-              
-              {/* Lock/Unlock Emoji with Threshold Info below */}
-              <div style={{
-                display: 'flex',
-                flexDirection: window.innerWidth <= 768 ? 'row' : 'column',
-                alignItems: 'center',
-                gap: window.innerWidth <= 768 ? '8px' : '4px',
-                justifyContent: window.innerWidth <= 768 ? 'center' : 'flex-start',
-                width: window.innerWidth <= 768 ? '100%' : 'auto'
-              }}>
-                <div style={{ 
-                  fontSize: window.innerWidth <= 768 ? '1.2rem' : '1.5rem'
-                }}>
-                  {currentRevenue >= lockRequirement ? '🔓' : '🔒'}
-                </div>
-                
-                {/* Threshold Info stacked under emoji */}
-                <div style={{
-                  fontSize: window.innerWidth <= 768 ? '8px' : '9px',
-                  color: '#ffa500',
-                  textAlign: 'center'
-                }}>
-                            {userTokenBalance >= lockRequirement ? (
-                    <>
-                      <div style={{ fontSize: window.innerWidth <= 768 ? '10px' : '12px', fontWeight: 'bold' }}>Maintain:</div>
-                      <div style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '4px',
-                        fontSize: window.innerWidth <= 768 ? '10px' : '12px',
-                        fontWeight: 'bold',
-                        justifyContent: 'center'
-                      }}>
-                                  {loadingMajorityHolder ? 'Loading...' : (majorityHolderBalance || lockRequirement).toLocaleString()}
-                                  <img 
-                                    src="/icons/The Mas Network.svg" 
-                                    alt="MAS Sats" 
-                          style={{ 
-                            width: window.innerWidth <= 768 ? '12px' : '14px', 
-                            height: window.innerWidth <= 768 ? '12px' : '14px'
-                          }} 
-                        />
-                      </div>
-                    </>
-                  ) : (
-                    <>
-                      <div style={{ fontSize: window.innerWidth <= 768 ? '10px' : '12px', fontWeight: 'bold' }}>Min Needed:</div>
-                      <div style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '4px',
-                        fontSize: window.innerWidth <= 768 ? '10px' : '12px',
-                        fontWeight: 'bold',
-                        justifyContent: 'center'
-                      }}>
-                                  {loadingThreshold ? 'Loading...' : lockRequirement.toLocaleString()}
-                        <img 
-                          src="/icons/sats1.svg" 
-                          alt="Sats" 
-                          style={{ 
-                            width: window.innerWidth <= 768 ? '12px' : '14px', 
-                            height: window.innerWidth <= 768 ? '12px' : '14px'
-                          }} 
-                        />
-                        <img 
-                          src="/icons/Vector.svg" 
-                          alt="Vector" 
-                          style={{ 
-                            width: window.innerWidth <= 768 ? '12px' : '14px', 
-                            height: window.innerWidth <= 768 ? '12px' : '14px'
-                          }} 
-                        />
-                      </div>
-                    </>
-                  )}
-                </div>
-              </div>
-            </div>
+
             
             {/* Current Token Balance Display */}
             <div style={{
@@ -2636,32 +2515,7 @@ const UnlockProgressBar = React.memo(function UnlockProgressBar({
                 >
                   🔓 Unlock Progress Bar
                 </button>
-                <button 
-                  onClick={() => setActiveSection(activeSection === 'profit' ? null : 'profit')}
-                  style={{
-                    backgroundColor: activeSection === 'profit' ? '#1e40af' : '#374151',
-                    color: 'white',
-                    border: 'none',
-                    borderRadius: '8px',
-                    padding: '12px 20px',
-                    fontSize: '14px',
-                    fontWeight: '600',
-                    cursor: 'pointer',
-                    transition: 'all 0.2s ease'
-                  }}
-                  onMouseEnter={(e) => {
-                    if (activeSection !== 'profit') {
-                      e.target.style.backgroundColor = '#4b5563';
-                    }
-                  }}
-                  onMouseLeave={(e) => {
-                    if (activeSection !== 'profit') {
-                      e.target.style.backgroundColor = '#374151';
-                    }
-                  }}
-                >
-                  📊 Profit / Loss
-                </button>
+
                 <button 
                   onClick={() => setActiveSection(activeSection === 'stats' ? null : 'stats')}
                   style={{
@@ -2692,65 +2546,44 @@ const UnlockProgressBar = React.memo(function UnlockProgressBar({
 
              {/* Action Buttons */}
              <div style={{ display: 'flex', gap: '12px', marginBottom: '24px', justifyContent: 'center', flexWrap: 'wrap' }}>
-               <button 
-                 onClick={() => { if (onClaimRevenue) { onClaimRevenue(); } else { setShowComingSoonPopup(true); } }}
-                 style={{
-                   backgroundColor: '#fbbf24',
-                   color: '#1a1a2e',
-                   border: 'none',
-                   borderRadius: '8px',
-                   padding: '12px 20px',
-                   fontSize: '14px',
-                   fontWeight: '600',
-                   cursor: 'pointer',
-                   transition: 'all 0.2s ease'
-                 }}
-                 onMouseEnter={(e) => {
-                   e.target.style.backgroundColor = '#f59e0b';
-                   e.target.style.transform = 'translateY(-1px)';
-                 }}
-                 onMouseLeave={(e) => {
-                   e.target.style.backgroundColor = '#fbbf24';
-                   e.target.style.transform = 'translateY(0)';
-                 }}
-               >
-                 💰 Claim Revenue
-               </button>
-               
                {/* Lock Button */}
-               <button 
-                 onClick={() => console.log('Lock button clicked - no functionality')}
-                 style={{
-                   backgroundColor: '#dc2626',
-                   color: 'white',
-                   border: 'none',
-                   borderRadius: '8px',
-                   padding: '12px 20px',
-                   fontSize: '14px',
-                   fontWeight: '600',
-                   cursor: 'pointer',
+                <button 
+                 onClick={() => setActiveSection(activeSection === 'lock' ? null : 'lock')}
+                  style={{
+                   backgroundColor: activeSection === 'lock' ? '#b91c1c' : '#dc2626',
+                    color: 'white',
+                    border: 'none',
+                    borderRadius: '8px',
+                    padding: '12px 20px',
+                    fontSize: '14px',
+                    fontWeight: '600',
+                    cursor: 'pointer',
                    transition: 'all 0.2s ease',
                    display: 'flex',
                    alignItems: 'center',
                    gap: '6px'
-                 }}
-                 onMouseEnter={(e) => {
-                   e.target.style.backgroundColor = '#b91c1c';
-                   e.target.style.transform = 'translateY(-1px)';
-                 }}
-                 onMouseLeave={(e) => {
-                   e.target.style.backgroundColor = '#dc2626';
-                   e.target.style.transform = 'translateY(0)';
-                 }}
-               >
+                  }}
+                  onMouseEnter={(e) => {
+                   if (activeSection !== 'lock') {
+                     e.target.style.backgroundColor = '#b91c1c';
+                     e.target.style.transform = 'translateY(-1px)';
+                    }
+                  }}
+                  onMouseLeave={(e) => {
+                   if (activeSection !== 'lock') {
+                     e.target.style.backgroundColor = '#dc2626';
+                     e.target.style.transform = 'translateY(0)';
+                    }
+                  }}
+                >
                  🔒 Lock <img src="/icons/The Mas Network.svg" alt="MAS Sats" style={{ width: '16px', height: '16px' }} />
-               </button>
-               
+                </button>
+
                {/* Unlock Button */}
                <button 
-                 onClick={() => console.log('Unlock button clicked - no functionality')}
+                 onClick={() => setActiveSection(activeSection === 'unlock' ? null : 'unlock')}
                  style={{
-                   backgroundColor: '#059669',
+                   backgroundColor: activeSection === 'unlock' ? '#047857' : '#059669',
                    color: 'white',
                    border: 'none',
                    borderRadius: '8px',
@@ -2764,15 +2597,52 @@ const UnlockProgressBar = React.memo(function UnlockProgressBar({
                    gap: '6px'
                  }}
                  onMouseEnter={(e) => {
-                   e.target.style.backgroundColor = '#047857';
+                   if (activeSection !== 'unlock') {
+                     e.target.style.backgroundColor = '#047857';
                    e.target.style.transform = 'translateY(-1px)';
+                   }
                  }}
                  onMouseLeave={(e) => {
-                   e.target.style.backgroundColor = '#059669';
+                   if (activeSection !== 'unlock') {
+                     e.target.style.backgroundColor = '#059669';
                    e.target.style.transform = 'translateY(0)';
+                   }
                  }}
                >
                  🔓 Unlock <img src="/icons/The Mas Network.svg" alt="MAS Sats" style={{ width: '16px', height: '16px' }} />
+               </button>
+               
+                               {/* Claim Revenue Button */}
+               <button 
+                  onClick={() => setActiveSection(activeSection === 'claim' ? null : 'claim')}
+                 style={{
+                    backgroundColor: activeSection === 'claim' ? '#f59e0b' : '#ffa500',
+                    color: '#1a1a2e',
+                   border: 'none',
+                   borderRadius: '8px',
+                   padding: '12px 20px',
+                   fontSize: '14px',
+                   fontWeight: '600',
+                   cursor: 'pointer',
+                   transition: 'all 0.2s ease',
+                   display: 'flex',
+                   alignItems: 'center',
+                   gap: '6px'
+                 }}
+                 onMouseEnter={(e) => {
+                    if (activeSection !== 'claim') {
+                      e.target.style.backgroundColor = '#f59e0b';
+                   e.target.style.transform = 'translateY(-1px)';
+                    }
+                 }}
+                 onMouseLeave={(e) => {
+                    if (activeSection !== 'claim') {
+                      e.target.style.backgroundColor = '#ffa500';
+                   e.target.style.transform = 'translateY(0)';
+                    }
+                 }}
+               >
+                  💰 Claim Revenue
                </button>
              </div>
 
@@ -2791,20 +2661,533 @@ const UnlockProgressBar = React.memo(function UnlockProgressBar({
                     lineHeight: '1.6'
                   }}>
                     <div style={{ fontSize: '48px', marginBottom: '16px' }}>🔓</div>
-                    <p>Unlock Progress Information</p>
+                    <p>Smart Contract Interaction</p>
                     <p style={{ fontSize: '14px', marginTop: '8px', marginBottom: '24px' }}>
-                      Track your progress towards unlocking tokens.
+                      Interact directly with the smart contract to claim your revenue.
                     </p>
                     
-                    {/* Independent Whale Access Progress Bar */}
-                    <WhaleAccessProgressBar
-                      tokenSymbol={tokenSymbol}
-                      revenue={revenue}
-                      liquidity={liquidity}
-                      tokenId={tokenId}
-                      dexInfo={dexInfo}
-                      tokenInfo={tokenInfo}
-                    />
+                    {/* Smart Contract Information Section */}
+                    <div style={{
+                      background: '#1c2d4e',
+                      borderRadius: '12px',
+                      padding: '20px',
+                      marginTop: '20px',
+                      border: '2px solid #ffa500'
+                    }}>
+                      <div style={{
+                        fontSize: '18px',
+                        color: '#ffa500',
+                        fontWeight: 'bold',
+                        textAlign: 'center',
+                        marginBottom: '16px'
+                      }}>
+                        🔓 Smart Contract Interaction Guide
+                      </div>
+                      
+                      <div style={{
+                        fontSize: '14px',
+                        color: '#ccc',
+                        lineHeight: '1.6',
+                        marginBottom: '20px'
+                      }}>
+                        <div style={{ marginBottom: '12px' }}>
+                          <strong style={{ color: '#ffa500' }}>Available to Claim:</strong> {revenue} SatsVector
+                        </div>
+                        
+                        <div style={{ marginBottom: '12px' }}>
+                          <strong style={{ color: '#ffa500' }}>Smart Contract:</strong> SP1T0V0Y3DNXRVP6HBM75DFWW0199CR0X15PC1D81B.mas-sats-treasury
+                        </div>
+                        
+                        <div style={{ marginBottom: '12px' }}>
+                          <strong style={{ color: '#ffa500' }}>Function to Call:</strong> withdraw-fees
+                        </div>
+                        
+                        <div style={{ 
+                          background: '#374151', 
+                          padding: '12px', 
+                          borderRadius: '8px',
+                          border: '1px solid #4b5563',
+                          marginTop: '12px'
+                        }}>
+                          <div style={{ fontSize: '12px', color: '#9ca3af', marginBottom: '8px' }}>
+                            <strong>Instructions:</strong>
+                          </div>
+                          <ol style={{ 
+                            fontSize: '12px', 
+                            color: '#ccc', 
+                            margin: '0', 
+                            paddingLeft: '16px',
+                            lineHeight: '1.4'
+                          }}>
+                            <li>Click "Proceed to Smart Contract" below</li>
+                            <li>In Hiro Explorer, click "Call Function"</li>
+                            <li>Select "withdraw-fees" function</li>
+                            <li>Connect your wallet</li>
+                            <li>Enter amount to claim in sats: <strong style={{ color: '#ffa500' }}>{revenue}</strong></li>
+                            <li>Confirm transaction</li>
+                            <li>Wait for transaction confirmation</li>
+                          </ol>
+                        </div>
+                      </div>
+                      
+                      <button
+                        onClick={() => {
+                          const contractAddress = 'SP1T0V0Y3DNXRVP6HBM75DFWW0199CR0X15PC1D81B';
+                          const contractName = 'mas-sats-treasury';
+                          const functionName = 'withdraw-fees';
+                          const explorerUrl = `https://explorer.hiro.so/txid/${contractAddress}.${contractName}?chain=mainnet`;
+                          
+                          // Open the contract in Hiro Explorer
+                          window.open(explorerUrl, '_blank');
+                        }}
+                        style={{
+                          backgroundColor: '#ffa500',
+                          color: '#1a1a2e',
+                          border: 'none',
+                          borderRadius: '8px',
+                          padding: '14px 24px',
+                          fontSize: '16px',
+                          fontWeight: 'bold',
+                          cursor: 'pointer',
+                          transition: 'all 0.2s ease',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          gap: '8px',
+                          width: '100%'
+                        }}
+                        onMouseEnter={(e) => {
+                          e.target.style.backgroundColor = '#f59e0b';
+                          e.target.style.transform = 'translateY(-1px)';
+                        }}
+                        onMouseLeave={(e) => {
+                          e.target.style.backgroundColor = '#ffa500';
+                          e.target.style.transform = 'translateY(0)';
+                        }}
+                      >
+                        🔓 Proceed to Smart Contract
+                      </button>
+                    </div>
+                  </div>
+                )}
+                {activeSection === 'lock' && (
+                  <div style={{
+                    textAlign: 'center',
+                    color: '#ccc',
+                    fontSize: '16px',
+                    lineHeight: '1.6'
+                  }}>
+                    <div style={{ fontSize: '48px', marginBottom: '16px' }}>🔒</div>
+                    <p>Smart Contract Interaction</p>
+                    <p style={{ fontSize: '14px', marginTop: '8px', marginBottom: '24px' }}>
+                      Interact directly with the smart contract to lock your tokens.
+                    </p>
+                    
+                    {/* Smart Contract Information Section */}
+                    <div style={{
+                      background: '#1c2d4e',
+                      borderRadius: '12px',
+                      padding: '20px',
+                      marginTop: '20px',
+                      border: '2px solid #dc2626'
+                    }}>
+                      <div style={{
+                        fontSize: '18px',
+                        color: '#dc2626',
+                        fontWeight: 'bold',
+                        textAlign: 'center',
+                        marginBottom: '16px'
+                      }}>
+                        🔒 Smart Contract Interaction Guide
+                      </div>
+                      
+                      <div style={{
+                        fontSize: '14px',
+                        color: '#ccc',
+                        lineHeight: '1.6',
+                        marginBottom: '20px'
+                      }}>
+                        <div style={{ marginBottom: '12px' }}>
+                          <strong style={{ color: '#dc2626' }}>Smart Contract:</strong> SP1T0V0Y3DNXRVP6HBM75DFWW0199CR0X15PC1D81B.mas-sats-treasury
+                        </div>
+                        
+                        <div style={{ marginBottom: '12px' }}>
+                          <strong style={{ color: '#dc2626' }}>Function to Call:</strong> lock-tokens
+                        </div>
+                        
+                        <div style={{ marginBottom: '12px' }}>
+                          <strong style={{ color: '#dc2626' }}>Current Minimum Threshold:</strong> {loadingThreshold ? 'Loading...' : (contractThreshold || 1000000).toLocaleString()} SatsVector
+                        </div>
+                        
+                        <div style={{ 
+                          background: '#374151', 
+                          padding: '12px', 
+                          borderRadius: '8px',
+                          border: '1px solid #4b5563',
+                          marginTop: '12px'
+                        }}>
+                          <div style={{ fontSize: '12px', color: '#9ca3af', marginBottom: '8px' }}>
+                            <strong>Instructions:</strong>
+                          </div>
+                          <ol style={{ 
+                            fontSize: '12px', 
+                            color: '#ccc', 
+                            margin: '0', 
+                            paddingLeft: '16px',
+                            lineHeight: '1.4'
+                          }}>
+                            <li>Click "Proceed to Smart Contract" below</li>
+                            <li>In Hiro Explorer, click "Call Function"</li>
+                            <li>Select "lock-tokens" function</li>
+                            <li>Connect your wallet</li>
+                            <li>Enter amount to lock: <strong style={{ color: '#dc2626' }}>Your token balance</strong></li>
+                            <li>Confirm transaction</li>
+                            <li>Wait for transaction confirmation</li>
+                          </ol>
+                        </div>
+                      </div>
+                      
+                      {/* Risk Warning and Acknowledgment */}
+                      <div style={{ 
+                        background: '#dc2626', 
+                        padding: '16px', 
+                        borderRadius: '8px',
+                        border: '1px solid #ef4444',
+                        marginTop: '16px',
+                        marginBottom: '16px'
+                      }}>
+                        <div style={{ fontSize: '14px', color: '#ffffff', marginBottom: '12px' }}>
+                          <strong>⚠️ Important Risk Warning:</strong>
+                        </div>
+                        <p style={{ 
+                          fontSize: '13px', 
+                          color: '#ffffff', 
+                          margin: '0 0 12px 0',
+                          lineHeight: '1.4'
+                        }}>
+                          You cannot unlock your tokens if sBTC fees are below the minimum threshold. 
+                          This is a permanent lock until the revenue threshold is met.
+                        </p>
+                        
+                        {/* Risk Acknowledgment Checkbox */}
+                        <div style={{
+                          display: 'flex',
+                          alignItems: 'flex-start',
+                          gap: '10px',
+                          textAlign: 'left'
+                        }}>
+                          <input
+                            type="checkbox"
+                            id="lockRiskAcknowledged"
+                            checked={lockRiskAcknowledged}
+                            onChange={(e) => setLockRiskAcknowledged(e.target.checked)}
+                            style={{
+                              width: '18px',
+                              height: '18px',
+                              marginTop: '2px',
+                              cursor: 'pointer'
+                            }}
+                          />
+                          <label
+                            htmlFor="lockRiskAcknowledged"
+                            style={{
+                              color: '#ffffff',
+                              fontSize: '12px',
+                              lineHeight: '1.4',
+                              cursor: 'pointer',
+                              userSelect: 'none'
+                            }}
+                          >
+                            I acknowledge that I understand the risk of locking my tokens. 
+                            I cannot unlock them if sBTC fees are below the minimum threshold, 
+                            and this lock is permanent until the revenue threshold is met.
+                          </label>
+                        </div>
+                      </div>
+                      
+                      <button
+                        disabled={!lockRiskAcknowledged}
+                        onClick={() => {
+                          if (lockRiskAcknowledged) {
+                            const explorerUrl = 'https://explorer.hiro.so/contract/SP1T0VY3DNXRVP6HBM75DFWW0199CR0X15PC1D81B.mas-sats-treasury';
+                            
+                            // Open the contract in Hiro Explorer
+                            window.open(explorerUrl, '_blank');
+                          }
+                        }}
+                        style={{
+                          backgroundColor: lockRiskAcknowledged ? '#dc2626' : '#6b7280',
+                          color: '#ffffff',
+                          border: 'none',
+                          borderRadius: '8px',
+                          padding: '14px 24px',
+                          fontSize: '16px',
+                          fontWeight: 'bold',
+                          cursor: lockRiskAcknowledged ? 'pointer' : 'not-allowed',
+                          transition: 'all 0.2s ease',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          gap: '8px',
+                          width: '100%'
+                        }}
+                        onMouseEnter={(e) => {
+                          if (lockRiskAcknowledged) {
+                            e.target.style.backgroundColor = '#b91c1c';
+                            e.target.style.transform = 'translateY(-1px)';
+                          }
+                        }}
+                        onMouseLeave={(e) => {
+                          if (lockRiskAcknowledged) {
+                            e.target.style.backgroundColor = '#dc2626';
+                            e.target.style.transform = 'translateY(0)';
+                          }
+                        }}
+                      >
+                        🔒 Proceed to Smart Contract
+                      </button>
+                    </div>
+                  </div>
+                )}
+                {activeSection === 'unlock' && (
+                  <div style={{
+                    textAlign: 'center',
+                    color: '#ccc',
+                    fontSize: '16px',
+                    lineHeight: '1.6'
+                  }}>
+                    <div style={{ fontSize: '48px', marginBottom: '16px' }}>🔓</div>
+                    <p>Smart Contract Interaction</p>
+                    <p style={{ fontSize: '14px', marginTop: '8px', marginBottom: '24px' }}>
+                      Interact directly with the smart contract to unlock your tokens.
+                    </p>
+                    
+                    {/* Smart Contract Information Section */}
+                    <div style={{
+                      background: '#1c2d4e',
+                      borderRadius: '12px',
+                      padding: '20px',
+                      marginTop: '20px',
+                      border: '2px solid #059669'
+                    }}>
+                      <div style={{
+                        fontSize: '18px',
+                        color: '#059669',
+                        fontWeight: 'bold',
+                        textAlign: 'center',
+                        marginBottom: '16px'
+                      }}>
+                        🔓 Smart Contract Interaction Guide
+                      </div>
+                      
+                      <div style={{
+                        fontSize: '14px',
+                        color: '#ccc',
+                        lineHeight: '1.6',
+                        marginBottom: '20px'
+                      }}>
+                        <div style={{ marginBottom: '12px' }}>
+                          <strong style={{ color: '#059669' }}>Smart Contract:</strong> SP1T0V0Y3DNXRVP6HBM75DFWW0199CR0X15PC1D81B.mas-sats-treasury
+                        </div>
+                        
+                        <div style={{ marginBottom: '12px' }}>
+                          <strong style={{ color: '#059669' }}>Function to Call:</strong> unlock-tokens
+                        </div>
+                        
+                        <div style={{ marginBottom: '12px' }}>
+                          <strong style={{ color: '#059669' }}>Current Minimum Threshold:</strong> {loadingThreshold ? 'Loading...' : (contractThreshold || 1000000).toLocaleString()} SatsVector
+                        </div>
+                        
+                        <div style={{ marginBottom: '12px' }}>
+                          <strong style={{ color: '#059669' }}>Current Progress:</strong> {progressPercentage.toFixed(1)}% ({currentRevenue.toLocaleString()} / {(contractThreshold || 1000000).toLocaleString()})
+                        </div>
+                        
+                        <div style={{ 
+                          background: '#374151', 
+                          padding: '12px', 
+                          borderRadius: '8px',
+                          border: '1px solid #4b5563',
+                          marginTop: '12px'
+                        }}>
+                          <div style={{ fontSize: '12px', color: '#9ca3af', marginBottom: '8px' }}>
+                            <strong>Instructions:</strong>
+                          </div>
+                          <ol style={{ 
+                            fontSize: '12px', 
+                            color: '#ccc', 
+                            margin: '0', 
+                            paddingLeft: '16px',
+                            lineHeight: '1.4'
+                          }}>
+                            <li>Click "Proceed to Smart Contract" below</li>
+                            <li>In Hiro Explorer, click "Call Function"</li>
+                            <li>Select "unlock-tokens" function</li>
+                            <li>Connect your wallet</li>
+                            <li>Confirm transaction</li>
+                            <li>Wait for transaction confirmation</li>
+                          </ol>
+                        </div>
+                      </div>
+                      
+                      <button
+                        disabled={progressPercentage < 100}
+                        onClick={() => {
+                          if (progressPercentage >= 100) {
+                            const explorerUrl = 'https://explorer.hiro.so/contract/SP1T0VY3DNXRVP6HBM75DFWW0199CR0X15PC1D81B.mas-sats-treasury';
+                            
+                            // Open the contract in Hiro Explorer
+                            window.open(explorerUrl, '_blank');
+                          }
+                        }}
+                        style={{
+                          backgroundColor: progressPercentage >= 100 ? '#059669' : '#6b7280',
+                          color: '#ffffff',
+                          border: 'none',
+                          borderRadius: '8px',
+                          padding: '14px 24px',
+                          fontSize: '16px',
+                          fontWeight: 'bold',
+                          cursor: progressPercentage >= 100 ? 'pointer' : 'not-allowed',
+                          transition: 'all 0.2s ease',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          gap: '8px',
+                          width: '100%'
+                        }}
+                        onMouseEnter={(e) => {
+                          if (progressPercentage >= 100) {
+                            e.target.style.backgroundColor = '#047857';
+                            e.target.style.transform = 'translateY(-1px)';
+                          }
+                        }}
+                        onMouseLeave={(e) => {
+                          if (progressPercentage >= 100) {
+                            e.target.style.backgroundColor = '#059669';
+                            e.target.style.transform = 'translateY(0)';
+                          }
+                        }}
+                      >
+                        🔓 Proceed to Smart Contract
+                      </button>
+                    </div>
+                  </div>
+                )}
+                {activeSection === 'claim' && (
+                  <div style={{
+                    textAlign: 'center',
+                    color: '#ccc',
+                    fontSize: '16px',
+                    lineHeight: '1.6'
+                  }}>
+                    <div style={{ fontSize: '48px', marginBottom: '16px' }}>💰</div>
+                    <p>Smart Contract Interaction</p>
+                    <p style={{ fontSize: '14px', marginTop: '8px', marginBottom: '24px' }}>
+                      Interact directly with the smart contract to claim your revenue.
+                    </p>
+                    
+                    {/* Smart Contract Information Section */}
+                    <div style={{
+                      background: '#1c2d4e',
+                      borderRadius: '12px',
+                      padding: '20px',
+                      marginTop: '20px',
+                      border: '2px solid #ffa500'
+                    }}>
+                      <div style={{
+                        fontSize: '18px',
+                        color: '#ffa500',
+                        fontWeight: 'bold',
+                        textAlign: 'center',
+                        marginBottom: '16px'
+                      }}>
+                        💰 Smart Contract Interaction Guide
+                      </div>
+                      
+                      <div style={{
+                        fontSize: '14px',
+                        color: '#ccc',
+                        lineHeight: '1.6',
+                        marginBottom: '20px'
+                      }}>
+                        <div style={{ marginBottom: '12px' }}>
+                          <strong style={{ color: '#ffa500' }}>Smart Contract:</strong> SP1T0V0Y3DNXRVP6HBM75DFWW0199CR0X15PC1D81B.mas-sats-treasury
+                        </div>
+                        
+                        <div style={{ marginBottom: '12px' }}>
+                          <strong style={{ color: '#ffa500' }}>Function to Call:</strong> withdraw-fees
+                        </div>
+                        
+                        <div style={{ marginBottom: '12px' }}>
+                          <strong style={{ color: '#ffa500' }}>Available to Claim:</strong> {revenue} SatsVector
+                        </div>
+                        
+                        <div style={{ 
+                          background: '#374151', 
+                          padding: '12px', 
+                          borderRadius: '8px',
+                          border: '1px solid #4b5563',
+                          marginTop: '12px'
+                        }}>
+                          <div style={{ fontSize: '12px', color: '#9ca3af', marginBottom: '8px' }}>
+                            <strong>Instructions:</strong>
+                          </div>
+                          <ol style={{ 
+                            fontSize: '12px', 
+                            color: '#ccc', 
+                            margin: '0', 
+                            paddingLeft: '16px',
+                            lineHeight: '1.4'
+                          }}>
+                            <li>Click "Proceed to Smart Contract" below</li>
+                            <li>In Hiro Explorer, click "Call Function"</li>
+                            <li>Select "withdraw-fees" function</li>
+                            <li>Connect your wallet</li>
+                            <li>Enter amount to claim in sats: <strong style={{ color: '#ffa500' }}>{revenue}</strong></li>
+                            <li>Confirm transaction</li>
+                            <li>Wait for transaction confirmation</li>
+                          </ol>
+                        </div>
+                      </div>
+                      
+                      <button
+                        onClick={() => {
+                          const contractAddress = 'SP1T0V0Y3DNXRVP6HBM75DFWW0199CR0X15PC1D81B';
+                          const contractName = 'mas-sats-treasury';
+                          const functionName = 'withdraw-fees';
+                          const explorerUrl = `https://explorer.hiro.so/txid/${contractAddress}.${contractName}?chain=mainnet`;
+                          
+                          // Open the contract in Hiro Explorer
+                          window.open(explorerUrl, '_blank');
+                        }}
+                        style={{
+                          backgroundColor: '#ffa500',
+                          color: '#1a1a2e',
+                          border: 'none',
+                          borderRadius: '8px',
+                          padding: '14px 24px',
+                          fontSize: '16px',
+                          fontWeight: 'bold',
+                          cursor: 'pointer',
+                          transition: 'all 0.2s ease',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          gap: '8px',
+                          width: '100%'
+                        }}
+                        onMouseEnter={(e) => {
+                          e.target.style.backgroundColor = '#f59e0b';
+                          e.target.style.transform = 'translateY(-1px)';
+                        }}
+                        onMouseLeave={(e) => {
+                          e.target.style.backgroundColor = '#ffa500';
+                          e.target.style.transform = 'translateY(0)';
+                        }}
+                      >
+                        💰 Proceed to Smart Contract
+                      </button>
+                    </div>
                   </div>
                 )}
                 {activeSection === 'profit' && (
@@ -3002,6 +3385,65 @@ const UnlockProgressBar = React.memo(function UnlockProgressBar({
                            height: '16px'
                          }} 
                        />
+                     </div>
+                     
+                     {/* Claim Revenue Button */}
+                     <div style={{
+                       display: 'flex',
+                       flexDirection: 'column',
+                       alignItems: 'center',
+                       gap: '8px',
+                       marginBottom: '12px'
+                     }}>
+                       <button
+                         onClick={() => {
+                           const contractAddress = 'SP1T0V0Y3DNXRVP6HBM75DFWW0199CR0X15PC1D81B';
+                           const contractName = 'mas-sats-treasury';
+                           const functionName = 'withdraw-fees';
+                           const explorerUrl = `https://explorer.hiro.so/txid/${contractAddress}.${contractName}?chain=mainnet`;
+                           
+                           // Open the contract in Hiro Explorer
+                           window.open(explorerUrl, '_blank');
+                           
+                           // Show explanation to user
+                           alert(`🔓 Direct Smart Contract Interaction\n\nYou can now interact with the smart contract directly to call the withdraw-fees function.\n\nContract: ${contractAddress}.${contractName}\nFunction: ${functionName}\n\nClick "Call Function" in the explorer to execute the withdraw-fees function and claim your revenue.`);
+                         }}
+                         style={{
+                           backgroundColor: '#ffa500',
+                           color: '#1a1a2e',
+                           border: 'none',
+                           borderRadius: '8px',
+                           padding: '12px 20px',
+                           fontSize: '14px',
+                           fontWeight: 'bold',
+                           cursor: 'pointer',
+                           transition: 'all 0.2s ease',
+                           display: 'flex',
+                           alignItems: 'center',
+                           gap: '8px',
+                           textDecoration: 'none'
+                         }}
+                         onMouseEnter={(e) => {
+                           e.target.style.backgroundColor = '#f59e0b';
+                           e.target.style.transform = 'translateY(-1px)';
+                         }}
+                         onMouseLeave={(e) => {
+                           e.target.style.backgroundColor = '#ffa500';
+                           e.target.style.transform = 'translateY(0)';
+                         }}
+                                               >
+                          Claim Revenue via Smart Contract
+                        </button>
+                       
+                       <div style={{
+                         fontSize: '11px',
+                         color: '#9ca3af',
+                         textAlign: 'center',
+                         maxWidth: '280px',
+                         lineHeight: '1.4'
+                       }}>
+                         Click to open Hiro Explorer and call the withdraw-fees function directly on the smart contract
+                       </div>
                      </div>
                      
                      {/* Progress Percentage */}
@@ -3277,6 +3719,8 @@ const UnlockProgressBar = React.memo(function UnlockProgressBar({
            </div>
          </div>
        )}
+
+
 
 
 

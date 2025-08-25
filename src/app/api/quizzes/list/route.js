@@ -21,6 +21,22 @@ export async function GET() {
       .eq('is_active', true)
       .order('created_at', { ascending: false });
 
+    // Get actual question count for each quiz
+    if (data && data.length > 0) {
+      for (let quiz of data) {
+        const { data: questionCount, error: countError } = await supabaseServer
+          .from('quiz_questions')
+          .select('id', { count: 'exact' })
+          .eq('quiz_id', quiz.id);
+        
+        if (!countError) {
+          quiz.actual_question_count = questionCount?.length || 0;
+        } else {
+          quiz.actual_question_count = 0;
+        }
+      }
+    }
+
     if (error) {
       console.error('❌ Database error fetching quizzes:', error);
       throw error;

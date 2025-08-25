@@ -150,73 +150,7 @@ export default function SwapPage() {
     }
   };
 
-  // Handle revenue claiming
-  const handleClaimRevenue = async () => {
-    try {
-      console.log('💰 Starting handleClaimRevenue for token:', tokenData?.id);
-      console.log('💰 TokenData available:', !!tokenData);
-      
-      // Check if wallet is connected
-      const connectedAddress = typeof window !== 'undefined' ? localStorage.getItem('connectedAddress') : null;
-      if (!connectedAddress) {
-        alert('Please connect your wallet to claim revenue.');
-        return;
-      }
-      
-      if (!tokenData) {
-        console.error('❌ No tokenData available');
-        alert('Token data not available. Please refresh the page.');
-        return;
-      }
-      
-      // Get the raw revenue number (not the formatted string) with timeout
-      console.log('🔍 Calling getTokenStatsData with tokenData:', tokenData);
-      const timeoutPromise = new Promise((_, reject) => 
-        setTimeout(() => reject(new Error('Request timeout')), 10000)
-      );
-      
-      const statsPromise = getTokenStatsData(tokenData);
-      const rawRevenue = await Promise.race([statsPromise, timeoutPromise]);
-      console.log('🔍 Raw revenue result:', rawRevenue);
-      
-      // Pass ALL data from trade page to avoid duplicate API calls
-      const revenueData = {
-        // Revenue data (use raw number, not formatted string)
-        totalRevenue: rawRevenue.revenue,
-        availableToClaim: rawRevenue.revenue,
-        tradingFees: rawRevenue.revenue,
-        
-        // Token data (already fetched on trade page)
-        tokenData: tokenData,
-        
-        // Locked token data (already fetched on trade page)
-        totalLockedTokens: rawRevenue.liquidity,
-        userLockedTokens: 0, // Will be updated when wallet is connected
-        majorityThreshold: Math.floor(rawRevenue.liquidity / 2) + 1,
-        
-        // Other data already available
-        remainingSupply: rawRevenue.remainingSupply,
-        
-        // Timestamp for data freshness
-        timestamp: Date.now()
-      };
-      
-      console.log('💰 Passing raw revenue data:', revenueData);
-      
-      // Encode the data and navigate - use tokenData.id for the revenue page
-      const encodedData = encodeURIComponent(JSON.stringify(revenueData));
-      window.location.href = `/revenue/${tokenData.id}?data=${encodedData}`;
-      
-    } catch (error) {
-      if (error.message === 'Request timeout') {
-        console.error('❌ Request timed out while fetching revenue data');
-        alert('Request timed out. Please try again.');
-      } else {
-        console.error('❌ Error navigating to revenue page:', error);
-        alert('Failed to navigate to revenue page. Please try again.');
-      }
-    }
-  };
+
 
   // Calculate user's token balance from trades
   const calculateUserTokenBalance = () => {
@@ -849,7 +783,7 @@ export default function SwapPage() {
               liquidity={liquidity}
               showButtons={true}
               onShowContracts={() => setShowContracts(true)}
-              onClaimRevenue={handleClaimRevenue}
+              
               tokenId={tokenData.id}
       
               dexInfo={tokenData?.dexInfo}

@@ -6,7 +6,7 @@ const ACCESS_SETTINGS_FILE = path.join(process.cwd(), 'access-settings.json');
 
 // Default settings
 const DEFAULT_SETTINGS = {
-  claimRevenue: true,
+  
   tokenTrading: {
     featured: false,
     practice: false
@@ -68,7 +68,7 @@ export async function POST(request) {
     }
 
     // Validate settings structure
-    const validKeys = ['claimRevenue'];
+    const validKeys = [];
     const validatedSettings = {};
     
     for (const key of validKeys) {

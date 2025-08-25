@@ -27,3 +27,4 @@ CREATE POLICY "Allow authenticated insert to sbtc_fee_pool_history" ON sbtc_fee_
 
 CREATE POLICY "Allow admin access to sbtc_fee_pool_history" ON sbtc_fee_pool_history
     FOR ALL USING (true);
+
