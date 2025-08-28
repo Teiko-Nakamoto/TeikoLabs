@@ -1,10 +1,5 @@
-import { createClient } from '@supabase/supabase-js';
 import { NextResponse } from 'next/server';
-
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
-);
+import { supabaseServer } from '../../utils/supabaseServer';
 
 export async function POST(request) {
   try {
@@ -12,7 +7,7 @@ export async function POST(request) {
     console.log('🧪 Testing quiz_attempts table insert...');
     
     // Test 1: Check if table exists and get its structure
-    const { data: tableInfo, error: tableError } = await supabase
+    const { data: tableInfo, error: tableError } = await supabaseServer
       .from('quiz_attempts')
       .select('*')
       .limit(1);
@@ -20,14 +15,15 @@ export async function POST(request) {
     console.log('📋 Table structure test:', { tableInfo, tableError });
     
     // Test 2: Try to insert a simple record
-    const { data: insertTest, error: insertError } = await supabase
+    const { data: insertTest, error: insertError } = await supabaseServer
       .from('quiz_attempts')
       .insert({
         wallet_address: 'test-wallet-123',
         quiz_id: 1,
         questions_answered: 6,
-        score: 6,
-        completed: true
+        correct_answers: 6,
+        points_earned: 6,
+        completed_at: new Date().toISOString()
       })
       .select()
       .single();
