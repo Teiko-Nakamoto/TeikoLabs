@@ -5,7 +5,7 @@ import { useTranslation } from 'react-i18next';
 import Header from '../components/header';
 import Footer from '../components/footer';
 import Link from 'next/link';
-import ProfitGrowthChart from '../components/ProfitGrowthChart';
+
 import './dashboard.css';
 
 export default function MajorityHolderDashboard() {
@@ -268,6 +268,14 @@ export default function MajorityHolderDashboard() {
     };
   };
 
+  // Load analytics data when analytics tab is active
+  useEffect(() => {
+    if (activeTab === 'analytics') {
+      loadDynamicReward();
+      loadFeePoolHistory();
+    }
+  }, [activeTab]);
+
   // Load quiz data when quiz tab is active
   useEffect(() => {
     if (activeTab === 'quiz') {
@@ -281,10 +289,7 @@ export default function MajorityHolderDashboard() {
     }
   }, [activeTab]);
 
-  // Show coming soon popup on first load
-  useEffect(() => {
-    showComingSoonModal();
-  }, []);
+
 
   // Load rewards data when rewards tab is active
   useEffect(() => {
@@ -617,7 +622,7 @@ export default function MajorityHolderDashboard() {
           setGameState('competition-ended');
         } else {
           alert('Failed to record quiz attempt: ' + (data.error || 'Unknown error') + '\n\nDetails: ' + (data.message || 'No additional details'));
-          setGameState('loading');
+        setGameState('loading');
         }
       }
     } catch (error) {
@@ -1387,193 +1392,7 @@ export default function MajorityHolderDashboard() {
     }, 10000);
   };
 
-  const showComingSoonModal = () => {
-    // Create a beautiful coming soon modal
-    const modal = document.createElement('div');
-    modal.style.cssText = `
-      position: fixed;
-      top: 50%;
-      left: 50%;
-      transform: translate(-50%, -50%);
-      background: linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%);
-      color: white;
-      padding: 0;
-      border-radius: 20px;
-      border: 2px solid #3b82f6;
-      z-index: 10000;
-      max-width: 500px;
-      width: 90vw;
-      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.8);
-      overflow: hidden;
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-    `;
-    
-    // Header with rocket icon
-    const header = document.createElement('div');
-    header.style.cssText = `
-      background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
-      padding: 30px 20px 20px;
-      text-align: center;
-      position: relative;
-    `;
-    
-    const rocketIcon = document.createElement('div');
-    rocketIcon.style.cssText = `
-      font-size: 4rem;
-      margin-bottom: 15px;
-      filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.3));
-      animation: rocket 3s infinite;
-    `;
-    rocketIcon.textContent = '🚀';
-    
-    const title = document.createElement('h2');
-    title.style.cssText = `
-      margin: 0;
-      font-size: 1.8rem;
-      font-weight: bold;
-      color: white;
-      text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
-    `;
-    title.textContent = 'Coming Soon!';
-    
-    header.appendChild(rocketIcon);
-    header.appendChild(title);
-    
-    // Content
-    const content = document.createElement('div');
-    content.style.cssText = `
-      padding: 30px 25px;
-      text-align: center;
-    `;
-    
-    const message = document.createElement('p');
-    message.style.cssText = `
-      margin: 0 0 20px 0;
-      font-size: 1.1rem;
-      color: #e5e7eb;
-      line-height: 1.6;
-    `;
-    message.textContent = 'We\'re working on something amazing! New features and improvements are on the way.';
-    
-    const featureMessage = document.createElement('p');
-    featureMessage.style.cssText = `
-      margin: 0 0 25px 0;
-      font-size: 1rem;
-      color: #3b82f6;
-      font-weight: bold;
-      padding: 15px;
-      background: rgba(59, 130, 246, 0.1);
-      border-radius: 10px;
-      border: 1px solid rgba(59, 130, 246, 0.3);
-    `;
-    featureMessage.textContent = '🎯 Enhanced quiz system, better rewards, and more exciting features!';
-    
-    const sparkleIcon = document.createElement('div');
-    sparkleIcon.style.cssText = `
-      font-size: 2rem;
-      margin-bottom: 20px;
-      animation: sparkle 2s infinite;
-    `;
-    sparkleIcon.textContent = '✨';
-    
-    // Add animations
-    const style = document.createElement('style');
-    style.textContent = `
-      @keyframes rocket {
-        0%, 100% { transform: translateY(0) rotate(0deg); }
-        25% { transform: translateY(-5px) rotate(5deg); }
-        50% { transform: translateY(-10px) rotate(0deg); }
-        75% { transform: translateY(-5px) rotate(-5deg); }
-      }
-      @keyframes sparkle {
-        0%, 100% { transform: scale(1) rotate(0deg); opacity: 1; }
-        50% { transform: scale(1.2) rotate(180deg); opacity: 0.8; }
-      }
-    `;
-    document.head.appendChild(style);
-    
-    content.appendChild(message);
-    content.appendChild(featureMessage);
-    content.appendChild(sparkleIcon);
-    
-    // Button
-    const buttonContainer = document.createElement('div');
-    buttonContainer.style.cssText = `
-      padding: 0 25px 25px;
-      text-align: center;
-    `;
-    
-    const okButton = document.createElement('button');
-    okButton.style.cssText = `
-      background: linear-gradient(135deg, #10b981 0%, #059669 100%);
-      color: white;
-      border: none;
-      padding: 15px 40px;
-      border-radius: 12px;
-      font-size: 1.1rem;
-      font-weight: bold;
-      cursor: pointer;
-      transition: all 0.3s ease;
-      box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
-    `;
-    okButton.textContent = '🎉 Get Excited!';
-    
-    // Button hover effects
-    okButton.onmouseenter = () => {
-      okButton.style.transform = 'translateY(-2px)';
-      okButton.style.boxShadow = '0 6px 20px rgba(16, 185, 129, 0.4)';
-    };
-    
-    okButton.onmouseleave = () => {
-      okButton.style.transform = 'translateY(0)';
-      okButton.style.boxShadow = '0 4px 12px rgba(16, 185, 129, 0.3)';
-    };
-    
-    okButton.onclick = () => {
-      closeModal();
-    };
-    
-    buttonContainer.appendChild(okButton);
-    
-    // Assemble modal
-    modal.appendChild(header);
-    modal.appendChild(content);
-    modal.appendChild(buttonContainer);
-    
-    // Add overlay
-    const overlay = document.createElement('div');
-    overlay.style.cssText = `
-      position: fixed;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      background: rgba(0, 0, 0, 0.7);
-      z-index: 9999;
-      backdrop-filter: blur(5px);
-    `;
-    
-    document.body.appendChild(overlay);
-    document.body.appendChild(modal);
-    
-    // Close functionality
-    const closeModal = () => {
-      document.body.removeChild(overlay);
-      document.body.removeChild(modal);
-      if (document.head.contains(style)) {
-        document.head.removeChild(style);
-      }
-    };
-    
-    overlay.onclick = closeModal;
-    
-    // Auto-close after 8 seconds
-    setTimeout(() => {
-      if (document.body.contains(modal)) {
-        closeModal();
-      }
-    }, 8000);
-  };
+
 
   return (
     <div className="dashboard-container">
@@ -1805,9 +1624,166 @@ export default function MajorityHolderDashboard() {
                 </div>
               </div>
 
-              {/* Profit Growth Chart */}
-              <ProfitGrowthChart />
+              {/* New Vertical Bar Chart Revenue Display */}
+              <div className="fee-dashboard">
+                <div className="dashboard-header">
+                  <div className="title-section">
+                    <span className="chart-icon">📊</span>
+                    <h2>Protocol Profit Over Time</h2>
+                  </div>
+                  
+                  <div className="controls">
+                    <button 
+                      onClick={loadFeePoolHistory}
+                      className="refresh-button"
+                      disabled={historyLoading}
+                    >
+                      <span className="refresh-icon">🔄</span>
+                      {historyLoading ? 'Loading...' : 'Refresh'}
+                    </button>
+                  </div>
+                </div>
 
+                <div className="chart-container">
+                  {feePoolHistory.length > 0 ? (
+                    <div className="line-chart">
+                      <svg className="chart-svg" viewBox="0 0 800 300" preserveAspectRatio="xMidYMid meet">
+                        {/* Grid lines */}
+                        {[0, 1, 2, 3, 4].map((i) => (
+                          <line
+                            key={`grid-${i}`}
+                            x1="0"
+                            y1={60 + i * 60}
+                            x2="800"
+                            y2={60 + i * 60}
+                            stroke="rgba(255, 255, 255, 0.15)"
+                            strokeWidth="1"
+                          />
+                        ))}
+                        
+                        {/* Data points and line */}
+                        {(() => {
+                          const data = feePoolHistory.slice(0, 7).reverse();
+                          const maxValue = Math.max(...data.map(h => h.fee_pool_amount));
+                          const minValue = Math.min(...data.map(h => h.fee_pool_amount));
+                          const valueRange = maxValue - minValue;
+                          
+                          const points = data.map((item, index) => {
+                            const x = 50 + (index * 125);
+                            const y = 300 - 60 - ((item.fee_pool_amount - minValue) / valueRange * 180);
+                            return { x, y, item };
+                          });
+                          
+                          // Create path for the line
+                          const pathData = points.map((point, index) => 
+                            `${index === 0 ? 'M' : 'L'} ${point.x} ${point.y}`
+                          ).join(' ');
+                          
+                          return (
+                            <>
+                              {/* Line */}
+                              <path
+                                d={pathData}
+                                stroke="#3b82f6"
+                                strokeWidth="3"
+                                fill="none"
+                                className="chart-line"
+                              />
+                              
+                              {/* Data points */}
+                              {points.map((point, index) => (
+                                <g key={index}>
+                                  <circle
+                                    cx={point.x}
+                                    cy={point.y}
+                                    r="6"
+                                    fill="#3b82f6"
+                                    stroke="#1d4ed8"
+                                    strokeWidth="2"
+                                    className="data-point"
+                                  />
+                                  
+                                  {/* Value labels */}
+                                  <text
+                                    x={point.x}
+                                    y={point.y - 15}
+                                    textAnchor="middle"
+                                    fill="#e2e8f0"
+                                    fontSize="12"
+                                    fontWeight="bold"
+                                    className="value-label"
+                                  >
+                                    {point.item.fee_pool_amount >= 1000 
+                                      ? `${(point.item.fee_pool_amount / 1000).toFixed(1)}K` 
+                                      : point.item.fee_pool_amount.toString()}
+                                  </text>
+                                  
+                                  {/* Date labels */}
+                                  <text
+                                    x={point.x}
+                                    y="290"
+                                    textAnchor="middle"
+                                    fill="#94a3b8"
+                                    fontSize="11"
+                                    className="date-label"
+                                  >
+                                    {new Date(point.item.recorded_at).toLocaleDateString('en-US', { 
+                                      month: 'short', 
+                                      day: 'numeric' 
+                                    })}
+                                  </text>
+                                </g>
+                              ))}
+                            </>
+                          );
+                        })()}
+                      </svg>
+                    </div>
+                  ) : (
+                    <div style={{ 
+                      textAlign: 'center', 
+                      padding: '2rem',
+                      color: '#9ca3af'
+                    }}>
+                      {historyLoading ? 'Loading chart data...' : 'No chart data available'}
+            </div>
+          )}
+                </div>
+
+                <div className="summary-section">
+                  <div className="summary-item">
+                    <span className="summary-label">Current Revenue:</span>
+                    <span className="summary-value current">
+                      {rewardLoading ? 'Updating...' : `${sbtcFeePool.toLocaleString()} sats`}
+                    </span>
+                  </div>
+                  
+                  <div className="summary-item">
+                    <span className="summary-label">Peak Revenue:</span>
+                    <span className="summary-value peak">
+                      {feePoolHistory.length > 0 
+                        ? `${Math.max(...feePoolHistory.map(h => h.fee_pool_amount)).toLocaleString()} sats`
+                        : 'N/A'
+                      }
+                    </span>
+                  </div>
+                  
+                  <div className="summary-item">
+                    <span className="summary-label">Growth (7-day period):</span>
+                    <span className="summary-value growth">
+                      {feePoolHistory.length >= 2 
+                        ? (() => {
+                            const first = feePoolHistory[feePoolHistory.length - 1]?.fee_pool_amount || 0;
+                            const last = feePoolHistory[0]?.fee_pool_amount || 0;
+                            const growth = first > 0 ? ((last - first) / first * 100) : 0;
+                            return `${growth >= 0 ? '+' : ''}${growth.toFixed(1)}%`;
+                          })()
+                        : 'N/A'
+                      }
+                    </span>
+                  </div>
+                </div>
+              </div>
 
             </div>
           )}
@@ -2075,18 +2051,7 @@ export default function MajorityHolderDashboard() {
                     </div>
                   )}
                   
-                  <div style={{
-                    textAlign: 'center',
-                    marginTop: '20px',
-                    padding: '10px',
-                    background: 'rgba(255, 255, 255, 0.05)',
-                    borderRadius: '8px',
-                    border: '1px solid rgba(255, 255, 255, 0.1)'
-                  }}>
-                    <span style={{ color: '#9ca3af', fontSize: '14px' }}>
-                      Current Protocol Revenue: {rewardLoading ? 'Updating...' : `${sbtcFeePool.toLocaleString()} sats`}
-                    </span>
-                  </div>
+
                 </div>
               ) : gameState === 'playing' ? (
                 <div className="quiz-game">

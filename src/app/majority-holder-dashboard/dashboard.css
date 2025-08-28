@@ -2207,3 +2207,199 @@
     width: 100%;
   }
 }
+
+/* New Vertical Bar Chart Revenue Display Styles */
+.fee-dashboard {
+  background: rgba(30, 41, 59, 0.8);
+  border-radius: 20px;
+  padding: 2rem;
+  border: 1px solid rgba(59, 130, 246, 0.2);
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+  margin-top: 2rem;
+}
+
+.fee-dashboard .dashboard-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 2rem;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.fee-dashboard .title-section {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.fee-dashboard .chart-icon {
+  font-size: 1.5rem;
+}
+
+.fee-dashboard .title-section h2 {
+  font-size: 1.8rem;
+  color: #f59e0b;
+  margin: 0;
+}
+
+.fee-dashboard .controls {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+}
+
+.fee-dashboard .refresh-button {
+  background: linear-gradient(135deg, #f59e0b, #d97706);
+  color: white;
+  border: none;
+  padding: 0.5rem 1rem;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  font-weight: bold;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  transition: all 0.3s ease;
+}
+
+.fee-dashboard .refresh-button:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(245, 158, 11, 0.3);
+}
+
+.fee-dashboard .refresh-button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.fee-dashboard .refresh-icon {
+  font-size: 0.8rem;
+}
+
+.fee-dashboard .chart-container {
+  margin-bottom: 2rem;
+  padding: 1rem;
+  position: relative;
+}
+
+.fee-dashboard .line-chart {
+  width: 100%;
+  height: 300px;
+  position: relative;
+  background: rgba(15, 23, 42, 0.3);
+  border-radius: 12px;
+  padding: 1rem;
+  border: 1px solid rgba(59, 130, 246, 0.1);
+}
+
+.fee-dashboard .chart-svg {
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+
+.fee-dashboard .chart-line {
+  transition: all 0.3s ease;
+  filter: drop-shadow(0 2px 4px rgba(59, 130, 246, 0.3));
+}
+
+.fee-dashboard .data-point {
+  transition: all 0.3s ease;
+  cursor: pointer;
+}
+
+.fee-dashboard .data-point:hover {
+  r: 8;
+  fill: #f59e0b;
+  stroke: #d97706;
+  filter: drop-shadow(0 4px 8px rgba(245, 158, 11, 0.4));
+}
+
+.fee-dashboard .value-label {
+  transition: all 0.3s ease;
+  opacity: 0.8;
+}
+
+.fee-dashboard .data-point:hover + .value-label {
+  opacity: 1;
+  fill: #f59e0b;
+  font-weight: bold;
+}
+
+.fee-dashboard .date-label {
+  transition: all 0.3s ease;
+}
+
+.fee-dashboard .summary-section {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1.5rem;
+  padding: 1.5rem;
+  background: rgba(15, 23, 42, 0.5);
+  border-radius: 12px;
+  border: 1px solid rgba(59, 130, 246, 0.1);
+}
+
+.fee-dashboard .summary-item {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.fee-dashboard .summary-label {
+  color: #94a3b8;
+  font-size: 0.9rem;
+  font-weight: 500;
+}
+
+.fee-dashboard .summary-value {
+  font-size: 1.5rem;
+  font-weight: bold;
+}
+
+.fee-dashboard .summary-value.current {
+  color: #3b82f6;
+}
+
+.fee-dashboard .summary-value.peak {
+  color: #f59e0b;
+}
+
+.fee-dashboard .summary-value.growth {
+  color: #10b981;
+}
+
+/* Responsive design for fee dashboard */
+@media (max-width: 768px) {
+  .fee-dashboard {
+    padding: 1rem;
+  }
+  
+  .fee-dashboard .dashboard-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  
+  .fee-dashboard .controls {
+    width: 100%;
+    justify-content: space-between;
+  }
+  
+  .fee-dashboard .line-chart {
+    height: 200px;
+  }
+  
+  .fee-dashboard .value-label {
+    font-size: 10px;
+  }
+  
+  .fee-dashboard .date-label {
+    font-size: 9px;
+  }
+  
+  .fee-dashboard .summary-section {
+    grid-template-columns: 1fr;
+  }
+}
