@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { useTranslation } from 'react-i18next';
 import { useSearchParams } from 'next/navigation';
+import { lazy, Suspense } from 'react';
 import Header from './header';
 import Footer from './footer';
 import BackgroundImage from './BackgroundImage';
