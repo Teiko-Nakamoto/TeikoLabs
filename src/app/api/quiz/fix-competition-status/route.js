@@ -17,7 +17,15 @@ export async function POST() {
       throw endGoalError;
     }
 
-    const endGoalThreshold = parseInt(endGoalSetting?.setting_value || '210000');
+    const endGoalThreshold = parseInt(endGoalSetting?.setting_value);
+    
+    if (!endGoalSetting || !endGoalThreshold) {
+      console.error('❌ No end goal threshold found in database');
+      return NextResponse.json({
+        success: false,
+        error: 'No end goal threshold configured in database'
+      }, { status: 400 });
+    }
 
     // Get all user points
     const { data: allUsers, error: allUsersError } = await supabaseServer

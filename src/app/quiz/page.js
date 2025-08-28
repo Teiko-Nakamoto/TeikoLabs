@@ -33,7 +33,7 @@ export default function QuizPage() {
   const loadQuizzes = async () => {
     try {
       setLoading(true);
-      const response = await fetch('/api/quizzes/list');
+      const response = await fetch('/api/quiz/available');
       const data = await response.json();
       
       if (data.success) {

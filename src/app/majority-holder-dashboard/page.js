@@ -94,9 +94,11 @@ export default function MajorityHolderDashboard() {
   const [showQuestionForm, setShowQuestionForm] = useState(false);
   
   // End goal configuration state
-  const [endGoalPoints, setEndGoalPoints] = useState(21000000);
+  const [endGoalPoints, setEndGoalPoints] = useState(0);
   const [showEndGoalForm, setShowEndGoalForm] = useState(false);
   const [endGoalLoading, setEndGoalLoading] = useState(false);
+  const [updatingCompetitionStatus, setUpdatingCompetitionStatus] = useState(false);
+  const [updatingVisibility, setUpdatingVisibility] = useState({});
 
   // Admin wallet addresses (comma-separated)
   const ADMIN_ADDRESSES = process.env.NEXT_PUBLIC_ADMIN_ADDRESSES?.split(',') || [
@@ -353,6 +355,13 @@ export default function MajorityHolderDashboard() {
     }
   }, [activeTab]);
 
+  // Load visible quizzes when quiz tab is active
+  useEffect(() => {
+    if (activeTab === 'quiz') {
+      loadVisibleQuizzes();
+    }
+  }, [activeTab]);
+
   // Load leaderboard once on component mount and when address changes
   useEffect(() => {
     if (connectedAddress) {
@@ -405,6 +414,22 @@ export default function MajorityHolderDashboard() {
       }
     } catch (error) {
       console.error('Error loading quizzes:', error);
+    }
+  };
+
+  // Load only visible quizzes for quiz selection
+  const loadVisibleQuizzes = async () => {
+    try {
+      const response = await fetch('/api/quiz/available');
+      const data = await response.json();
+      
+      if (data.success) {
+        setQuizzes(data.quizzes);
+      } else {
+        console.error('Failed to load visible quizzes:', data.error);
+      }
+    } catch (error) {
+      console.error('Error loading visible quizzes:', error);
     }
   };
 
@@ -692,12 +717,16 @@ export default function MajorityHolderDashboard() {
   };
 
   const goToQuizSelection = () => {
+    // Return to quiz selection page
     setGameState('loading');
     setCurrentQuestion(0);
     setScore(0);
     setTimeLeft(10);
     setSelectedQuiz(null);
     setQuizQuestions([]);
+    
+    // Load only visible quizzes for selection
+    loadVisibleQuizzes();
     
     // Refresh user's quiz points
     if (connectedAddress) {
@@ -1008,6 +1037,77 @@ export default function MajorityHolderDashboard() {
     }
   };
 
+  const toggleCompetitionStatus = async () => {
+    const newStatus = competitionStatus === 'active' ? 'ended' : 'active';
+    const confirmMessage = newStatus === 'ended' 
+      ? 'Are you sure you want to end the quiz competition? Users will not be able to play quizzes.'
+      : 'Are you sure you want to activate the quiz competition? Users will be able to play quizzes again.';
+    
+    if (!confirm(confirmMessage)) {
+      return;
+    }
+    
+    try {
+      setUpdatingCompetitionStatus(true);
+      
+      const response = await fetch('/api/quiz/toggle-competition-status', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: newStatus })
+      });
+      
+      const data = await response.json();
+      
+      if (data.success) {
+        setCompetitionStatus(newStatus);
+        alert(`Quiz competition ${newStatus === 'active' ? 'activated' : 'ended'} successfully!`);
+      } else {
+        alert('Error updating competition status: ' + data.error);
+      }
+    } catch (error) {
+      console.error('Error toggling competition status:', error);
+      alert('Failed to update competition status');
+    } finally {
+      setUpdatingCompetitionStatus(false);
+    }
+  };
+
+  const toggleQuizVisibility = async (quizId, currentVisibility) => {
+    try {
+      setUpdatingVisibility(prev => ({ ...prev, [quizId]: true }));
+      
+      const response = await fetch('/api/quizzes/toggle-visibility', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          quizId: quizId,
+          isVisible: !currentVisibility
+        })
+      });
+      
+      const data = await response.json();
+      
+      if (data.success) {
+        // Update the quiz in the local state
+        setQuizzes(prevQuizzes => 
+          prevQuizzes.map(quiz => 
+            quiz.id === quizId 
+              ? { ...quiz, is_visible: !currentVisibility }
+              : quiz
+          )
+        );
+        alert(`Quiz ${!currentVisibility ? 'shown' : 'hidden'} successfully!`);
+      } else {
+        alert('Error updating quiz visibility: ' + data.error);
+      }
+    } catch (error) {
+      console.error('Error toggling quiz visibility:', error);
+      alert('Failed to update quiz visibility');
+    } finally {
+      setUpdatingVisibility(prev => ({ ...prev, [quizId]: false }));
+    }
+  };
+
   const checkSettings = async () => {
     try {
       console.log('🔍 Checking quiz settings...');
@@ -1214,37 +1314,51 @@ export default function MajorityHolderDashboard() {
         document.body.appendChild(overlay);
         document.body.appendChild(popup);
         
-        // Copy functionality
         copyButton.onclick = () => {
-          navigator.clipboard.writeText(message).then(() => {
-            copyButton.textContent = '✅ Copied!';
-            setTimeout(() => {
-              copyButton.textContent = '📋 Copy to Clipboard';
-            }, 2000);
-          }).catch(err => {
-            console.error('Failed to copy:', err);
-            copyButton.textContent = '❌ Copy Failed';
-            setTimeout(() => {
-              copyButton.textContent = '📋 Copy to Clipboard';
-            }, 2000);
-          });
+          navigator.clipboard.writeText(message);
+          copyButton.textContent = '✅ Copied!';
+          setTimeout(() => {
+            copyButton.textContent = '📋 Copy to Clipboard';
+          }, 2000);
         };
         
-        // Close functionality
-        const closePopup = () => {
+        closeButton.onclick = () => {
           document.body.removeChild(overlay);
           document.body.removeChild(popup);
         };
         
-        closeButton.onclick = closePopup;
-        overlay.onclick = closePopup;
-        
+        overlay.onclick = () => {
+          document.body.removeChild(overlay);
+          document.body.removeChild(popup);
+        };
       } else {
         alert('Error debugging database: ' + data.error);
       }
     } catch (error) {
       console.error('Error debugging database:', error);
       alert('Error debugging database');
+    }
+  };
+
+  const cleanupSettings = async () => {
+    try {
+      console.log('🧹 Cleaning up redundant settings...');
+      const response = await fetch('/api/quiz/cleanup-settings', {
+        method: 'POST'
+      });
+      const data = await response.json();
+      
+      console.log('📊 Cleanup response:', data);
+      
+      if (data.success) {
+        console.log('✅ Settings cleanup successful!');
+        alert(`Settings Cleanup Results:\n\n${data.message}\n\nRemaining settings:\n${JSON.stringify(data.remainingSettings, null, 2)}`);
+      } else {
+        alert('Error cleaning up settings: ' + data.error);
+      }
+    } catch (error) {
+      console.error('Error cleaning up settings:', error);
+      alert('Error cleaning up settings');
     }
   };
 
@@ -2121,10 +2235,10 @@ export default function MajorityHolderDashboard() {
               ) : gameState === 'failed' ? (
                 <div className="quiz-result failed">
                   <h3>❌ Quiz Failed</h3>
-                  <p>You missed the last question. Try again!</p>
+                  <p>You missed the last question. Return to quiz selection to try another quiz!</p>
                   <div className="result-actions">
-                    <button onClick={goToQuizSelection} className="try-again-button">
-                      Try Again
+                    <button onClick={goToQuizSelection} className="return-to-quiz-button">
+                      Return to Quiz Page
                     </button>
                     <button onClick={() => setActiveTab('leaderboard')} className="view-leaderboard-button">
                       View Leaderboard
@@ -2136,8 +2250,8 @@ export default function MajorityHolderDashboard() {
                   <h3>🎉 Perfect Score!</h3>
                   <p>Congratulations! You got 100% correct and earned {sbtcFeePool.toLocaleString()} sats in revenue!</p>
                   <div className="result-actions">
-                    <button onClick={resetQuiz} className="play-again-button">
-                      Play Again
+                    <button onClick={goToQuizSelection} className="return-to-quiz-button">
+                      Return to Quiz Page
                     </button>
                     <button onClick={() => setActiveTab('leaderboard')} className="view-leaderboard-button">
                       View Leaderboard
@@ -2149,8 +2263,8 @@ export default function MajorityHolderDashboard() {
                   <h3>✅ Quiz Completed!</h3>
                   <p>Good job! You earned {sbtcFeePool.toLocaleString()} sats in revenue!</p>
                   <div className="result-actions">
-                    <button onClick={goToQuizSelection} className="try-again-button">
-                      Try Again
+                    <button onClick={goToQuizSelection} className="return-to-quiz-button">
+                      Return to Quiz Page
                     </button>
                     <button onClick={() => setActiveTab('leaderboard')} className="view-leaderboard-button">
                       View Leaderboard
@@ -2344,6 +2458,48 @@ export default function MajorityHolderDashboard() {
                     </button>
                     
                     <button 
+                      onClick={toggleCompetitionStatus}
+                      disabled={updatingCompetitionStatus}
+                      className="toggle-competition-button"
+                      style={{
+                        background: competitionStatus === 'active' 
+                          ? 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)' 
+                          : 'linear-gradient(135deg, #28a745 0%, #20c997 100%)',
+                        color: 'white',
+                        border: 'none',
+                        padding: '0.75rem 1.5rem',
+                        borderRadius: '8px',
+                        cursor: updatingCompetitionStatus ? 'not-allowed' : 'pointer',
+                        fontWeight: '600',
+                        marginLeft: '1rem',
+                        opacity: updatingCompetitionStatus ? 0.6 : 1
+                      }}
+                    >
+                      {updatingCompetitionStatus ? '⏳' : (competitionStatus === 'active' ? '⏹️ End Competition' : '▶️ Activate Competition')}
+                    </button>
+                    
+                    <button 
+                      onClick={() => {
+                        if (confirm('Are you sure you want to reactivate the leaderboard? This will reset the competition status to active.')) {
+                          toggleCompetitionStatus();
+                        }
+                      }}
+                      className="reactivate-leaderboard-button"
+                      style={{
+                        background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                        color: 'white',
+                        border: 'none',
+                        padding: '0.75rem 1.5rem',
+                        borderRadius: '8px',
+                        cursor: 'pointer',
+                        fontWeight: '600',
+                        marginLeft: '1rem'
+                      }}
+                    >
+                      🏆 Reactivate Leaderboard
+                    </button>
+                    
+                    <button 
                       onClick={() => setShowEndGoalForm(true)} 
                       className="end-goal-button"
                     >
@@ -2405,6 +2561,23 @@ export default function MajorityHolderDashboard() {
                     >
                       🔍 Debug DB
                     </button>
+                    
+                    <button 
+                      onClick={cleanupSettings} 
+                      className="cleanup-settings-button"
+                      style={{
+                        background: 'linear-gradient(135deg, #ff6b6b 0%, #ee5a52 100%)',
+                        color: 'white',
+                        border: 'none',
+                        padding: '0.75rem 1.5rem',
+                        borderRadius: '8px',
+                        cursor: 'pointer',
+                        fontWeight: '600',
+                        marginLeft: '1rem'
+                      }}
+                    >
+                      🧹 Cleanup Settings
+                    </button>
                   </div>
 
                   {/* End Goal Configuration */}
@@ -2439,7 +2612,7 @@ export default function MajorityHolderDashboard() {
                               value={endGoalPoints}
                               onChange={(e) => setEndGoalPoints(parseInt(e.target.value))}
                               required
-                              min="210000"
+                              min="1000"
                               max="100000000"
                               placeholder="Enter end goal points"
                             />
@@ -2624,9 +2797,14 @@ export default function MajorityHolderDashboard() {
                           <div key={quiz.id} className="quiz-card">
                             <div className="quiz-header">
                               <h4>{quiz.title}</h4>
-                              <span className={`status ${quiz.is_active ? 'active' : 'inactive'}`}>
-                                {quiz.is_active ? 'Active' : 'Inactive'}
-                              </span>
+                              <div className="quiz-status-badges">
+                                <span className={`status ${quiz.is_active ? 'active' : 'inactive'}`}>
+                                  {quiz.is_active ? 'Active' : 'Inactive'}
+                                </span>
+                                <span className={`visibility-status ${quiz.is_visible ? 'visible' : 'hidden'}`}>
+                                  {quiz.is_visible ? '👁️ Visible' : '🙈 Hidden'}
+                                </span>
+                              </div>
                             </div>
                             
                             {quiz.description && (
@@ -2645,6 +2823,29 @@ export default function MajorityHolderDashboard() {
                                 className="manage-button"
                               >
                                 Manage Questions
+                              </button>
+                              <button 
+                                onClick={() => toggleQuizVisibility(quiz.id, quiz.is_visible)}
+                                disabled={updatingVisibility[quiz.id]}
+                                className={`visibility-toggle ${quiz.is_visible ? 'hide' : 'show'}`}
+                                title={quiz.is_visible ? 'Hide from users' : 'Show to users'}
+                                style={{
+                                  background: quiz.is_visible 
+                                    ? 'linear-gradient(135deg, #dc3545, #c82333)' 
+                                    : 'linear-gradient(135deg, #28a745, #20c997)',
+                                  color: 'white',
+                                  border: 'none',
+                                  padding: '8px 16px',
+                                  borderRadius: '8px',
+                                  fontSize: '0.85rem',
+                                  fontWeight: '600',
+                                  cursor: updatingVisibility[quiz.id] ? 'not-allowed' : 'pointer',
+                                  marginTop: '8px',
+                                  width: '100%',
+                                  opacity: updatingVisibility[quiz.id] ? 0.6 : 1
+                                }}
+                              >
+                                {updatingVisibility[quiz.id] ? '⏳' : (quiz.is_visible ? '🙈 Hide' : '👁️ Show')}
                               </button>
                             </div>
                           </div>

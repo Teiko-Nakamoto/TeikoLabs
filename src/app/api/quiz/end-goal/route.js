@@ -17,7 +17,15 @@ export async function GET() {
       throw error;
     }
 
-    const endGoal = parseInt(endGoalSetting?.setting_value || '21000000');
+    const endGoal = parseInt(endGoalSetting?.setting_value);
+    
+    if (!endGoalSetting || !endGoal) {
+      console.error('❌ No end goal threshold found in database');
+      return NextResponse.json({
+        success: false,
+        error: 'No end goal threshold configured in database'
+      }, { status: 400 });
+    }
     
     console.log('✅ API: Successfully fetched end goal:', endGoal);
     
@@ -40,9 +48,9 @@ export async function POST(request) {
     const { endGoal } = await request.json();
     
     // Validate required fields
-    if (!endGoal || endGoal < 210000 || endGoal > 100000000) {
+    if (!endGoal || endGoal < 1000 || endGoal > 100000000) {
       return NextResponse.json({ 
-        error: 'Invalid end goal. Must be between 210,000 and 100,000,000 points.' 
+                  error: 'Invalid end goal. Must be between 1,000 and 100,000,000 points.' 
       }, { status: 400 });
     }
     

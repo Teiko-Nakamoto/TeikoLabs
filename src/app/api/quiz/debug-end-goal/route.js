@@ -30,11 +30,12 @@ export async function GET() {
       
       // Try to create the setting if it doesn't exist
       console.log('🔄 Attempting to create missing end goal setting...');
+      const defaultEndGoal = 1000000; // Default to 1M points
       const { data: insertData, error: insertError } = await supabaseServer
         .from('quiz_settings')
         .insert({
           setting_key: 'competition_end_threshold',
-          setting_value: '21000000'
+          setting_value: defaultEndGoal.toString()
         })
         .select()
         .single();
@@ -48,14 +49,22 @@ export async function GET() {
       
       return NextResponse.json({
         success: true,
-        endGoal: 21000000,
+        endGoal: defaultEndGoal,
         message: 'Created missing end goal setting',
         allSettings: allSettings,
         created: true
       });
     }
 
-    const endGoal = parseInt(endGoalSetting?.setting_value || '21000000');
+    const endGoal = parseInt(endGoalSetting?.setting_value);
+    
+    if (!endGoalSetting || !endGoal) {
+      console.error('❌ No end goal threshold found in database');
+      return NextResponse.json({
+        success: false,
+        error: 'No end goal threshold configured in database'
+      }, { status: 400 });
+    }
     
     console.log('✅ Current end goal:', endGoal);
     

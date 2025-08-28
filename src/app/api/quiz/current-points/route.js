@@ -17,7 +17,15 @@ export async function GET() {
       throw endGoalError;
     }
 
-    const endGoalThreshold = parseInt(endGoalSetting?.setting_value || '220000');
+    const endGoalThreshold = parseInt(endGoalSetting?.setting_value);
+    
+    if (!endGoalSetting || !endGoalThreshold) {
+      console.error('❌ No end goal threshold found in database');
+      return NextResponse.json({
+        success: false,
+        error: 'No end goal threshold configured in database'
+      }, { status: 400 });
+    }
 
     // Get all user points
     const { data: allUsers, error: allUsersError } = await supabaseServer
@@ -33,11 +41,23 @@ export async function GET() {
     const highestPoints = allUsers.length > 0 ? allUsers[0].total_points : 0;
     const topUser = allUsers.length > 0 ? allUsers[0] : null;
 
+    // Check the actual competition status from database
+    const { data: statusData, error: statusError } = await supabaseServer
+      .from('quiz_competition_status')
+      .select('status')
+      .single();
+
+    const competitionStatus = statusData?.status || 'active';
+    // Only check end goal threshold if competition status is 'active' and not manually overridden
+    const isCompetitionEnded = competitionStatus === 'ended';
+
     console.log('📊 Current points:', {
       endGoalThreshold,
       highestPoints,
       topUser: topUser?.wallet_address,
-      totalUsers: allUsers.length
+      totalUsers: allUsers.length,
+      competitionStatus,
+      isCompetitionEnded
     });
 
     return NextResponse.json({
@@ -46,7 +66,8 @@ export async function GET() {
       endGoalThreshold,
       topUser: topUser?.wallet_address,
       totalUsers: allUsers.length,
-      isCompetitionEnded: highestPoints >= endGoalThreshold
+      competitionStatus,
+      isCompetitionEnded
     });
     
   } catch (error) {

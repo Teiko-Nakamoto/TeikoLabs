@@ -17,7 +17,15 @@ export async function POST() {
       throw endGoalError;
     }
 
-    const endGoalThreshold = parseInt(endGoalSetting?.setting_value || '210000');
+    const endGoalThreshold = parseInt(endGoalSetting?.setting_value);
+    
+    if (!endGoalSetting || !endGoalThreshold) {
+      console.error('❌ No end goal threshold found in database');
+      return NextResponse.json({
+        success: false,
+        error: 'No end goal threshold configured in database'
+      }, { status: 400 });
+    }
 
     // Get all user points
     const { data: allUsers, error: allUsersError } = await supabaseServer
@@ -66,14 +74,15 @@ export async function POST() {
       message = `Competition active - highest points (${highestPoints.toLocaleString()}) < threshold (${endGoalThreshold.toLocaleString()})`;
     }
 
-    // Update competition status if it needs to change
-    if (currentCompetitionStatus !== newStatus) {
-      console.log(`🔄 Updating competition status from ${currentCompetitionStatus} to ${newStatus}`);
+    // Only auto-update if the current status is 'active' and we need to pause
+    // Don't override manual 'ended' status
+    if (currentCompetitionStatus === 'active' && shouldEndCompetition) {
+      console.log(`🔄 Auto-pausing competition - highest points (${highestPoints.toLocaleString()}) >= threshold (${endGoalThreshold.toLocaleString()})`);
       
       const { error: updateError } = await supabaseServer
         .from('quiz_competition_status')
         .upsert({ 
-          status: newStatus,
+          status: 'paused',
           updated_at: new Date().toISOString()
         });
       
@@ -85,7 +94,7 @@ export async function POST() {
       // Also update the competition_active setting
       const { error: settingError } = await supabaseServer
         .from('quiz_settings')
-        .update({ setting_value: newStatus === 'active' ? 'true' : 'false' })
+        .update({ setting_value: 'false' })
         .eq('setting_key', 'competition_active');
       
       if (settingError) {
@@ -93,9 +102,40 @@ export async function POST() {
         throw settingError;
       }
 
-      console.log(`✅ Competition status updated to: ${newStatus}`);
+      console.log(`✅ Competition auto-paused`);
+      newStatus = 'paused';
+    } else if (currentCompetitionStatus === 'paused' && !shouldEndCompetition) {
+      // Auto-resume if points are below threshold
+      console.log(`🔄 Auto-resuming competition - highest points (${highestPoints.toLocaleString()}) < threshold (${endGoalThreshold.toLocaleString()})`);
+      
+      const { error: updateError } = await supabaseServer
+        .from('quiz_competition_status')
+        .upsert({ 
+          status: 'active',
+          updated_at: new Date().toISOString()
+        });
+      
+      if (updateError) {
+        console.error('❌ Error updating competition status:', updateError);
+        throw updateError;
+      }
+      
+      // Also update the competition_active setting
+      const { error: settingError } = await supabaseServer
+        .from('quiz_settings')
+        .update({ setting_value: 'true' })
+        .eq('setting_key', 'competition_active');
+      
+      if (settingError) {
+        console.error('❌ Error updating competition setting:', settingError);
+        throw settingError;
+      }
+
+      console.log(`✅ Competition auto-resumed`);
+      newStatus = 'active';
     } else {
-      console.log(`✅ Competition status already correct: ${newStatus}`);
+      console.log(`✅ Competition status unchanged: ${currentCompetitionStatus}`);
+      newStatus = currentCompetitionStatus;
     }
 
     return NextResponse.json({

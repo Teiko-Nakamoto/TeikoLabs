@@ -24,20 +24,25 @@ export async function GET() {
       throw error;
     }
 
-    // Get competition status and end goal
+    // Get competition status from quiz_competition_status table and end goal from settings
+    const { data: competitionStatusData, error: statusError } = await supabaseServer
+      .from('quiz_competition_status')
+      .select('status')
+      .single();
+
     const { data: settings, error: settingsError } = await supabaseServer
       .from('quiz_settings')
       .select('setting_key, setting_value')
-      .in('setting_key', ['competition_active', 'competition_end_threshold']);
+      .eq('setting_key', 'competition_end_threshold');
 
     if (settingsError) {
       console.error('❌ Error checking competition settings:', settingsError);
       throw settingsError;
     }
 
-    const competitionStatus = settings.find(s => s.setting_key === 'competition_active');
-    const endGoalSetting = settings.find(s => s.setting_key === 'competition_end_threshold');
-    const endGoal = parseInt(endGoalSetting?.setting_value || '21000000');
+    const competitionStatus = competitionStatusData?.status || 'active';
+    const endGoalSetting = settings[0];
+    const endGoal = parseInt(endGoalSetting?.setting_value || '1000000');
 
     // Get total points earned globally
     const { data: totalPoints, error: totalError } = await supabaseServer
@@ -67,7 +72,7 @@ export async function GET() {
     return NextResponse.json({
       success: true,
       leaderboard: formattedLeaderboard,
-      competitionActive: competitionStatus?.setting_value === 'true',
+      competitionActive: competitionStatus === 'active',
       totalPointsEarned: globalTotal,
       totalParticipants: leaderboard.length,
       endGoal: endGoal

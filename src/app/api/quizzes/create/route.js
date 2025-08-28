@@ -17,7 +17,8 @@ export async function POST(request) {
       .insert({
         title,
         max_questions: maxQuestions,
-        points_per_correct_answer: Math.round(21 / maxQuestions) // Fixed 21 points total for quiz completion
+        points_per_correct_answer: Math.round(21 / maxQuestions), // Fixed 21 points total for quiz completion
+        is_visible: true // Default to visible for new quizzes
       })
       .select()
       .single();

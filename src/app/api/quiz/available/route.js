@@ -3,7 +3,7 @@ import { supabaseServer } from '../../../utils/supabaseServer';
 
 export async function GET() {
   try {
-    console.log('📝 API: Fetching quizzes list');
+    console.log('📝 API: Fetching available quizzes for users');
     
     const { data, error } = await supabaseServer
       .from('quizzes')
@@ -12,13 +12,14 @@ export async function GET() {
         title,
         description,
         is_active,
-        is_visible,
         max_questions,
         time_per_question,
         points_per_correct_answer,
         created_at,
         updated_at
       `)
+      .eq('is_active', true)
+      .eq('is_visible', true)
       .order('created_at', { ascending: false });
 
     // Get actual question count for each quiz
@@ -38,17 +39,17 @@ export async function GET() {
     }
 
     if (error) {
-      console.error('❌ Database error fetching quizzes:', error);
+      console.error('❌ Database error fetching available quizzes:', error);
       throw error;
     }
 
-    console.log('✅ API: Successfully fetched quizzes:', data?.length || 0);
+    console.log('✅ API: Successfully fetched available quizzes:', data?.length || 0);
     return NextResponse.json({ success: true, quizzes: data || [] });
     
   } catch (error) {
-    console.error('❌ API: Error fetching quizzes:', error);
+    console.error('❌ API: Error fetching available quizzes:', error);
     return NextResponse.json({ 
-      error: 'Failed to fetch quizzes', 
+      error: 'Failed to fetch available quizzes', 
       message: error.message 
     }, { status: 500 });
   }

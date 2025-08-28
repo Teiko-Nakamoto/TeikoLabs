@@ -25,21 +25,35 @@ export async function POST(request) {
       correctAnswers
     });
 
-    // Get competition status and end goal threshold
+    // Get competition status from quiz_competition_status table and end goal from settings
+    const { data: competitionStatusData, error: statusError } = await supabaseServer
+      .from('quiz_competition_status')
+      .select('status')
+      .single();
+
     const { data: settings, error: settingsError } = await supabaseServer
       .from('quiz_settings')
       .select('setting_key, setting_value')
-      .in('setting_key', ['competition_active', 'competition_end_threshold']);
+      .eq('setting_key', 'competition_end_threshold');
 
     if (settingsError) {
       console.error('❌ Error checking competition settings:', settingsError);
       throw settingsError;
     }
 
-    const competitionActive = settings.find(s => s.setting_key === 'competition_active')?.setting_value;
-    const endGoalThreshold = parseInt(settings.find(s => s.setting_key === 'competition_end_threshold')?.setting_value || '210000');
+    const competitionStatus = competitionStatusData?.status || 'active';
+    const endGoalSetting = settings[0];
+    const endGoalThreshold = parseInt(endGoalSetting?.setting_value);
+    
+    if (!endGoalSetting || !endGoalThreshold) {
+      console.error('❌ No end goal threshold found in database');
+      return NextResponse.json({
+        success: false,
+        error: 'No end goal threshold configured in database'
+      }, { status: 400 });
+    }
 
-    if (competitionActive === 'false') {
+    if (competitionStatus === 'ended' || competitionStatus === 'paused') {
       return NextResponse.json({ 
         error: 'Competition has ended. No more quiz attempts allowed.' 
       }, { status: 403 });

@@ -14,7 +14,7 @@ export default function LeaderboardPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [connectedAddress, setConnectedAddress] = useState('');
-  const [endGoalPoints, setEndGoalPoints] = useState(21000000);
+  const [endGoalPoints, setEndGoalPoints] = useState(0);
   const router = useRouter();
 
   useEffect(() => {
@@ -149,7 +149,7 @@ export default function LeaderboardPage() {
           </div>
           <div className="stat-card">
             <div className="stat-value">
-                              {Math.round((totalPointsEarned / (endGoalPoints || 21000000)) * 100)}%
+                              {Math.round((totalPointsEarned / (endGoalPoints || 1)) * 100)}%
             </div>
             <div className="stat-label">Progress</div>
           </div>
