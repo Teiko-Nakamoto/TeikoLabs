@@ -1,8 +1,8 @@
 /* Quiz Page Styles */
 .quiz-page {
   min-height: 100vh;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  color: #333;
+  background: #f0f2f5;
+  color: #111;
 }
 
 .quiz-main {
@@ -248,8 +248,8 @@
 /* Quiz Game Page Styles */
 .quiz-game-page {
   min-height: 100vh;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  color: #333;
+  background: #f0f2f5;
+  color: #111;
 }
 
 .quiz-game-main {
