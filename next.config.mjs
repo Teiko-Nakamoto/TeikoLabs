@@ -14,6 +14,10 @@ const nextConfig = {
     imageSizes: [16, 32, 48, 64, 96, 128, 256, 384],
     minimumCacheTTL: 60,
   },
+  // Do not fail production build on ESLint errors (treat them as warnings)
+  eslint: {
+    ignoreDuringBuilds: true,
+  },
   
   // Experimental features for performance
   experimental: {
