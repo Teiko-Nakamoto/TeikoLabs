@@ -321,11 +321,16 @@
   box-shadow: 0 4px 15px rgba(0,0,0,0.1);
 }
 
+/* Ensure text contrasts well even if parent gradient overlays */
+.quiz-game-page, .quiz-game-main, .question, .answers {
+  color: #111;
+}
+
 .question h2 {
   margin: 0 0 2rem 0;
-  color: #333;
-  font-size: 1.5rem;
-  line-height: 1.4;
+  color: #111 !important;
+  font-size: 1.7rem;
+  line-height: 1.5;
 }
 
 .answers {
@@ -342,6 +347,7 @@
   cursor: pointer;
   transition: all 0.3s ease;
   text-align: left;
+  color: #111 !important;
 }
 
 .answer-button:hover:not(:disabled) {
