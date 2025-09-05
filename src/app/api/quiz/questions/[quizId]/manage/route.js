@@ -65,8 +65,7 @@ export async function GET(request, { params }) {
         title: quiz.title,
         description: quiz.description,
         maxQuestions: quiz.max_questions,
-        timePerQuestion: quiz.time_per_question,
-        pointsPerCorrectAnswer: quiz.points_per_correct_answer
+        timePerQuestion: quiz.time_per_question
       },
       questions: formattedQuestions
     });

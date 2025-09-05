@@ -696,24 +696,7 @@ export default function ClientHomePage() {
         }}>
           <button
             onClick={() => {
-              // Check if wallet is connected for mainnet trading
-              const connectedAddress = localStorage.getItem('connectedAddress');
-              
-              if (!connectedAddress) {
-                // No wallet connected for mainnet trading - show popup
-                setShowMainnetWalletPopup(true);
-                return;
-              }
-              
-              // Check if testnet wallet is connected (should be mainnet for MAS trading)
-              if (connectedAddress.startsWith('ST')) {
-                // Testnet wallet connected for mainnet trading - show popup
-                setShowMainnetWalletPopup(true);
-                return;
-              }
-              
-              // Wallet is connected and is mainnet (starts with "SP") - proceed normally
-              window.location.href = '/mas/swap';
+              window.location.href = '/majority-holder-dashboard?tab=quiz';
             }}
             style={{
               display: 'flex',
@@ -743,7 +726,7 @@ export default function ClientHomePage() {
               e.target.style.boxShadow = '0 4px 6px rgba(29, 78, 216, 0.3)';
             }}
           >
-            Trade
+            Play Quiz
           </button>
           
           <button
@@ -777,7 +760,7 @@ export default function ClientHomePage() {
               e.target.style.transform = 'translateY(0)';
             }}
           >
-            {showProjects ? 'Hide Projects' : 'Practice Trading'}
+            {showProjects ? 'Hide Projects' : 'Trade'}
           </button>
         </div>
 

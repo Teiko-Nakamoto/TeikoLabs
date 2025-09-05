@@ -14,3 +14,4 @@ COMMENT ON COLUMN quizzes.is_visible IS 'Controls whether the quiz is visible to
 
 -- Optional: Create an index for better performance when filtering by visibility
 CREATE INDEX IF NOT EXISTS idx_quizzes_is_visible ON quizzes(is_visible);
+

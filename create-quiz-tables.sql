@@ -7,7 +7,6 @@ CREATE TABLE IF NOT EXISTS quizzes (
     title VARCHAR(255) NOT NULL,
     description TEXT,
     max_questions INTEGER DEFAULT 6,
-    points_per_correct_answer DECIMAL(10,2) DEFAULT 3.5,
     is_active BOOLEAN DEFAULT true,
     created_at TIMESTAMP DEFAULT NOW(),
     updated_at TIMESTAMP DEFAULT NOW()
@@ -86,8 +85,7 @@ ON CONFLICT DO NOTHING;
 INSERT INTO quiz_settings (setting_key, setting_value) VALUES
     ('competition_active', 'true'),
     ('total_points_earned', '0'),
-    ('competition_end_threshold', '21000000'),
-    ('quiz_completion_points', '21');
+    ('competition_end_threshold', '21000000');
 
 -- Create indexes for better performance
 CREATE INDEX IF NOT EXISTS idx_quiz_questions_quiz_id ON quiz_questions(quiz_id);

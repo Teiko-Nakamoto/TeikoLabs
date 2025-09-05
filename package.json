@@ -12,6 +12,7 @@
     "build:analyze": "cross-env ANALYZE=true next build"
   },
   "dependencies": {
+    "@google/generative-ai": "^0.21.0",
     "@stacks/connect": "^8.1.9",
     "@stacks/encryption": "^7.2.0",
     "@stacks/network": "^7.0.2",

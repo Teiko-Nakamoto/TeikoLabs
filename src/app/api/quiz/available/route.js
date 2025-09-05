@@ -14,7 +14,6 @@ export async function GET() {
         is_active,
         max_questions,
         time_per_question,
-        points_per_correct_answer,
         created_at,
         updated_at
       `)
@@ -44,7 +43,16 @@ export async function GET() {
     }
 
     console.log('✅ API: Successfully fetched available quizzes:', data?.length || 0);
-    return NextResponse.json({ success: true, quizzes: data || [] });
+    return NextResponse.json(
+      { success: true, quizzes: data || [] },
+      {
+        headers: {
+          'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
+          Pragma: 'no-cache',
+          Expires: '0'
+        }
+      }
+    );
     
   } catch (error) {
     console.error('❌ API: Error fetching available quizzes:', error);
@@ -54,3 +62,4 @@ export async function GET() {
     }, { status: 500 });
   }
 }
+

@@ -15,7 +15,6 @@ export async function GET() {
         is_visible,
         max_questions,
         time_per_question,
-        points_per_correct_answer,
         created_at,
         updated_at
       `)

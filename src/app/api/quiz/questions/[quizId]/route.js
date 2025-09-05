@@ -34,32 +34,22 @@ export async function GET(request, { params }) {
       return NextResponse.json({ error: 'No questions found for this quiz' }, { status: 404 });
     }
 
-    // Randomize and limit questions using proper Fisher-Yates shuffle
-    const shuffledQuestions = [...allQuestions];
-    for (let i = shuffledQuestions.length - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1));
-      [shuffledQuestions[i], shuffledQuestions[j]] = [shuffledQuestions[j], shuffledQuestions[i]];
-    }
+    // Randomize and limit questions
+    const shuffledQuestions = allQuestions.sort(() => Math.random() - 0.5);
     const questions = shuffledQuestions.slice(0, quiz.max_questions);
 
     if (!questions || questions.length === 0) {
       return NextResponse.json({ error: 'No questions found for this quiz' }, { status: 404 });
     }
 
-    // Format questions with shuffled answers using Fisher-Yates shuffle
+    // Format questions with shuffled answers
     const formattedQuestions = questions.map(q => {
       const answers = [
         q.correct_answer,
         q.wrong_answer_1,
         q.wrong_answer_2,
         q.wrong_answer_3
-      ];
-      
-      // Fisher-Yates shuffle for better randomization
-      for (let i = answers.length - 1; i > 0; i--) {
-        const j = Math.floor(Math.random() * (i + 1));
-        [answers[i], answers[j]] = [answers[j], answers[i]];
-      }
+      ].sort(() => Math.random() - 0.5); // Shuffle answers
 
       return {
         id: q.id,
@@ -70,15 +60,6 @@ export async function GET(request, { params }) {
     });
 
     console.log('✅ API: Successfully fetched questions:', formattedQuestions.length);
-    console.log('🎲 Questions randomized:', questions.length, 'out of', allQuestions.length, 'total questions');
-    console.log('🎲 Answer positions randomized for each question');
-    
-    // Log the first few questions to verify randomization
-    console.log('🎲 First 3 questions (randomized):', formattedQuestions.slice(0, 3).map(q => ({
-      id: q.id,
-      question: q.questionText.substring(0, 50) + '...',
-      answers: q.answers
-    })));
     
     return NextResponse.json({
       success: true,
@@ -87,8 +68,7 @@ export async function GET(request, { params }) {
         title: quiz.title,
         description: quiz.description,
         maxQuestions: quiz.max_questions,
-        timePerQuestion: quiz.time_per_question,
-        pointsPerCorrectAnswer: quiz.points_per_correct_answer
+        timePerQuestion: quiz.time_per_question
       },
       questions: formattedQuestions
     });

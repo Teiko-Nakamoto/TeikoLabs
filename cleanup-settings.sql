@@ -12,3 +12,4 @@ SELECT * FROM quiz_settings ORDER BY setting_key;
 
 -- Show the current competition status from the proper table
 SELECT * FROM quiz_competition_status;
+

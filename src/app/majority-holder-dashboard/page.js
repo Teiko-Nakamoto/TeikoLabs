@@ -1,12 +1,14 @@
 'use client';
 
 import { useState, useEffect, useMemo, useCallback } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { useTranslation } from 'react-i18next';
 import Header from '../components/header';
 import Footer from '../components/footer';
 import Link from 'next/link';
 
 import './dashboard.css';
+import '../quiz/quiz.css';
 
 // Memoized loading component
 const LoadingSpinner = () => (
@@ -40,7 +42,11 @@ export default function MajorityHolderDashboard() {
   const { t } = useTranslation();
   const [connectedAddress, setConnectedAddress] = useState('');
   const [copied, setCopied] = useState(false);
-  const [activeTab, setActiveTab] = useState('analytics');
+  const searchParams = useSearchParams();
+  const initialTab = typeof window !== 'undefined' && searchParams?.get('tab')
+    ? searchParams.get('tab')
+    : 'rewards';
+  const [activeTab, setActiveTab] = useState(initialTab);
   const [airdropType, setAirdropType] = useState('');
   const [airdropAmount, setAirdropAmount] = useState('');
   const [showSupportModal, setShowSupportModal] = useState(false);
@@ -50,6 +56,13 @@ export default function MajorityHolderDashboard() {
   const [isCallingFunction, setIsCallingFunction] = useState(false);
   const [globalAmount, setGlobalAmount] = useState('');
   const [bulkAddresses, setBulkAddresses] = useState('');
+  const [aiPanelOpen, setAiPanelOpen] = useState({});
+  const [aiPrompt, setAiPrompt] = useState('');
+  const [aiLoading, setAiLoading] = useState(false);
+  const [aiResult, setAiResult] = useState('');
+  const toggleAiPanel = (quizId, open) => {
+    setAiPanelOpen(prev => ({ ...prev, [quizId]: open }));
+  };
   
   // Quiz state variables
   const [quizzes, setQuizzes] = useState([]);
@@ -632,7 +645,7 @@ export default function MajorityHolderDashboard() {
     const isCorrect = selectedAnswer === currentQ.correctAnswer;
     
     if (isCorrect) {
-      setScore(score + selectedQuiz.pointsPerCorrectAnswer);
+      setScore(score + 1);
       
       if (currentQuestion + 1 < quizQuestions.length) {
         setCurrentQuestion(currentQuestion + 1);
@@ -2179,20 +2192,19 @@ export default function MajorityHolderDashboard() {
               ) : gameState === 'loading' ? (
                 <div className="quiz-selection">
                   <h3>Available Quizzes</h3>
-                  {quizzes.length === 0 ? (
-                    <div className="no-quizzes">
-                      <p>No quizzes available yet. Check back later!</p>
-                    </div>
-                  ) : (
-                    <div className="quizzes-grid">
-                      {quizzes.map((quiz) => (
-                        <div key={quiz.id} className="quiz-card">
-                          <h4>{quiz.title}</h4>
-                          {quiz.description && <p>{quiz.description}</p>}
-                          <div className="quiz-stats">
-                            <span>Time: {quiz.time_per_question}s</span>
-                            <span>Points: {rewardLoading ? 'Updating...' : sbtcFeePool.toLocaleString()}</span>
+                  <div className="quizzes-grid">
+                    {quizzes.map((quiz) => (
+                      <div key={quiz.id} className="quiz-card">
+                        <div className="quiz-card-inner">
+                          <div className="quiz-card-header">
+                            <h4>{quiz.title}</h4>
+                            <div className="quiz-stats">
+                              <span className="stat"><span className="stat-label">Time:</span><span className="stat-value">{quiz.time_per_question}s</span></span>
+                              <span className="stat"><span className="stat-label">Points:</span><span className="stat-value">{rewardLoading ? 'Updating...' : sbtcFeePool.toLocaleString()}</span></span>
+                              <span className="stat"><span className="stat-label">Status:</span><span className="stat-value">Visible</span></span>
+                            </div>
                           </div>
+                          {quiz.description && <p className="quiz-description">{quiz.description}</p>}
                           <button 
                             onClick={() => startQuiz(quiz.id)}
                             className="start-quiz-button"
@@ -2200,11 +2212,9 @@ export default function MajorityHolderDashboard() {
                             Start Quiz
                           </button>
                         </div>
-                      ))}
-                    </div>
-                  )}
-                  
-
+                      </div>
+                    ))}
+                  </div>
                 </div>
               ) : gameState === 'playing' ? (
                 <div className="quiz-game">
@@ -2806,17 +2816,78 @@ export default function MajorityHolderDashboard() {
                                 </span>
                               </div>
                             </div>
-                            
                             {quiz.description && (
                               <p className="quiz-description">{quiz.description}</p>
                             )}
-                            
-                            <div className="quiz-stats">
-                              <span>Questions: {quiz.max_questions}</span>
-                              <span>Time: {quiz.time_per_question}s</span>
-                              <span>Points: {quiz.points_per_correct_answer * quiz.max_questions}</span>
+
+                            {/* Tabs: Details | AI Questions */}
+                            <div className="quiz-tabs">
+                              <button
+                                className={`quiz-tab ${!aiPanelOpen[quiz.id] ? 'active' : ''}`}
+                                onClick={() => toggleAiPanel(quiz.id, false)}
+                              >
+                                Details
+                              </button>
+                              <button
+                                className={`quiz-tab ${aiPanelOpen[quiz.id] ? 'active' : ''}`}
+                                onClick={() => toggleAiPanel(quiz.id, true)}
+                              >
+                                🤖 AI Questions
+                              </button>
                             </div>
-                            
+                            {!aiPanelOpen[quiz.id] && (
+                              <div className="quiz-stats">
+                                <span>Questions: {quiz.max_questions}</span>
+                                <span>Time: {quiz.time_per_question}s</span>
+                                <span>Reward: Dynamic (21% of sBTC fee pool)</span>
+                              </div>
+                            )}
+
+                            {aiPanelOpen[quiz.id] && (
+                              <div className="ai-chat-panel">
+                                <div className="ai-chat-header">AI Question Assistant</div>
+                                {aiResult && (
+                                  <div className="ai-chat-messages"><div className="ai-message">{aiResult}</div></div>
+                                )}
+                                <div className="ai-chat-input">
+                                  <textarea 
+                                    placeholder="Describe the topic or paste content to generate questions..." 
+                                    rows={3}
+                                    value={aiPrompt}
+                                    onChange={(e) => setAiPrompt(e.target.value)}
+                                  ></textarea>
+                                  <div className="ai-chat-actions">
+                                    <button 
+                                      className="generate-questions-button"
+                                      disabled={aiLoading || !aiPrompt.trim()}
+                                      onClick={async () => {
+                                        try {
+                                          setAiLoading(true);
+                                          setAiResult('');
+                                          const res = await fetch('/api/quiz/generate-questions', {
+                                            method: 'POST',
+                                            headers: { 'Content-Type': 'application/json' },
+                                            body: JSON.stringify({ prompt: aiPrompt }),
+                                          });
+                                          const data = await res.json();
+                                          if (data.success) {
+                                            setAiResult(data.text || '');
+                                          } else {
+                                            setAiResult(`Error: ${data.error || 'Unknown error'}`);
+                                          }
+                                        } catch (err) {
+                                          setAiResult(`Error: ${err.message}`);
+                                        } finally {
+                                          setAiLoading(false);
+                                        }
+                                      }}
+                                    >
+                                      {aiLoading ? 'Generating…' : 'Generate Questions'}
+                                    </button>
+                                  </div>
+                                </div>
+                              </div>
+                            )}
                             <div className="quiz-actions">
                               <button 
                                 onClick={() => selectQuiz(quiz)}
