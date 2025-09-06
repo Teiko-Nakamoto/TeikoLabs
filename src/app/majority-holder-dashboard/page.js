@@ -2371,7 +2371,8 @@ export default function MajorityHolderDashboard() {
                 </div>
               </div>
 
-                            <div className="rewards-table">
+              <div className="rewards-table-wrapper">
+                <div className="rewards-table">
                 <div className="table-header">
                   <span>Rank</span>
                   <span>Wallet Address</span>
@@ -2437,6 +2438,7 @@ export default function MajorityHolderDashboard() {
                     );
                   })
                 )}
+                </div>
               </div>
 
               <div className="rewards-footer">

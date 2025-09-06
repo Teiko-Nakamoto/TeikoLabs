@@ -59,7 +59,8 @@ const UnlockProgressBar = React.memo(function UnlockProgressBar({
   tokenInfo,
   tokenBalance = '0',
   holdingsSats = 0,
-  currentPrice = 0
+  currentPrice = 0,
+  remainingSupply = '--'
 }) {
   const [contractThreshold, setContractThreshold] = useState(0);
   const [loadingThreshold, setLoadingThreshold] = useState(true);
@@ -1285,6 +1286,24 @@ const UnlockProgressBar = React.memo(function UnlockProgressBar({
             width: window.innerWidth <= 768 ? '100%' : 'auto'
           }}>
 
+            {/* Remaining Supply label above holdings */}
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '6px',
+              fontSize: window.innerWidth <= 768 ? '13px' : '15px',
+              fontWeight: '700',
+              color: '#fbbf24'
+            }}>
+              <span>Remaining Supply to Buy: {remainingSupply}</span>
+              <img 
+                src="/icons/The Mas Network.svg" 
+                alt="MAS Sats" 
+                style={{ width: window.innerWidth <= 768 ? '14px' : '16px', height: window.innerWidth <= 768 ? '14px' : '16px' }}
+              />
+            </div>
+
             
             {/* Current Token Balance Display */}
             <div style={{
@@ -1299,7 +1318,7 @@ const UnlockProgressBar = React.memo(function UnlockProgressBar({
               flexWrap: window.innerWidth <= 768 ? 'wrap' : 'nowrap',
               textAlign: window.innerWidth <= 768 ? 'center' : 'left'
             }}>
-              <span style={{ whiteSpace: window.innerWidth <= 768 ? 'normal' : 'nowrap' }}>
+              <span style={{ whiteSpace: window.innerWidth <= 768 ? 'normal' : 'nowrap', color: '#fbbf24' }}>
                 {(() => {
                   // Check if this is a mainnet token (SP address) or testnet token (ST address)
                   if (dexInfo) {
@@ -1535,6 +1554,14 @@ const UnlockProgressBar = React.memo(function UnlockProgressBar({
                 marginBottom: '12px'
               }}>
               <div style={{
+                fontSize: window.innerWidth <= 768 ? '13px' : '15px',
+                fontWeight: '700',
+                color: '#ffffff',
+                marginBottom: '6px'
+              }}>
+                Remaining Supply to Buy:
+              </div>
+              <div style={{
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
@@ -1545,7 +1572,7 @@ const UnlockProgressBar = React.memo(function UnlockProgressBar({
                 flexWrap: window.innerWidth <= 768 ? 'wrap' : 'nowrap',
                 textAlign: window.innerWidth <= 768 ? 'center' : 'left'
               }}>
-                <span style={{ whiteSpace: window.innerWidth <= 768 ? 'normal' : 'nowrap' }}>
+                <span style={{ whiteSpace: window.innerWidth <= 768 ? 'normal' : 'nowrap', color: '#fbbf24' }}>
                     {(() => {
                       // Check if this is a mainnet token (SP address) or testnet token (ST address)
                       if (dexInfo) {
@@ -1657,6 +1684,14 @@ const UnlockProgressBar = React.memo(function UnlockProgressBar({
                 gap: '4px',
                 marginBottom: '12px'
               }}>
+              <div style={{
+                fontSize: window.innerWidth <= 768 ? '13px' : '15px',
+                fontWeight: '700',
+                color: '#ffffff',
+                marginBottom: '6px'
+              }}>
+                Remaining Supply to Buy:
+              </div>
               <div style={{
                 display: 'flex',
                 alignItems: 'center',

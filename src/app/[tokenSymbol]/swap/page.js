@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useParams, useRouter } from 'next/navigation';
 import Header from '../../components/header';
+import Footer from '../../components/footer';
 
 import TradeHistory from '../../components/tradehistory';
 import Chart from '../../components/chart';
@@ -11,7 +12,7 @@ import Chart from '../../components/chart';
 import UnlockProgressBar from '../../components/UnlockProgressBar';
 import ProfitLoss from '../../components/ProfitLoss';
 import TokenStats from '../../components/TokenStats';
-import { getTokenStatsData } from '../../utils/fetchTokenData';
+import { getTokenStatsData, parseContractInfo, getTokenDexBalances } from '../../utils/fetchTokenData';
 import { Cl, standardPrincipalCV } from '@stacks/transactions';
 import './token-page.css';
 
@@ -359,7 +360,21 @@ export default function SwapPage() {
       
       setRevenue(statsData.revenue.toLocaleString());
       setLiquidity(statsData.liquidity.toLocaleString());
-      setRemainingSupply(Math.floor(statsData.remainingSupply).toLocaleString());
+      // Also fetch DEX balances (cached) to compute remaining supply from on-chain values
+      try {
+        const contractInfo = parseContractInfo(tokenData);
+        const { tokenBalance } = await getTokenDexBalances({
+          address: contractInfo.address,
+          name: contractInfo.name,
+          network: contractInfo.network
+        });
+        // remaining supply in tokens (already converted in util), minus 210,000 buffer
+        const remaining = Math.max(0, Math.floor(tokenBalance) - 210000);
+        setRemainingSupply(remaining.toLocaleString());
+      } catch (e) {
+        const fallbackRemaining = Math.max(0, Math.floor(statsData.remainingSupply) - 210000);
+        setRemainingSupply(fallbackRemaining.toLocaleString());
+      }
       console.log('🔍 Token stats updated:', statsData);
     } catch (error) {
       console.error('Error fetching token stats:', error);
@@ -790,6 +805,7 @@ export default function SwapPage() {
               tokenInfo={tokenData?.tokenInfo}
               tokenBalance={userTokenBalance || '0'}
               holdingsSats={userSatsBalance || 0}
+              remainingSupply={remainingSupply}
             />
           )}
 
@@ -1042,6 +1058,7 @@ export default function SwapPage() {
         </div>
       )}
       </main>
+      <Footer />
     </>
   );
 }

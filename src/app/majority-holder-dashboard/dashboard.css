@@ -562,6 +562,13 @@
   margin: 0;
 }
 
+/* Scrollable wrapper for rewards table */
+.rewards-table-wrapper {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  width: 100%;
+}
+
 .rewards-table {
   background: rgba(255, 255, 255, 0.05);
   border-radius: 16px;
@@ -591,6 +598,25 @@
   border-bottom: 1px solid rgba(255, 255, 255, 0.1);
   align-items: center;
   transition: background-color 0.3s ease;
+}
+
+/* Mobile stacked layout for rewards table */
+@media (max-width: 768px) {
+  .rewards-table .table-header {
+    display: none;
+  }
+  .rewards-row {
+    grid-template-columns: 1fr 1fr;
+    grid-template-areas: 
+      'rank rank'
+      'address address'
+      'share expected';
+    row-gap: 0.5rem;
+  }
+  .rewards-row .rank { grid-area: rank; }
+  .rewards-row .address { grid-area: address; }
+  .rewards-row .reward-share { grid-area: share; text-align: left; }
+  .rewards-row .expected-reward { grid-area: expected; text-align: right; }
 }
 
 .rewards-row:hover {
