@@ -2,6 +2,7 @@
 
 import { useTranslation } from 'react-i18next';
 import { useState, useEffect } from 'react';
+import './footer.css';
 
 export default function Footer() {
   const { t } = useTranslation();

@@ -118,6 +118,9 @@ export default function LeaderboardPage() {
       <main className="leaderboard-main">
         <div className="leaderboard-header">
           <h1>🏆 Quiz Leaderboard</h1>
+          <p style={{ color: '#ef4444', fontWeight: 700, marginTop: '8px' }}>
+            Rewards will only be given to users who own at least 21,000 MAS SATS.
+          </p>
           
           <div className="competition-status">
             {competitionActive ? (

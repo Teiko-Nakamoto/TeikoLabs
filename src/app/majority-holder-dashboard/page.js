@@ -2355,6 +2355,9 @@ export default function MajorityHolderDashboard() {
               <div className="rewards-header">
                 <h2>💰 Expected Rewards</h2>
                 <p>Current reward: {rewardLoading ? 'Updating...' : `${Math.floor((sbtcFeePool || 0)).toLocaleString()} points`} (1:1 of {rewardLoading ? '...' : `${(sbtcFeePool || 0).toLocaleString()} fee pool`})</p>
+                <p style={{ color: '#9CA3AF', marginTop: '6px' }}>
+                  Rewards will only be given to users who own at least 21,000 MAS SATS.
+                </p>
                 
                 {/* Airdrop Notice */}
                 <div className="airdrop-notice">
