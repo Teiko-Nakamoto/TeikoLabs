@@ -179,37 +179,39 @@ export default function LeaderboardPage() {
               )}
             </div>
           ) : (
-            <div className="leaderboard-table">
-              <div className="table-header">
-                <div className="header-rank">Rank</div>
-                <div className="header-wallet">Wallet Address</div>
-                <div className="header-points">Points</div>
-                <div className="header-perfect">Perfect Scores</div>
-                <div className="header-joined">Joined</div>
-              </div>
-              
-              {leaderboard.map((player, index) => (
-                <div 
-                  key={player.walletAddress} 
-                  className={`table-row ${player.walletAddress === connectedAddress ? 'current-user' : ''}`}
-                >
-                  <div className="cell-rank">
-                    {index === 0 && <span className="rank-icon">🥇</span>}
-                    {index === 1 && <span className="rank-icon">🥈</span>}
-                    {index === 2 && <span className="rank-icon">🥉</span>}
-                    {index > 2 && <span className="rank-number">{player.rank}</span>}
-                  </div>
-                  <div className="cell-wallet">
-                    {formatAddress(player.walletAddress)}
-                    {player.walletAddress === connectedAddress && (
-                      <span className="you-badge">You</span>
-                    )}
-                  </div>
-                  <div className="cell-points">{player.totalPoints.toLocaleString()}</div>
-                  <div className="cell-perfect">{player.perfectScores}</div>
-                  <div className="cell-joined">{formatDate(player.joinedAt)}</div>
+            <div className="leaderboard-table-wrapper">
+              <div className="leaderboard-table">
+                <div className="table-header">
+                  <div className="header-rank">Rank</div>
+                  <div className="header-wallet">Wallet Address</div>
+                  <div className="header-points">Points</div>
+                  <div className="header-perfect">Perfect Scores</div>
+                  <div className="header-joined">Joined</div>
                 </div>
-              ))}
+                
+                {leaderboard.map((player, index) => (
+                  <div 
+                    key={player.walletAddress} 
+                    className={`table-row ${player.walletAddress === connectedAddress ? 'current-user' : ''}`}
+                  >
+                    <div className="cell-rank">
+                      {index === 0 && <span className="rank-icon">🥇</span>}
+                      {index === 1 && <span className="rank-icon">🥈</span>}
+                      {index === 2 && <span className="rank-icon">🥉</span>}
+                      {index > 2 && <span className="rank-number">{player.rank}</span>}
+                    </div>
+                    <div className="cell-wallet">
+                      {formatAddress(player.walletAddress)}
+                      {player.walletAddress === connectedAddress && (
+                        <span className="you-badge">You</span>
+                      )}
+                    </div>
+                    <div className="cell-points">{player.totalPoints.toLocaleString()}</div>
+                    <div className="cell-perfect">{player.perfectScores}</div>
+                    <div className="cell-joined">{formatDate(player.joinedAt)}</div>
+                  </div>
+                ))}
+              </div>
             </div>
           )}
         </div>
