@@ -731,6 +731,16 @@ export default function ClientHomePage() {
           
           <button
             onClick={() => {
+              const addr = localStorage.getItem('connectedAddress');
+              if (!addr) {
+                // Let normal flow prompt connect via header
+                window.dispatchEvent(new Event('connectWallet'));
+                return;
+              }
+              if (addr.startsWith('ST')) {
+                alert('Please switch your wallet to Mainnet (address starting with SP) to play games.');
+                return;
+              }
               setShowProjects(!showProjects);
             }}
             style={{

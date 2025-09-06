@@ -114,6 +114,11 @@ export default function QuizPage() {
       alert('Please connect your wallet to play quizzes!');
       return;
     }
+    // Block testnet wallets (must be SP mainnet)
+    if (connectedAddress && connectedAddress.startsWith('ST')) {
+      alert('Please switch your wallet to Mainnet (address starting with SP) to play games.');
+      return;
+    }
     
     router.push(`/quiz/${quizId}/play`);
   };
@@ -320,9 +325,13 @@ export default function QuizPage() {
                     <button 
                       onClick={() => startQuiz(quiz.id)}
                       className="start-quiz-button"
-                      disabled={!connectedAddress}
+                      disabled={!connectedAddress || (connectedAddress && connectedAddress.startsWith('ST'))}
                     >
-                      {!connectedAddress ? 'Connect Wallet to Play' : 'Start Quiz'}
+                      {!connectedAddress
+                        ? 'Connect Wallet to Play'
+                        : connectedAddress.startsWith('ST')
+                          ? 'Switch to Mainnet to Play'
+                          : 'Start Quiz'}
                     </button>
                   </div>
                 ))}
