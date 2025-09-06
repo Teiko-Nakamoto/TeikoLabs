@@ -726,7 +726,7 @@ export default function ClientHomePage() {
               e.target.style.boxShadow = '0 4px 6px rgba(29, 78, 216, 0.3)';
             }}
           >
-            Play Quiz
+            Play Games
           </button>
           
           <button
