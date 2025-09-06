@@ -71,6 +71,11 @@ export async function POST(request) {
       throw userCheckErrorInitial;
     }
 
+    // Determine if this is a perfect score (100%)
+    const isPerfect = (questionsAnswered || 0) > 0 
+      && correctAnswers === questionsAnswered 
+      && (failedAtQuestion === undefined || failedAtQuestion === null);
+
     // Get dynamic reward based on sBTC fee pool directly from database (1:1 mapping)
     let quizCompletionPoints = 0;
     let sbtcFeePool = 0;
@@ -103,6 +108,11 @@ export async function POST(request) {
       console.log('🎯 Using 1:1 fallback reward due to error:', quizCompletionPoints, 'points');
     }
 
+    // If not perfect, no points should be awarded
+    if (!isPerfect) {
+      quizCompletionPoints = 0;
+    }
+
     const currentUserPoints = existingUserCheck ? existingUserCheck.total_points : 0;
     const potentialNewPoints = currentUserPoints + quizCompletionPoints;
     
@@ -128,7 +138,7 @@ export async function POST(request) {
         quiz_id: quizId,
         questions_answered: questionsAnswered,
         correct_answers: correctAnswers, // Use correct_answers field
-        points_earned: quizCompletionPoints, // Add points earned
+        points_earned: quizCompletionPoints, // Add points earned (0 when not perfect)
         completed_at: new Date().toISOString() // Mark as completed with timestamp
       })
       .select()
@@ -161,7 +171,7 @@ export async function POST(request) {
         .update({
           total_points: newTotalPoints,
           total_quizzes_completed: existingUser.total_quizzes_completed + 1,
-          perfect_scores: existingUser.perfect_scores + 1, // Every completed quiz is perfect
+          perfect_scores: existingUser.perfect_scores + (isPerfect ? 1 : 0),
           updated_at: new Date().toISOString()
         })
         .eq('wallet_address', walletAddress);
@@ -180,7 +190,7 @@ export async function POST(request) {
           wallet_address: walletAddress,
           total_points: newTotalPoints,
           total_quizzes_completed: 1,
-          perfect_scores: 1 // Every completed quiz is perfect
+          perfect_scores: isPerfect ? 1 : 0
         });
 
       if (createError) {
@@ -256,7 +266,7 @@ export async function POST(request) {
       }
     }
 
-    // Milestone logic removed - simplified to 21% reward structure only
+    // Milestone logic removed - simplified to perfect-score only rewards
 
     // Update total points earned globally
     const { data: totalPoints, error: totalError } = await supabaseServer
@@ -285,9 +295,9 @@ export async function POST(request) {
     return NextResponse.json({
       success: true,
       attempt: attempt,
-      pointsEarned: quizCompletionPoints, // Dynamic points based on sBTC fee pool
+      pointsEarned: quizCompletionPoints, // 0 when not perfect
       totalPointsEarned: globalTotal,
-      perfectScore: true, // Every completed quiz is perfect
+      perfectScore: isPerfect,
       sbtcFeePool: sbtcFeePool, // Current sBTC fee pool for transparency
       dynamicReward: true // Indicates this was calculated dynamically
     });

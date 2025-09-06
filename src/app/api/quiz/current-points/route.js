@@ -49,7 +49,7 @@ export async function GET() {
 
     const competitionStatus = statusData?.status || 'active';
     // Only check end goal threshold if competition status is 'active' and not manually overridden
-    const isCompetitionEnded = competitionStatus === 'ended';
+    const isCompetitionEnded = competitionStatus === 'ended' || competitionStatus === 'paused';
 
     console.log('📊 Current points:', {
       endGoalThreshold,

@@ -110,8 +110,8 @@ export async function POST() {
     } else {
       return NextResponse.json({
         success: true,
-        message: 'Competition should remain active',
-        status: 'active',
+        message: shouldEndCompetition ? 'Competition already paused' : 'Competition should remain active',
+        status: shouldEndCompetition ? 'paused' : 'active',
         highestPoints,
         endGoalThreshold
       });

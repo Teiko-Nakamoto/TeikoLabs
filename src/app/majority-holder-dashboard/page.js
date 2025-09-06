@@ -60,6 +60,7 @@ export default function MajorityHolderDashboard() {
   const [aiPrompt, setAiPrompt] = useState('');
   const [aiLoading, setAiLoading] = useState(false);
   const [aiResult, setAiResult] = useState('');
+  const [showRewardsAck, setShowRewardsAck] = useState(false);
   const toggleAiPanel = (quizId, open) => {
     setAiPanelOpen(prev => ({ ...prev, [quizId]: open }));
   };
@@ -150,6 +151,16 @@ export default function MajorityHolderDashboard() {
       setConnectedAddress(address);
       loadInitialData(address);
     }
+
+    // Open rewards acknowledgement once per user when landing on Rewards tab
+    try {
+      const hasAck = localStorage.getItem('rewards_ack_21000');
+      const urlTab = searchParams?.get('tab');
+      const isRewards = (urlTab || initialTab) === 'rewards';
+      if (!hasAck && isRewards) {
+        setShowRewardsAck(true);
+      }
+    } catch {}
 
     const handleStorageChange = () => {
       const newAddress = localStorage.getItem('connectedAddress');
@@ -2372,7 +2383,7 @@ export default function MajorityHolderDashboard() {
               </div>
 
               <div className="rewards-table-wrapper">
-                <div className="rewards-table">
+                            <div className="rewards-table">
                 <div className="table-header">
                   <span>Rank</span>
                   <span>Wallet Address</span>
@@ -2988,6 +2999,37 @@ export default function MajorityHolderDashboard() {
 
         </div>
       </main>
+
+      {showRewardsAck && (
+        <div 
+          className="popup-overlay" 
+          onClick={() => {
+            setShowRewardsAck(false);
+            try { localStorage.setItem('rewards_ack_21000', '1'); } catch {}
+          }}
+        >
+          <div 
+            className="popup"
+            onClick={(e) => e.stopPropagation()}
+            style={{ maxWidth: 420, textAlign: 'center' }}
+          >
+            <h3 style={{ marginTop: 0 }}>Rewards Eligibility</h3>
+            <p style={{ color: '#ef4444', fontWeight: 700 }}>
+              Rewards will only be given to users who own at least 21,000 MAS SATS.
+            </p>
+            <button
+              onClick={() => {
+                setShowRewardsAck(false);
+                try { localStorage.setItem('rewards_ack_21000', '1'); } catch {}
+              }}
+              className="support-button"
+              style={{ marginTop: 12 }}
+            >
+              I Understand
+            </button>
+          </div>
+        </div>
+      )}
       <Footer />
     </div>
   );

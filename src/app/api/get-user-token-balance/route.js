@@ -8,18 +8,22 @@ export async function GET(request) {
     const { searchParams } = new URL(request.url);
     const principal = searchParams.get('principal');
     const networkParam = searchParams.get('network');
+    const overrideAddress = searchParams.get('address');
+    const overrideName = searchParams.get('name');
 
     if (!principal) {
       return NextResponse.json({ success: false, error: 'Missing principal' }, { status: 400 });
     }
 
     // Default to testnet unless explicitly specified
-    const isMainnet = networkParam === 'mainnet' || DEX_CONTRACT_ADDRESS?.startsWith('SP');
+    const selectedAddress = overrideAddress || DEX_CONTRACT_ADDRESS;
+    const selectedName = overrideName || TOKEN_CONTRACT_NAME;
+    const isMainnet = networkParam === 'mainnet' || selectedAddress?.startsWith('SP');
     const network = isMainnet ? STACKS_MAINNET : STACKS_TESTNET;
 
     const result = await callReadOnlyFunction({
-      contractAddress: DEX_CONTRACT_ADDRESS,
-      contractName: TOKEN_CONTRACT_NAME,
+      contractAddress: selectedAddress,
+      contractName: selectedName,
       functionName: 'get-balance',
       functionArgs: [principalCV(principal)],
       network,
@@ -36,4 +40,4 @@ export async function GET(request) {
     console.error('❌ get-user-token-balance error:', error);
     return NextResponse.json({ success: false, error: error.message }, { status: 500 });
   }
-}
+} 

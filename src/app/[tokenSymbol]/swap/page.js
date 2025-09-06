@@ -113,6 +113,13 @@ export default function SwapPage() {
           if (matchingToken) {
             console.log('✅ Found matching token:', matchingToken);
             setTokenData(matchingToken);
+            // Persist preferred contract for global header holdings sync
+            try {
+              if (matchingToken.tokenInfo) {
+                localStorage.setItem('preferredTokenContract', matchingToken.tokenInfo);
+                window.dispatchEvent(new Event('preferredTokenContractChanged'));
+              }
+            } catch {}
             setLoading(false);
           } else {
             console.error('❌ No token found for symbol:', tokenSymbol);
@@ -526,6 +533,13 @@ export default function SwapPage() {
             };
             
             setTokenData(transformedToken);
+            // Persist preferred contract for global header holdings sync (user token)
+            try {
+              if (transformedToken.tokenContractAddress) {
+                localStorage.setItem('preferredTokenContract', transformedToken.tokenContractAddress);
+                window.dispatchEvent(new Event('preferredTokenContractChanged'));
+              }
+            } catch {}
             // For user tokens, skip blockchain stats if not deployed
             if (userToken.deploymentStatus === 'deployed' && userToken.dexContractAddress) {
               await fetchTokenStats(transformedToken);

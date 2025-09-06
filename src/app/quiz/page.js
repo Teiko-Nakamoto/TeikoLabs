@@ -89,6 +89,16 @@ export default function QuizPage() {
         setCurrentPoints(data.highestPoints);
         setEndGoalThreshold(data.endGoalThreshold);
         console.log('✅ Current points loaded:', data.highestPoints, 'Threshold:', data.endGoalThreshold);
+
+        // Safety: if threshold reached but status still active, trigger fix endpoint
+        if (data.highestPoints >= data.endGoalThreshold && data.competitionStatus === 'active') {
+          try {
+            console.log('⚠️ Threshold met but status active. Triggering fix (POST)...');
+            await fetch('/api/quiz/fix-competition-status', { method: 'POST' });
+          } catch (e) {
+            console.warn('Fix competition status call failed:', e);
+          }
+        }
       }
     } catch (error) {
       console.error('Error loading current points:', error);
@@ -262,8 +272,22 @@ export default function QuizPage() {
             <h2>Available Games</h2>
             
             {quizzes.length === 0 ? (
-              <div className="no-quizzes">
-                <p>No quizzes available at the moment.</p>
+              <div className="quiz-grid">
+                {/* Sponsor card shown even when there are no quizzes */}
+                <div className="quiz-card">
+                  <div className="quiz-card-header">
+                    <h3>Sponsor Quiz Questions</h3>
+                    <div className="quiz-stats">
+                      <span className="stat">
+                        <span className="stat-label">Eligibility:</span>
+                        <span className="stat-value">1,000,000+ MAS SATS</span>
+                      </span>
+                    </div>
+                  </div>
+                  <p className="quiz-description">
+                    Users who own over 1 million MAS SATS can sponsor quiz questions.
+                  </p>
+                </div>
               </div>
             ) : (
               <div className="quiz-grid">
@@ -302,6 +326,22 @@ export default function QuizPage() {
                     </button>
                   </div>
                 ))}
+
+                {/* Sponsor card for high holders */}
+                <div className="quiz-card">
+                  <div className="quiz-card-header">
+                    <h3>Sponsor Quiz Questions</h3>
+                    <div className="quiz-stats">
+                      <span className="stat">
+                        <span className="stat-label">Eligibility:</span>
+                        <span className="stat-value">1,000,000+ MAS SATS</span>
+                      </span>
+                    </div>
+                  </div>
+                  <p className="quiz-description">
+                    Users who own over 1 million MAS SATS can sponsor quiz questions.
+                  </p>
+                </div>
               </div>
             )}
           </div>
@@ -327,6 +367,26 @@ export default function QuizPage() {
             </p>
           </div>
         )}
+
+        {/* Sponsor card is always visible */}
+        <div className="quizzes-container">
+          <div className="quiz-grid">
+            <div className="quiz-card">
+              <div className="quiz-card-header">
+                <h3>Sponsor Quiz Questions</h3>
+                <div className="quiz-stats">
+                  <span className="stat">
+                    <span className="stat-label">Eligibility:</span>
+                    <span className="stat-value">1,000,000+ MAS SATS</span>
+                  </span>
+                </div>
+              </div>
+              <p className="quiz-description">
+                Users who own over 1 million MAS SATS can sponsor quiz questions.
+              </p>
+            </div>
+          </div>
+        </div>
 
         <div className="quiz-rules">
           <h3>📋 Quiz Rules</h3>
