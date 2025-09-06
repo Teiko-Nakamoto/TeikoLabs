@@ -1735,7 +1735,7 @@ export default function MajorityHolderDashboard() {
               onClick={() => setActiveTab('quiz')}
               className={`tab-button ${activeTab === 'quiz' ? 'active' : ''}`}
             >
-              🎯 Play Quiz
+              🎮 Play Games
             </button>
             <button
               onClick={() => setActiveTab('leaderboard')}
@@ -2191,7 +2191,7 @@ export default function MajorityHolderDashboard() {
                 </div>
               ) : gameState === 'loading' ? (
                 <div className="quiz-selection">
-                  <h3>Available Quizzes</h3>
+                  <h3>Available Games</h3>
                     <div className="quizzes-grid">
                       {quizzes.map((quiz) => (
                         <div key={quiz.id} className="quiz-card">

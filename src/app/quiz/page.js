@@ -259,7 +259,7 @@ export default function QuizPage() {
 
         {competitionStatus !== 'paused' && (
           <div className="quizzes-container">
-            <h2>Available Quizzes</h2>
+            <h2>Available Games</h2>
             
             {quizzes.length === 0 ? (
               <div className="no-quizzes">
