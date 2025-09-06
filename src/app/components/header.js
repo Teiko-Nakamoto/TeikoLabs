@@ -16,6 +16,7 @@ export default function Header() {
   const dropdownRef = useRef(null);
   const [connectedAddress, setConnectedAddress] = useState('');
   const [isAdmin, setIsAdmin] = useState(false);
+  const [globalHoldings, setGlobalHoldings] = useState(null);
   
   // Admin wallet address
   const ADMIN_ADDRESS = 'ST37918Q7NBZ52AMV133VTY5C864KVK0S2HZ3CGA4';
@@ -33,9 +34,24 @@ export default function Header() {
       if (savedAddress) {
         setConnectedAddress(savedAddress);
         setIsAdmin(savedAddress === ADMIN_ADDRESS);
+        // Fetch global holdings for header context
+        fetch(`/api/get-user-token-balance?principal=${savedAddress}`)
+          .then(r => r.json())
+          .then(d => {
+            if (d && d.success) {
+              setGlobalHoldings(d.balance);
+              try { localStorage.setItem('globalHoldings', String(d.balance)); } catch {}
+            } else {
+              setGlobalHoldings(0);
+              try { localStorage.setItem('globalHoldings', '0'); } catch {}
+            }
+          })
+          .catch(() => setGlobalHoldings(0));
       } else {
         setConnectedAddress('');
         setIsAdmin(false);
+        setGlobalHoldings(null);
+        try { localStorage.removeItem('globalHoldings'); } catch {}
       }
     };
 
@@ -175,6 +191,13 @@ export default function Header() {
                   {languages.find(l => l.code === i18n.language)?.label || t('language')}
                 </span>
               </div>
+            </div>
+          )}
+
+          {/* Minimal display for global holdings when connected */}
+          {connectedAddress && (
+            <div style={{ color: '#9CA3AF', marginRight: 12, fontSize: 12 }}>
+              Holdings: <span style={{ color: '#fff', fontWeight: 600 }}>{globalHoldings !== null ? (globalHoldings?.toLocaleString?.() || globalHoldings) : '--'}</span>
             </div>
           )}
 

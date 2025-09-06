@@ -15,6 +15,7 @@ export default function QuizGame() {
   const [quizInfo, setQuizInfo] = useState(null);
   const [timeLeft, setTimeLeft] = useState(10);
   const [score, setScore] = useState(0);
+  const [earnedPoints, setEarnedPoints] = useState(0);
   const [gameState, setGameState] = useState('loading'); // loading, playing, failed, completed
   const [connectedAddress, setConnectedAddress] = useState('');
   const [loading, setLoading] = useState(true);
@@ -100,8 +101,6 @@ export default function QuizGame() {
     const isPerfectScore = success && (currentQuestion + 1 === questions.length);
     setGameState(isPerfectScore ? 'perfect' : (success ? 'completed' : 'failed'));
     
-    const pointsEarned = success ? 21 : 0;
-    
     // Submit results to backend
     try {
       const response = await fetch('/api/quiz/end-attempt', {
@@ -112,7 +111,7 @@ export default function QuizGame() {
           walletAddress: connectedAddress,
           questionsAnswered: currentQuestion + 1,
           correctAnswers: score,
-          pointsEarned: pointsEarned,
+          // pointsEarned is now calculated dynamically on the server
           failedAtQuestion: success ? null : currentQuestion + 1
         })
       });
@@ -124,6 +123,11 @@ export default function QuizGame() {
         // Check if it's an end goal exceeded error
         if (data.error && data.error.includes('exceed the end goal')) {
           alert('🏆 Congratulations! You\'re very close to the end goal. The competition will end when someone reaches the target points.');
+        }
+      } else {
+        // Use dynamic points from backend
+        if (typeof data.pointsEarned === 'number') {
+          setEarnedPoints(data.pointsEarned);
         }
       }
     } catch (error) {
@@ -217,11 +221,11 @@ export default function QuizGame() {
           <div className="quiz-result perfect">
             <div className="result-icon">🎉</div>
             <h2>Perfect Score!</h2>
-            <p>Congratulations! You got 100% correct and earned 21 points!</p>
+            <p>Congratulations! You got 100% correct and earned {earnedPoints.toLocaleString()} points!</p>
             <div className="result-stats">
               <p>Questions answered: {questions.length}</p>
               <p>Correct answers: {score}</p>
-              <p>Points earned: 21</p>
+              <p>Points earned: {earnedPoints.toLocaleString()}</p>
             </div>
             <div className="result-actions">
               <button onClick={playAgain} className="play-again-button">
@@ -246,11 +250,11 @@ export default function QuizGame() {
           <div className="quiz-result completed">
             <div className="result-icon">✅</div>
             <h2>Quiz Completed!</h2>
-            <p>Good job! You earned 21 points!</p>
+            <p>Good job! You earned {earnedPoints.toLocaleString()} points!</p>
             <div className="result-stats">
               <p>Questions answered: {questions.length}</p>
               <p>Correct answers: {score}</p>
-              <p>Points earned: 21</p>
+              <p>Points earned: {earnedPoints.toLocaleString()}</p>
             </div>
             <div className="result-actions">
               <button onClick={tryAgain} className="try-again-button">

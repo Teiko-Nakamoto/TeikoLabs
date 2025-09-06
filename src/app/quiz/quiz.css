@@ -503,3 +503,31 @@
     grid-template-columns: 1fr;
   }
 }
+
+/* ===== Accessibility overrides (high-contrast) ===== */
+/* Force high-contrast question text */
+.question h2 {
+  color: #000 !important;
+  text-shadow: none !important;
+  font-weight: 700;
+}
+
+/* Remove card look from the question area */
+.question-container {
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  padding: 0 !important;
+  margin-bottom: 1rem !important;
+}
+
+/* Flatten answer buttons (optional for readability) */
+.answer-button {
+  background: #e9ecef !important;
+  border: 1px solid #cfd4da !important;
+  color: #000 !important;
+}
+.answer-button:hover:not(:disabled) {
+  background: #dfe3e7 !important;
+  color: #000 !important;
+}

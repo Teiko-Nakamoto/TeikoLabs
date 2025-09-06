@@ -71,7 +71,7 @@ export async function POST(request) {
       throw userCheckErrorInitial;
     }
 
-    // Get dynamic reward based on sBTC fee pool directly from database
+    // Get dynamic reward based on sBTC fee pool directly from database (1:1 mapping)
     let quizCompletionPoints = 0;
     let sbtcFeePool = 0;
     
@@ -86,21 +86,21 @@ export async function POST(request) {
       
       if (!error && latestRecord) {
         sbtcFeePool = latestRecord.fee_pool_amount;
-        quizCompletionPoints = Math.floor(sbtcFeePool * 0.21); // 21% of fee pool = quiz reward
-        console.log('🎯 Using 21% reward from database:', quizCompletionPoints, 'based on sBTC fee pool:', sbtcFeePool);
+        quizCompletionPoints = Math.floor(sbtcFeePool); // 1:1 with current sBTC fee pool
+        console.log('🎯 Using 1:1 reward from database:', quizCompletionPoints, 'based on sBTC fee pool:', sbtcFeePool);
       } else {
         console.log('⚠️ No fee pool data found, using fallback');
         // Fallback to reasonable default if no database data
         sbtcFeePool = 10000;
-        quizCompletionPoints = Math.floor(sbtcFeePool * 0.21); // 21% of fallback
-        console.log('🎯 Using 21% fallback reward:', quizCompletionPoints, 'sats');
+        quizCompletionPoints = Math.floor(sbtcFeePool); // 1:1 fallback
+        console.log('🎯 Using 1:1 fallback reward:', quizCompletionPoints, 'points');
       }
     } catch (error) {
       console.error('❌ Error getting fee pool data:', error.message);
       // Fallback to reasonable default
       sbtcFeePool = 10000;
-      quizCompletionPoints = Math.floor(sbtcFeePool * 0.21);
-      console.log('🎯 Using fallback reward due to error:', quizCompletionPoints, 'sats');
+      quizCompletionPoints = Math.floor(sbtcFeePool);
+      console.log('🎯 Using 1:1 fallback reward due to error:', quizCompletionPoints, 'points');
     }
 
     const currentUserPoints = existingUserCheck ? existingUserCheck.total_points : 0;

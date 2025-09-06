@@ -11,6 +11,7 @@ export default function QuizPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [connectedAddress, setConnectedAddress] = useState('');
+  const [globalHoldings, setGlobalHoldings] = useState(null);
   const [competitionActive, setCompetitionActive] = useState(true);
   const [competitionStatus, setCompetitionStatus] = useState('active');
   const [currentPoints, setCurrentPoints] = useState(0);
@@ -21,6 +22,10 @@ export default function QuizPage() {
     // Get connected wallet address
     const address = localStorage.getItem('connectedAddress');
     setConnectedAddress(address || '');
+    try {
+      const h = localStorage.getItem('globalHoldings');
+      if (h !== null && h !== undefined) setGlobalHoldings(parseInt(h));
+    } catch {}
 
     // Load available quizzes and competition status
     loadQuizzes();
@@ -275,6 +280,12 @@ export default function QuizPage() {
                           <span className="stat-label">Points:</span>
                           <span className="stat-value">Dynamic</span>
                         </span>
+                        {connectedAddress && (
+                          <span className="stat">
+                            <span className="stat-label">Your Holdings:</span>
+                            <span className="stat-value">{globalHoldings !== null ? (globalHoldings?.toLocaleString?.() || globalHoldings) : '--'}</span>
+                          </span>
+                        )}
                       </div>
                     </div>
                     

@@ -2192,17 +2192,17 @@ export default function MajorityHolderDashboard() {
               ) : gameState === 'loading' ? (
                 <div className="quiz-selection">
                   <h3>Available Quizzes</h3>
-                  <div className="quizzes-grid">
-                    {quizzes.map((quiz) => (
-                      <div key={quiz.id} className="quiz-card">
+                    <div className="quizzes-grid">
+                      {quizzes.map((quiz) => (
+                        <div key={quiz.id} className="quiz-card">
                         <div className="quiz-card-inner">
                           <div className="quiz-card-header">
-                            <h4>{quiz.title}</h4>
-                            <div className="quiz-stats">
+                          <h4>{quiz.title}</h4>
+                          <div className="quiz-stats">
                               <span className="stat"><span className="stat-label">Time:</span><span className="stat-value">{quiz.time_per_question}s</span></span>
                               <span className="stat"><span className="stat-label">Points:</span><span className="stat-value">{rewardLoading ? 'Updating...' : sbtcFeePool.toLocaleString()}</span></span>
                               <span className="stat"><span className="stat-label">Status:</span><span className="stat-value">Visible</span></span>
-                            </div>
+                          </div>
                           </div>
                           {quiz.description && <p className="quiz-description">{quiz.description}</p>}
                           <button 
@@ -2212,9 +2212,9 @@ export default function MajorityHolderDashboard() {
                             Start Quiz
                           </button>
                         </div>
-                      </div>
-                    ))}
-                  </div>
+                        </div>
+                      ))}
+                    </div>
                 </div>
               ) : gameState === 'playing' ? (
                 <div className="quiz-game">
@@ -2258,7 +2258,7 @@ export default function MajorityHolderDashboard() {
               ) : gameState === 'perfect' ? (
                 <div className="quiz-result perfect">
                   <h3>🎉 Perfect Score!</h3>
-                  <p>Congratulations! You got 100% correct and earned {sbtcFeePool.toLocaleString()} sats in revenue!</p>
+                  <p>Congratulations! You got 100% correct and earned {sbtcFeePool.toLocaleString()} points!</p>
                   <div className="result-actions">
                     <button onClick={goToQuizSelection} className="return-to-quiz-button">
                       Return to Quiz Page
@@ -2271,7 +2271,7 @@ export default function MajorityHolderDashboard() {
               ) : gameState === 'completed' ? (
                 <div className="quiz-result completed">
                   <h3>✅ Quiz Completed!</h3>
-                  <p>Good job! You earned {sbtcFeePool.toLocaleString()} sats in revenue!</p>
+                  <p>Good job! You earned {sbtcFeePool.toLocaleString()} points!</p>
                   <div className="result-actions">
                     <button onClick={goToQuizSelection} className="return-to-quiz-button">
                       Return to Quiz Page
@@ -2354,7 +2354,7 @@ export default function MajorityHolderDashboard() {
             <div className="rewards-content">
               <div className="rewards-header">
                 <h2>💰 Expected Rewards</h2>
-                <p>Current reward: {rewardLoading ? 'Updating...' : `${Math.floor((sbtcFeePool || 0) * 0.21).toLocaleString()} sats`} (21% of {rewardLoading ? '...' : `${(sbtcFeePool || 0).toLocaleString()} sats`} fee pool)</p>
+                <p>Current reward: {rewardLoading ? 'Updating...' : `${Math.floor((sbtcFeePool || 0)).toLocaleString()} points`} (1:1 of {rewardLoading ? '...' : `${(sbtcFeePool || 0).toLocaleString()} fee pool`})</p>
                 
                 {/* Airdrop Notice */}
                 <div className="airdrop-notice">
@@ -2389,8 +2389,8 @@ export default function MajorityHolderDashboard() {
                     // Calculate user's share of top 10 points (capped at 10th place)
                     const userShare = user && top10TotalPoints > 0 ? (user.totalPoints / top10TotalPoints * 100) : 0;
                     
-                    // Calculate expected reward based on their share of the prize pot (21% of fee pool)
-                    const prizePot = Math.floor((sbtcFeePool || 0) * 0.21); // 21% of fee pool
+                    // Calculate expected reward based on their share of the prize pot (1:1 of fee pool)
+                    const prizePot = Math.floor((sbtcFeePool || 0)); // 1:1 of fee pool
                     const expectedReward = Math.floor(prizePot * (userShare / 100));
                     
                     return (
@@ -2819,7 +2819,7 @@ export default function MajorityHolderDashboard() {
                             {quiz.description && (
                               <p className="quiz-description">{quiz.description}</p>
                             )}
-
+                            
                             {/* Tabs: Details | AI Questions */}
                             <div className="quiz-tabs">
                               <button
@@ -2836,11 +2836,11 @@ export default function MajorityHolderDashboard() {
                               </button>
                             </div>
                             {!aiPanelOpen[quiz.id] && (
-                              <div className="quiz-stats">
-                                <span>Questions: {quiz.max_questions}</span>
-                                <span>Time: {quiz.time_per_question}s</span>
-                                <span>Reward: Dynamic (21% of sBTC fee pool)</span>
-                              </div>
+                            <div className="quiz-stats">
+                              <span>Questions: {quiz.max_questions}</span>
+                              <span>Time: {quiz.time_per_question}s</span>
+                                <span>Reward: Dynamic (1:1 of sBTC fee pool)</span>
+                            </div>
                             )}
 
                             {aiPanelOpen[quiz.id] && (
