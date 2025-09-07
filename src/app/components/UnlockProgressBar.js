@@ -2323,7 +2323,7 @@ const UnlockProgressBar = React.memo(function UnlockProgressBar({
                console.log('🔍 Whale access button clicked!');
                console.log('🔍 Current tokenBalance prop:', tokenBalance);
                
-               // Check if user has 1,500+ token balance
+               // Check if user has 210,000+ token balance
                let userTokenBalance = 0;
                if (typeof tokenBalance === 'string') {
                  userTokenBalance = parseFloat(tokenBalance.replace(/,/g, '')) || 0;
@@ -2332,7 +2332,7 @@ const UnlockProgressBar = React.memo(function UnlockProgressBar({
                } else {
                  userTokenBalance = 0;
                }
-               const requiredBalance = 150000; // 150k tokens
+               const requiredBalance = 210000; // 210k tokens
                
                console.log('🔍 Whale access check:', {
                  userTokenBalance,

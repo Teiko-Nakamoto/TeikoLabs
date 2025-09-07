@@ -5,13 +5,13 @@ import Header from '../components/header';
 import Footer from '../components/footer';
 
 export default function TeikoBridgePage() {
-  // Supported pairs only: sBTC <-> BTCs and USDh <-> USDC
-  const PAIRS = { sBTC: 'BTCs', BTCs: 'sBTC', USDh: 'USDC', USDC: 'USDh' };
+  // Supported pairs only: sBTC <-> BTCs and USDh <-> USDT
+  const PAIRS = { sBTC: 'BTCs', BTCs: 'sBTC', USDh: 'USDT', USDT: 'USDh' };
   const tokens = [
     { symbol: 'sBTC', label: 'sBTC' },
     { symbol: 'BTCs', label: 'BTCs' },
     { symbol: 'USDh', label: 'USDh' },
-    { symbol: 'USDC', label: 'USDC' },
+    { symbol: 'USDT', label: 'USDT' },
   ];
 
   const [fromToken, setFromToken] = React.useState('sBTC');
@@ -61,7 +61,7 @@ export default function TeikoBridgePage() {
         }}>
           <h2 style={{ margin: 0, marginBottom: '0.75rem', textAlign: 'center' }}>Token Swap</h2>
           <p style={{ color: '#9CA3AF', marginTop: 0, marginBottom: '1rem', textAlign: 'center' }}>
-            Supported routes only: sBTC ↔ BTCs, USDh ↔ USDC.
+            Supported routes only: sBTC ↔ BTCs, USDh ↔ USDT.
           </p>
 
           {/* From card */}
