@@ -126,15 +126,15 @@ export async function getTokenCardsServer() {
   // Transform database format to frontend format
   const transformedData = (data || []).map(card => ({
     id: card.id,
-    isComingSoon: card.is_coming_soon || false,
-    isHidden: card.is_hidden || false,
+    isComingSoon: !!card.is_coming_soon,
+    isHidden: !!card.is_hidden,
     tabType: card.tab_type || 'featured',
     dexInfo: card.dex_info || '',
     tokenInfo: card.token_info || '',
     symbol: card.symbol || '',
-    revenue: card.revenue || 0,
-    liquidity: card.liquidity || 0,
-    network: card.network || 'testnet',
+    revenue: Number(card.revenue) || 0,
+    liquidity: Number(card.liquidity) || 0,
+    network: card.tab_type === 'featured' ? 'mainnet' : (card.network || 'testnet'),
     metadataUri: card.metadata_uri || null,
     imageUrl: card.image_url || null
   }));
@@ -155,22 +155,30 @@ export async function saveTokenCardsServer(tokenCards, defaultTab) {
   }
 
   // Transform frontend data to database format
-  const transformedCards = tokenCards.map(card => ({
-    id: card.id,
-    is_coming_soon: card.isComingSoon || false,
-    is_hidden: card.isHidden || false,
-    tab_type: card.tabType || 'featured',
-    dex_info: card.dexInfo || '',
-    token_info: card.tokenInfo || '',
-    symbol: card.symbol || '',
-    revenue: card.revenue || 0,
-    liquidity: card.liquidity || 0,
-    network: card.network || 'testnet',
-    metadata_uri: card.metadataUri || null,
-    image_url: card.imageUrl || null,
-    created_at: new Date().toISOString(),
-    updated_at: new Date().toISOString()
-  }));
+  const transformedCards = tokenCards.map(card => {
+    // Coerce numbers and sanitize fields to avoid DB type errors
+    const revenueNum = Number(card.revenue);
+    const liquidityNum = Number(card.liquidity);
+    const tabType = card.tabType || 'featured';
+    const network = tabType === 'featured' ? 'mainnet' : 'testnet';
+
+    return {
+      id: card.id,
+      is_coming_soon: !!card.isComingSoon,
+      is_hidden: !!card.isHidden,
+      tab_type: tabType,
+      dex_info: (card.dexInfo || '').trim(),
+      token_info: (card.tokenInfo || '').trim(),
+      symbol: (card.symbol || '').trim(),
+      revenue: Number.isFinite(revenueNum) ? revenueNum : 0,
+      liquidity: Number.isFinite(liquidityNum) ? liquidityNum : 0,
+      network,
+      metadata_uri: card.metadataUri || null,
+      image_url: card.imageUrl || null,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString()
+    };
+  });
 
   console.log('🔄 Transformed data:', transformedCards);
 
