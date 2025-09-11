@@ -159,6 +159,21 @@ export default function ClientHomePage() {
     });
   };
 
+  // Fallback: ensure headline appears even when counters are not rendered
+  useEffect(() => {
+    // If no mainnet totals to animate, reveal the headline after a short delay
+    const noTotals = !mainnetTotals || (
+      (mainnetTotals.totalProfitGenerated === 0 || !Number.isFinite(mainnetTotals.totalProfitGenerated)) &&
+      (mainnetTotals.totalValueLocked === 0 || !Number.isFinite(mainnetTotals.totalValueLocked))
+    );
+    const timer = setTimeout(() => {
+      if (noTotals) {
+        setShowTypewriter(true);
+      }
+    }, 800);
+    return () => clearTimeout(timer);
+  }, [mainnetTotals]);
+
   // Load access settings from server
   useEffect(() => {
     const loadAccessSettings = async () => {

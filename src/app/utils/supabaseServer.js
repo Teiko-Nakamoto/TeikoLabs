@@ -143,17 +143,6 @@ export async function getTokenCardsServer() {
 }
 
 export async function saveTokenCardsServer(tokenCards, defaultTab) {
-  // First, clear existing data
-  const { error: deleteError } = await supabaseServer
-    .from('token_cards')
-    .delete()
-    .neq('id', 0); // Delete all rows
-
-  if (deleteError) {
-    console.error('❌ Server Error clearing token cards:', deleteError.message);
-    throw deleteError;
-  }
-
   // Transform frontend data to database format
   const transformedCards = tokenCards.map(card => {
     // Coerce numbers and sanitize fields to avoid DB type errors
@@ -180,12 +169,12 @@ export async function saveTokenCardsServer(tokenCards, defaultTab) {
     };
   });
 
-  console.log('🔄 Transformed data:', transformedCards);
+  console.log('🔄 Transformed data (upsert):', transformedCards);
 
-  // Insert transformed data
+  // Upsert by id to avoid wiping table
   const { data, error } = await supabaseServer
     .from('token_cards')
-    .insert(transformedCards);
+    .upsert(transformedCards, { onConflict: 'id' });
 
   if (error) {
     console.error('❌ Server Error saving token cards:', error.message);

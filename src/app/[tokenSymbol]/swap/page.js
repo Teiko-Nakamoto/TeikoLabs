@@ -88,55 +88,7 @@ export default function SwapPage() {
   // Add polling ref to track if component is still mounted
   const pollIntervalRef = useRef(null);
 
-  // Load token data based on token symbol
-  useEffect(() => {
-    const loadTokenData = async () => {
-      if (!tokenSymbol) {
-        console.error('❌ No token symbol provided');
-        setLoading(false);
-        return;
-      }
-
-      try {
-        console.log('🔍 Loading token data for symbol:', tokenSymbol);
-        
-        // Fetch token cards to find the matching token
-        const response = await fetch('/api/get-token-cards');
-        const data = await response.json();
-        
-        if (data.tokenCards && Array.isArray(data.tokenCards)) {
-          // Find the token that matches the symbol
-          const matchingToken = data.tokenCards.find(token => 
-            token.symbol && token.symbol.toLowerCase() === tokenSymbol.toLowerCase()
-          );
-          
-          if (matchingToken) {
-            console.log('✅ Found matching token:', matchingToken);
-            setTokenData(matchingToken);
-            // Persist preferred contract for global header holdings sync
-            try {
-              if (matchingToken.tokenInfo) {
-                localStorage.setItem('preferredTokenContract', matchingToken.tokenInfo);
-                window.dispatchEvent(new Event('preferredTokenContractChanged'));
-              }
-            } catch {}
-            setLoading(false);
-          } else {
-            console.error('❌ No token found for symbol:', tokenSymbol);
-            setLoading(false);
-          }
-        } else {
-          console.error('❌ Failed to fetch token cards:', data.error || 'No tokenCards array found');
-          setLoading(false);
-        }
-      } catch (error) {
-        console.error('❌ Error loading token data:', error);
-        setLoading(false);
-      }
-    };
-
-    loadTokenData();
-  }, [tokenSymbol]);
+  // (Removed duplicate early loader that could prematurely set loading=false)
 
   // Read token balance when wallet address or token data changes
   useEffect(() => {

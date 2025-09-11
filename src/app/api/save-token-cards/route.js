@@ -26,6 +26,14 @@ export async function POST(request) {
       }, { status: 400 });
     }
 
+    // Safeguard: reject empty saves to avoid wiping table
+    if (tokenCards.length === 0) {
+      return NextResponse.json({ 
+        error: 'Empty payload',
+        message: 'tokenCards is empty; refusing to save to prevent data loss' 
+      }, { status: 400 });
+    }
+
     // Use server-side Supabase client
     await saveTokenCardsServer(tokenCards, defaultTab);
 

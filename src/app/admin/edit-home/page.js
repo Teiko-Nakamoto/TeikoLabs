@@ -128,6 +128,12 @@ export default function EditHomePage() {
   const handleSave = async () => {
     try {
       console.log('💾 Saving token cards and default tab to database:', { tokenCards, defaultTab });
+
+      // Frontend guard: prevent empty saves
+      if (!tokenCards || tokenCards.length === 0) {
+        alert('Nothing to save: token list is empty. Add at least one token before saving.');
+        return;
+      }
       
       // Get admin authentication data from localStorage
       const adminSignature = localStorage.getItem('adminSignature');
@@ -167,7 +173,7 @@ export default function EditHomePage() {
         setIsEditing(false);
       } else {
         console.error('❌ API returned error:', result);
-        throw new Error(result.error || 'Failed to save token cards');
+        throw new Error(result.message || result.error || 'Failed to save token cards');
       }
     } catch (error) {
       console.error('❌ Error saving token cards:', error);
