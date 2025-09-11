@@ -99,12 +99,9 @@ export default function HowItWorksPage() {
             <section className="docs-section">
               <div className="intro-section-docs">
                 <div className="intro-header-docs">
-                  <img 
-                    src="/icons/The Mas Network.svg" 
-                    alt="MAS Sats" 
-                    className="intro-image-docs"
-                  />
-                  <h2>🚀 Introducing MAS Sats</h2>
+                  <h2>
+                    🚀 Introducing <img src="/icons/The Mas Network.svg" alt="MAS Sats" className="inline-icon" />
+                  </h2>
                 </div>
                 <p className="intro-subtitle-docs">Market Activated Satoshis</p>
                 <p className="intro-description-docs">

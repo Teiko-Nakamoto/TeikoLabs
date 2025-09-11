@@ -255,61 +255,42 @@ export default function ClientHomePage() {
       setShowTradingUpdatePopup(true);
       return;
     }
-
-    // Check wallet connection and network based on token card type (not active tab)
+    // Reinstate wallet/network checks for individual token cards
     if (tokenCard.tabType === 'practice') {
       console.log('Practice token detected, checking wallet...');
       if (!connectedAddress) {
         console.log('No wallet connected for practice trading - showing practice popup');
-        // No wallet connected for practice trading - show popup
         setShowPracticeWalletPopup(true);
         return;
       }
-      
-      // For practice (testnet) tokens, require testnet wallet (ST address)
       if (!connectedAddress.startsWith('ST')) {
         console.log('Non-testnet wallet connected for practice trading - showing practice popup');
-        // Non-testnet wallet connected for practice trading - show popup
         setShowPracticeWalletPopup(true);
         return;
       }
-      
-      // Testnet wallet is connected - proceed
       console.log('✅ Testnet wallet connected for practice trading - proceeding');
     } else if (tokenCard.tabType === 'featured') {
       console.log('Featured token detected, checking wallet...');
-      
-      // For featured (mainnet) tokens, prevent access if:
-      // 1. No wallet connected
-      // 2. Testnet wallet connected (ST address)
       if (!connectedAddress) {
         console.log('No wallet connected for mainnet trading - showing mainnet popup');
         setShowMainnetWalletPopup(true);
         return;
       }
-      
-      // Check if testnet wallet is connected (should be mainnet for featured)
       if (connectedAddress.startsWith('ST')) {
         console.log('Testnet wallet connected for mainnet trading - showing mainnet popup');
         setShowMainnetWalletPopup(true);
         return;
       }
-      
-      // Additional check: ensure it's a mainnet wallet (SP address)
       if (!connectedAddress.startsWith('SP')) {
         console.log('Invalid wallet type for mainnet trading - showing mainnet popup');
         setShowMainnetWalletPopup(true);
         return;
       }
-      
-      // Mainnet wallet is connected - proceed
       console.log('✅ Mainnet wallet connected for featured trading - proceeding');
     }
 
     if (!connectedAddress) {
-      // Show loading state
       setIsConnectingWallet(true);
-      // Trigger wallet connection directly (same as header button)
       const connectEvent = new CustomEvent('connectWallet');
       window.dispatchEvent(connectEvent);
       return;
@@ -726,21 +707,11 @@ export default function ClientHomePage() {
               e.target.style.boxShadow = '0 4px 6px rgba(29, 78, 216, 0.3)';
             }}
           >
-            Play Games
+            Play Quiz
           </button>
           
           <button
             onClick={() => {
-              const addr = localStorage.getItem('connectedAddress');
-              if (!addr) {
-                // Let normal flow prompt connect via header
-                window.dispatchEvent(new Event('connectWallet'));
-                return;
-              }
-              if (addr.startsWith('ST')) {
-                alert('Please switch your wallet to Mainnet (address starting with SP) to play games.');
-                return;
-              }
               setShowProjects(!showProjects);
             }}
             style={{

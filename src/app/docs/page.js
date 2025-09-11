@@ -32,14 +32,14 @@ export default function DocsPage() {
   };
 
   const navigateToNext = () => {
-    const sections = ['welcome', 'the-problem', 'our-solution', 'who-we-are', 'tokenomics', 'roadmap'];
+    const sections = ['welcome', 'the-problem', 'our-solution', 'who-we-are', 'tokenomics', 'protocol-revenue', 'roadmap'];
     const currentIndex = sections.indexOf(activeSection);
     const nextIndex = (currentIndex + 1) % sections.length;
     setActiveSection(sections[nextIndex]);
   };
 
   const navigateToPrevious = () => {
-    const sections = ['welcome', 'the-problem', 'our-solution', 'who-we-are', 'tokenomics', 'roadmap'];
+    const sections = ['welcome', 'the-problem', 'our-solution', 'who-we-are', 'tokenomics', 'protocol-revenue', 'roadmap'];
     const currentIndex = sections.indexOf(activeSection);
     const prevIndex = currentIndex === 0 ? sections.length - 1 : currentIndex - 1;
     setActiveSection(sections[prevIndex]);
@@ -47,8 +47,8 @@ export default function DocsPage() {
 
   // Navigation component
   const NavigationButtons = () => {
-    const sections = ['welcome', 'the-problem', 'our-solution', 'who-we-are', 'tokenomics', 'roadmap'];
-    const sectionNames = ['Welcome', 'The Problem', 'Our Solution', 'Who We Are', 'Tokenomics', 'Roadmap'];
+    const sections = ['welcome', 'the-problem', 'our-solution', 'who-we-are', 'tokenomics', 'protocol-revenue', 'roadmap'];
+    const sectionNames = ['Welcome', 'The Problem', 'Our Solution', 'Who We Are', 'Tokenomics', 'Protocol Revenue', 'Roadmap'];
     const currentIndex = sections.indexOf(activeSection);
     const prevIndex = currentIndex === 0 ? sections.length - 1 : currentIndex - 1;
     const nextIndex = (currentIndex + 1) % sections.length;
@@ -134,6 +134,13 @@ export default function DocsPage() {
         { 
           title: 'Tokenomics', 
           id: 'tokenomics', 
+          href: '/docs',
+          isActive: pathname === '/docs',
+          subItems: []
+        },
+        { 
+          title: 'Protocol Revenue', 
+          id: 'protocol-revenue', 
           href: '/docs',
           isActive: pathname === '/docs',
           subItems: []
@@ -288,6 +295,139 @@ export default function DocsPage() {
                 </div>
               </div>
               
+              <NavigationButtons />
+            </section>
+
+            {/* Protocol Revenue Section */}
+            <section id="protocol-revenue" className={`docs-section ${activeSection === 'protocol-revenue' ? 'active' : ''}`}>
+              <h2>Protocol Revenue</h2>
+              <div className="tokenomics-intro">
+                <h3>How the MAS Sats DEX Generates and Distributes Fees</h3>
+                <p>
+                  MAS Sats trades on a bonding curve AMM. Each buy/sell auto-adjusts price along the curve and continues until the
+                  entire supply is sold. Every trade contributes protocol revenue that can be claimed by the Majority‑Locked Holder
+                  and optionally redirected to stimulate growth when challenges occur.
+                </p>
+              </div>
+
+              {/* At a Glance */}
+              <div className="docs-feature-list">
+                <div className="docs-feature-item">
+                  <h4>At a Glance</h4>
+                  <ul>
+                    <li><strong>1.5% Trading Fee</strong> → saved on‑chain in the Trading Fee Pool</li>
+                    <li><strong>0.6% Treasury Fee</strong> → available for jackpots and growth</li>
+                    <li><strong>Majority‑Locked Holder</strong> → can claim the Trading Fee Pool</li>
+                    <li><strong>Challenge</strong> → new locker must wait until ≤ 1,000,000 sats are repaid by natural volume</li>
+                    <li><strong>Price Floor Effect</strong> → predictable region while a challenger is locked</li>
+                  </ul>
+                </div>
+              </div>
+
+              <div className="docs-feature-list">
+                <div className="docs-feature-item">
+                  <h4>DEX Utility: Bonding Curve AMM</h4>
+                  <p>
+                    Price moves programmatically along a curve as traders buy and sell. There is no terminal state until supply is exhausted,
+                    creating continuous market making and transparent pricing.
+                  </p>
+                </div>
+
+                <div className="docs-feature-item">
+                  <h4>Revenue Tap (1.5%)</h4>
+                  <p>
+                    On every buy and sell, <strong>1.5%</strong> of trade value is routed to the Trading Fee Pool. The current Majority‑Locked Holder can
+                    claim these accumulated fees on‑chain at any time.
+                  </p>
+                </div>
+
+                <div className="docs-feature-item">
+                  <h4>Challenge & Lock</h4>
+                  <p>
+                    If a new participant locks more tokens to claim Majority status, those tokens remain <strong>locked</strong> until the last highest claimed
+                    fee amount is naturally repaid to the DEX via trading volume (cap: <strong>1,000,000 sats</strong> obligation).
+                  </p>
+                </div>
+
+                <div className="docs-feature-item">
+                  <h4>Price Floor from Repayment</h4>
+                  <p>
+                    The combination of lock + repayment creates a predictable floor region for traders. While the challenger is locked and repayment is
+                    outstanding, opportunistic buyers can trade above a known floor.
+                  </p>
+                </div>
+
+                <div className="docs-feature-item">
+                  <h4>Treasury Safety Valve (0.6%)</h4>
+                  <p>
+                    A separate <strong>0.6%</strong> treasury fee accrues per trade. During a challenge, the treasury can deploy jackpot rewards to stimulate
+                    volume and help clear the challenger’s repayment obligation faster.
+                  </p>
+                </div>
+
+                <div className="docs-feature-item">
+                  <h4>Decentralized Buyout Path</h4>
+                  <p>
+                    Anyone can assume Majority‑Locked status by locking more tokens and satisfying the repayment obligation — acquiring control over
+                    fee claims and DEX usage <strong>without centralized approval</strong>.
+                  </p>
+                </div>
+              </div>
+
+              {/* Mini Flow Diagram */}
+              <div className="profit-flow">
+                <h3>Revenue Flow</h3>
+                <div className="flow-diagram">
+                  <div className="flow-step">
+                    <div className="flow-icon">🔁</div>
+                    <div className="flow-text"><h4>Trade</h4><p>Buy or Sell</p></div>
+                  </div>
+                  <div className="flow-arrow">→</div>
+                  <div className="flow-step">
+                    <div className="flow-icon">💧</div>
+                    <div className="flow-text"><h4>1.5% Fee Pool</h4><p>Saved on‑chain</p></div>
+                  </div>
+                  <div className="flow-arrow">+</div>
+                  <div className="flow-step">
+                    <div className="flow-icon">🏦</div>
+                    <div className="flow-text"><h4>0.6% Treasury</h4><p>Growth budget</p></div>
+                  </div>
+                  <div className="flow-arrow">→</div>
+                  <div className="flow-step">
+                    <div className="flow-icon">🏆</div>
+                    <div className="flow-text"><h4>Majority Claims</h4><p>Claim at any time</p></div>
+                  </div>
+                </div>
+
+                <div className="flow-diagram" style={{ marginTop: 12 }}>
+                  <div className="flow-step">
+                    <div className="flow-icon">⚔️</div>
+                    <div className="flow-text"><h4>Challenge</h4><p>New majority locks</p></div>
+                  </div>
+                  <div className="flow-arrow">→</div>
+                  <div className="flow-step">
+                    <div className="flow-icon">🔒</div>
+                    <div className="flow-text"><h4>Locked</h4><p>Until ≤ 1,000,000 sats repaid</p></div>
+                  </div>
+                  <div className="flow-arrow">→</div>
+                  <div className="flow-step">
+                    <div className="flow-icon">📉</div>
+                    <div className="flow-text"><h4>Price Floor</h4><p>Predictable buy region</p></div>
+                  </div>
+                  <div className="flow-arrow">→</div>
+                  <div className="flow-step">
+                    <div className="flow-icon">🎁</div>
+                    <div className="flow-text"><h4>Jackpots (Optional)</h4><p>Treasury boosts volume</p></div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="info-box">
+                <strong>Flow:</strong> Trade → <strong>1.5%</strong> to Trading Fee Pool; <strong>0.6%</strong> to Treasury → Majority‑Locked Holder claims.
+                If challenged: challenger remains locked until ≤ <strong>1,000,000 sats</strong> repaid via natural volume → price floor; optional
+                treasury jackpots to accelerate volume.
+              </div>
+
               <NavigationButtons />
             </section>
 

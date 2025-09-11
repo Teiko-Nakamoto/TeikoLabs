@@ -125,21 +125,6 @@ export default function Header() {
                 How It Works
               </button>
             )}
-            
-            {/* Dashboard link - Desktop only, only visible for mainnet wallets */}
-            {connectedAddress && connectedAddress.startsWith('SP') && (
-              <Link 
-                href="/teiko-bridge"
-                className="nav-link"
-                style={{ 
-                  textDecoration: 'none',
-                  color: 'inherit',
-                  font: 'inherit'
-                }}
-              >
-                Teiko Bridge
-              </Link>
-            )}
           </div>
           
           {/* Mobile menu button - hidden when mainnet wallet is connected */}

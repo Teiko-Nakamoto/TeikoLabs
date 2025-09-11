@@ -68,21 +68,11 @@ const LearnAboutHowTo = ({ onClose }) => {
         <div className="learn-about-content">
           {/* MAS Sats Introduction */}
           <div className="section-header">
-            <h3>🚀 Introducing MAS Sats</h3>
+            <h3>
+              🚀 Introducing <img src="/icons/The Mas Network.svg" alt="MAS Sats" style={{ width: '32px', height: '32px', verticalAlign: 'middle', marginLeft: '6px', display: 'inline-block' }} />
+            </h3>
             <div className="mas-sats-intro">
-              <img 
-                src="/icons/The Mas Network.svg" 
-                alt="MAS Sats" 
-                style={{ 
-                  width: '60px', 
-                  height: '60px', 
-                  marginBottom: '1rem',
-                  filter: 'drop-shadow(0 4px 8px rgba(251, 191, 36, 0.3))'
-                }} 
-              />
-              <h4 style={{ color: '#fbbf24', marginBottom: '0.5rem', fontSize: '1.3rem' }}>
-                Market Activated Satoshis
-              </h4>
+              
               <p style={{ 
                 color: '#9CA3AF', 
                 fontSize: '0.9rem', 
@@ -149,15 +139,6 @@ const LearnAboutHowTo = ({ onClose }) => {
                 }}
               >
                 🚀 Trade
-                <img 
-                  src="/icons/The Mas Network.svg" 
-                  alt="MAS Sats" 
-                  style={{ 
-                    width: '20px', 
-                    height: '20px',
-                    verticalAlign: 'middle'
-                  }} 
-                />
               </Link>
               <a 
                 href="https://app.velar.com/swap" 

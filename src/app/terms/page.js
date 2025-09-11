@@ -1,12 +1,16 @@
 'use client';
 import './terms.css';
 import { useTranslation } from 'react-i18next';
+import '../../i18n';
+import Header from '../components/header';
 
 export default function TermsPage() {
   const { t } = useTranslation();
   
   return (
-    <div className="terms-container">
+    <>
+      <Header />
+      <div className="terms-container">
       <div className="terms-content">
         <h1>📋 {t('terms_of_service_risk_disclosure')}</h1>
         
@@ -246,6 +250,7 @@ export default function TermsPage() {
           </p>
         </div>
       </div>
-    </div>
+      </div>
+    </>
   );
 }
