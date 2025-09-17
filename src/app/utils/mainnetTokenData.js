@@ -359,7 +359,7 @@ export function validateMainnetTokenData(tokenData) {
   }
   
   // Check if it's actually a mainnet token
-  if (tokenData.tabType !== 'featured') {
+  if (tokenData.tabType !== 'featured' && tokenData.tabType !== 'user_created_mainnet') {
     return { isValid: false, error: 'Token must be a mainnet token' };
   }
   

@@ -19,9 +19,9 @@ const geistMono = Geist_Mono({
 
 export const metadata = {
   // Basic SEO
-  title: "Play to Earn Bitcoin",
-  description: "Play to Earn Bitcoin",
-  keywords: "Play to Earn Bitcoin, Bitcoin DeFi, The Forever Pump Protocol, MAS Sats, Stacks blockchain, decentralized trading, cryptocurrency, Bitcoin Layer 3, DeFi platform, token trading, blockchain trading, meme coin, sBTC, STX, Stacks, Pump.fun, staking, yield farming, liquidity pools, yield farm, The MAS Network, Bitcoin DeFi tokens, Stacks DeFi, sBTC trading, meme coin trading, DeFi staking, yield optimization, liquidity mining, Bitcoin Layer 3 DeFi, Stacks ecosystem, DeFi yield farming, cryptocurrency staking, Bitcoin DeFi platform",
+  title: "Play-To-Earn Bitcoin",
+  description: "Play-To-Earn Bitcoin",
+  keywords: "Play-To-Earn Bitcoin, Bitcoin DeFi, The Forever Pump Protocol, MAS Sats, Stacks blockchain, decentralized trading, cryptocurrency, Bitcoin Layer 3, DeFi platform, token trading, blockchain trading, meme coin, sBTC, STX, Stacks, Pump.fun, staking, yield farming, liquidity pools, yield farm, The MAS Network, Bitcoin DeFi tokens, Stacks DeFi, sBTC trading, meme coin trading, DeFi staking, yield optimization, liquidity mining, Bitcoin Layer 3 DeFi, Stacks ecosystem, DeFi yield farming, cryptocurrency staking, Bitcoin DeFi platform",
   authors: [{ name: "Teiko Labs" }],
   creator: "Teiko Labs",
   publisher: "Teiko Labs",
@@ -43,8 +43,8 @@ export const metadata = {
     locale: 'en_US',
     url: 'https://teikolabs.com', // Replace with your actual domain
     siteName: 'Teiko Labs',
-    title: 'Teiko Labs - Play to Earn Bitcoin',
-    description: 'Play to Earn Bitcoin',
+    title: 'Teiko Labs - Play-To-Earn Bitcoin',
+    description: 'Play-To-Earn Bitcoin',
     images: [
       {
         url: '/logo.png', // Replace with your actual OG image
@@ -60,8 +60,8 @@ export const metadata = {
     card: 'summary_large_image',
     site: '@TeikoLabs', // Replace with your actual Twitter handle
     creator: '@TeikoLabs', // Replace with your actual Twitter handle
-    title: 'Teiko Labs - Play to Earn Bitcoin',
-    description: 'Play to Earn Bitcoin',
+    title: 'Teiko Labs - Play-To-Earn Bitcoin',
+    description: 'Play-To-Earn Bitcoin',
     images: ['/logo.png'], // Replace with your actual Twitter image
   },
   
@@ -93,7 +93,7 @@ export const metadata = {
   category: 'technology',
   
   // Classification
-  classification: 'Play to Earn Bitcoin',
+  classification: 'Play-To-Earn Bitcoin',
   
   // Other
   referrer: 'origin-when-cross-origin',
@@ -138,7 +138,7 @@ export default function RootLayout({ children }) {
               "@context": "https://schema.org",
               "@type": "WebApplication",
               "name": "Teiko Labs",
-              "description": "Play to Earn Bitcoin",
+              "description": "Play-To-Earn Bitcoin",
               "url": "https://teikolabs.com",
               "applicationCategory": "FinanceApplication",
               "operatingSystem": "Web Browser",
@@ -169,7 +169,7 @@ export default function RootLayout({ children }) {
               "name": "Teiko Labs",
               "url": "https://teikolabs.com",
               "logo": "https://teikolabs.com/logo.png",
-              "description": "Play to Earn Bitcoin",
+              "description": "Play-To-Earn Bitcoin",
               "sameAs": [
                 "https://twitter.com/TeikoLabs",
                 "https://github.com/TeikoLabs"

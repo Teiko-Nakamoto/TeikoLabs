@@ -8,7 +8,7 @@ import Footer from '../components/footer';
 import Link from 'next/link';
 
 import './dashboard.css';
-import '../quiz/quiz.css';
+// Removed old test quiz styles import
 
 // Memoized loading component
 const LoadingSpinner = () => (
@@ -90,6 +90,7 @@ export default function MajorityHolderDashboard() {
   const [userRank, setUserRank] = useState(null);
   const [levelName, setLevelName] = useState('Novice');
   const [tiedUsers, setTiedUsers] = useState(0);
+  const [isQuizBlocked, setIsQuizBlocked] = useState(false);
   
   // Quiz management state
   const [quizForm, setQuizForm] = useState({
@@ -175,6 +176,32 @@ export default function MajorityHolderDashboard() {
     return () => window.removeEventListener('storage', handleStorageChange);
   }, []);
 
+  // Load quiz block flag
+  useEffect(() => {
+    const fetchBlock = async () => {
+      try {
+        const res = await fetch('/api/settings/quiz-block');
+        const data = await res.json();
+        if (data.success) setIsQuizBlocked(!!data.blocked);
+      } catch {}
+    };
+    fetchBlock();
+  }, []);
+
+  // Re-check block flag whenever user navigates to the quiz tab
+  useEffect(() => {
+    const refreshIfQuiz = async () => {
+      if (activeTab === 'quiz') {
+        try {
+          const res = await fetch('/api/settings/quiz-block');
+          const data = await res.json();
+          if (data.success) setIsQuizBlocked(!!data.blocked);
+        } catch {}
+      }
+    };
+    refreshIfQuiz();
+  }, [activeTab]);
+
   // Load end goal on component mount
   useEffect(() => {
     loadEndGoal(); // Load for all users, not just admins
@@ -250,6 +277,25 @@ export default function MajorityHolderDashboard() {
     
     const userRank = userIndex + 1;
     const userPoints = leaderboardData[userIndex].totalPoints; // Changed from total_points to totalPoints
+
+    // If user has zero points, treat as unranked with 0% progress
+    if (!userPoints || userPoints <= 0) {
+      setUserRank(null);
+      setLevelName('Unranked');
+      setTiedUsers(0);
+      setUserLevel(6);
+      setPointsToNextLevel(0);
+      setLevelProgress(0);
+      return {
+        rank: null,
+        level: 6,
+        levelName: 'Unranked',
+        points: 0,
+        tiedUsers: 0,
+        nextLevelPoints: 0,
+        progress: 0
+      };
+    }
     
     console.log('✅ User rank calculated:', { rank: userRank, points: userPoints });
     
@@ -615,6 +661,23 @@ export default function MajorityHolderDashboard() {
         // Refresh user's quiz points when leaderboard is loaded
         if (connectedAddress) {
           loadUserQuizPoints(connectedAddress);
+        }
+
+        // Auto-block quizzes when any user reaches the end goal
+        try {
+          const maxPoints = Math.max(
+            ...data.leaderboard.map(u => Number(u.totalPoints) || 0)
+          );
+          if (endGoalPoints > 0 && maxPoints >= endGoalPoints && !isQuizBlocked) {
+            await fetch('/api/settings/quiz-block', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ blocked: true })
+            });
+            setIsQuizBlocked(true);
+          }
+        } catch (e) {
+          console.warn('Auto-block check failed:', e?.message || e);
         }
       } else {
         console.error('Failed to load leaderboard:', data.error);
@@ -1038,28 +1101,7 @@ export default function MajorityHolderDashboard() {
     }
   };
 
-  const updateCompetitionStatus = async () => {
-    try {
-      console.log('🔄 Updating competition status...');
-      const response = await fetch('/api/quiz/auto-update-status', {
-        method: 'POST'
-      });
-      const data = await response.json();
-      
-      console.log('📊 Update response:', data);
-      
-      if (data.success) {
-        console.log('✅ Competition status updated!');
-        await loadCompetitionStatus();
-        alert(`Competition status updated!\n\n${data.message}\n\nPrevious: ${data.previousStatus}\nNew: ${data.newStatus}\n\nStatus changed: ${data.statusChanged ? 'Yes' : 'No'}`);
-      } else {
-        alert('Error updating competition status: ' + data.error);
-      }
-    } catch (error) {
-      console.error('Error updating competition status:', error);
-      alert('Error updating competition status');
-    }
-  };
+  // Removed updateCompetitionStatus (deprecated)
 
   const toggleCompetitionStatus = async () => {
     const newStatus = competitionStatus === 'active' ? 'ended' : 'active';
@@ -1132,259 +1174,19 @@ export default function MajorityHolderDashboard() {
     }
   };
 
-  const checkSettings = async () => {
-    try {
-      console.log('🔍 Checking quiz settings...');
-      const response = await fetch('/api/quiz/check-settings');
-      const data = await response.json();
-      
-      console.log('📊 Settings response:', data);
-      
-      if (data.success) {
-        const settings = data.settings;
-        const message = `Quiz Settings:\n\nCompetition Active: ${settings.competitionActive}\nEnd Goal Threshold: ${settings.endGoalThreshold}\nCompetition Status: ${settings.competitionStatus}\n\nLast Updated: ${settings.statusUpdatedAt || 'Never'}\n\nCurrent Points: 221,230\nThreshold: 220,000\nStatus: ${settings.competitionActive === 'true' ? 'ACTIVE' : 'PAUSED'}`;
-        alert(message);
-      } else {
-        alert('Error checking settings: ' + data.error);
-      }
-    } catch (error) {
-      console.error('Error checking settings:', error);
-      alert('Error checking settings');
-    }
-  };
+  // Removed checkSettings (deprecated)
 
-  const initCompetitionStatus = async () => {
-    try {
-      console.log('🔧 Initializing competition status...');
-      const response = await fetch('/api/quiz/init-competition-status', {
-        method: 'POST'
-      });
-      const data = await response.json();
-      
-      console.log('📊 Init response:', data);
-      
-      if (data.success) {
-        console.log('✅ Competition status initialized!');
-        alert(`Competition status initialized!\n\n${data.message}`);
-      } else {
-        alert('Error initializing competition status: ' + data.error);
-      }
-    } catch (error) {
-      console.error('Error initializing competition status:', error);
-      alert('Error initializing competition status');
-    }
-  };
+  // Removed initCompetitionStatus (deprecated)
 
-  const fixCompetitionActive = async () => {
-    try {
-      console.log('🔧 Fixing competition active setting...');
-      const response = await fetch('/api/quiz/fix-competition-active', {
-        method: 'POST'
-      });
-      const data = await response.json();
-      
-      console.log('📊 Fix response:', data);
-      
-      if (data.success) {
-        console.log('✅ Competition active setting fixed!');
-        alert(`Competition active setting fixed!\n\n${data.message}\n\nPrevious: ${data.previousActive}\nNew: ${data.newActive}\n\nStatus changed: ${data.statusChanged ? 'Yes' : 'No'}`);
-      } else {
-        alert('Error fixing competition active setting: ' + data.error);
-      }
-    } catch (error) {
-      console.error('Error fixing competition active setting:', error);
-      alert('Error fixing competition active setting');
-    }
-  };
+  // Removed fixCompetitionActive (deprecated)
 
-  const fixSchema = async () => {
-    try {
-      console.log('🔧 Fixing database schema...');
-      const response = await fetch('/api/quiz/fix-schema', {
-        method: 'POST'
-      });
-      const data = await response.json();
-      
-      console.log('📊 Schema fix response:', data);
-      
-      if (data.success) {
-        console.log('✅ Database schema fixed!');
-        alert(`Database schema fixed!\n\n${data.message}`);
-      } else {
-        alert('Error fixing database schema: ' + data.error);
-      }
-    } catch (error) {
-      console.error('Error fixing database schema:', error);
-      alert('Error fixing database schema');
-    }
-  };
+  // Removed fixSchema (deprecated)
 
-  const setStatusActive = async () => {
-    try {
-      console.log('🔧 Setting competition status to active...');
-      const response = await fetch('/api/quiz/set-status-active', {
-        method: 'POST'
-      });
-      const data = await response.json();
-      
-      console.log('📊 Set status response:', data);
-      
-      if (data.success) {
-        console.log('✅ Competition status set to active!');
-        alert(`Competition status set to active!\n\n${data.message}`);
-      } else {
-        alert('Error setting competition status: ' + data.error);
-      }
-    } catch (error) {
-      console.error('Error setting competition status:', error);
-      alert('Error setting competition status');
-    }
-  };
+  // Removed setStatusActive (deprecated)
 
-  const debugDatabase = async () => {
-    try {
-      console.log('🔍 Debugging database...');
-      const response = await fetch('/api/quiz/debug-database');
-      const data = await response.json();
-      
-      console.log('📊 Debug response:', data);
-      
-      if (data.success) {
-        console.log('✅ Database debugged!');
-        const results = data.results;
-        let message = 'Database Debug Results:\n\n';
-        
-        Object.keys(results).forEach(table => {
-          const result = results[table];
-          message += `${table}:\n`;
-          message += `  Exists: ${result.exists}\n`;
-          if (result.exists) {
-            message += `  Count: ${result.count}\n`;
-            if (result.data && result.data.length > 0) {
-              message += `  Sample: ${JSON.stringify(result.data[0])}\n`;
-            }
-          } else {
-            message += `  Error: ${result.error}\n`;
-          }
-          message += '\n';
-        });
-        
-        // Create a custom popup with copy button
-        const popup = document.createElement('div');
-        popup.style.cssText = `
-          position: fixed;
-          top: 50%;
-          left: 50%;
-          transform: translate(-50%, -50%);
-          background: #1a1a1a;
-          color: white;
-          padding: 20px;
-          border-radius: 10px;
-          border: 1px solid #333;
-          z-index: 10000;
-          max-width: 80vw;
-          max-height: 80vh;
-          overflow-y: auto;
-          font-family: monospace;
-          white-space: pre-wrap;
-        `;
-        
-        const text = document.createElement('div');
-        text.textContent = message;
-        text.style.marginBottom = '15px';
-        
-        const copyButton = document.createElement('button');
-        copyButton.textContent = '📋 Copy to Clipboard';
-        copyButton.style.cssText = `
-          background: #007bff;
-          color: white;
-          border: none;
-          padding: 10px 20px;
-          border-radius: 5px;
-          cursor: pointer;
-          margin-right: 10px;
-        `;
-        
-        const closeButton = document.createElement('button');
-        closeButton.textContent = '❌ Close';
-        closeButton.style.cssText = `
-          background: #dc3545;
-          color: white;
-          border: none;
-          padding: 10px 20px;
-          border-radius: 5px;
-          cursor: pointer;
-        `;
-        
-        const buttonContainer = document.createElement('div');
-        buttonContainer.appendChild(copyButton);
-        buttonContainer.appendChild(closeButton);
-        
-        popup.appendChild(text);
-        popup.appendChild(buttonContainer);
-        
-        // Add overlay
-        const overlay = document.createElement('div');
-        overlay.style.cssText = `
-          position: fixed;
-          top: 0;
-          left: 0;
-          width: 100%;
-          height: 100%;
-          background: rgba(0, 0, 0, 0.5);
-          z-index: 9999;
-        `;
-        
-        document.body.appendChild(overlay);
-        document.body.appendChild(popup);
-        
-        copyButton.onclick = () => {
-          navigator.clipboard.writeText(message);
-          copyButton.textContent = '✅ Copied!';
-          setTimeout(() => {
-            copyButton.textContent = '📋 Copy to Clipboard';
-          }, 2000);
-        };
-        
-        closeButton.onclick = () => {
-          document.body.removeChild(overlay);
-          document.body.removeChild(popup);
-        };
-        
-        overlay.onclick = () => {
-          document.body.removeChild(overlay);
-          document.body.removeChild(popup);
-        };
-      } else {
-        alert('Error debugging database: ' + data.error);
-      }
-    } catch (error) {
-      console.error('Error debugging database:', error);
-      alert('Error debugging database');
-    }
-  };
+  // Removed debugDatabase (deprecated)
 
-  const cleanupSettings = async () => {
-    try {
-      console.log('🧹 Cleaning up redundant settings...');
-      const response = await fetch('/api/quiz/cleanup-settings', {
-        method: 'POST'
-      });
-      const data = await response.json();
-      
-      console.log('📊 Cleanup response:', data);
-      
-      if (data.success) {
-        console.log('✅ Settings cleanup successful!');
-        alert(`Settings Cleanup Results:\n\n${data.message}\n\nRemaining settings:\n${JSON.stringify(data.remainingSettings, null, 2)}`);
-      } else {
-        alert('Error cleaning up settings: ' + data.error);
-      }
-    } catch (error) {
-      console.error('Error cleaning up settings:', error);
-      alert('Error cleaning up settings');
-    }
-  };
+  // Removed cleanupSettings (deprecated)
 
   const showCompetitionEndedModal = () => {
     // Create a beautiful competition ended modal
@@ -1661,7 +1463,9 @@ export default function MajorityHolderDashboard() {
                 className="progress-fill"
                 style={{ 
                   width: progressMode === 'competition' 
-                    ? `${Math.min((userQuizPoints || 0) / endGoalPoints * 100, 100)}%`
+                    ? `${Math.min((userQuizPoints || 0) / (endGoalPoints || 1) * 100, 100)}%`
+                    : (!userRank || userRank <= 0)
+                      ? '0%'
                     : userRank === 1 
                       ? '100%'
                       : userRank === 2
@@ -1683,7 +1487,7 @@ export default function MajorityHolderDashboard() {
                 </>
               ) : (
                 <>
-                  <span>⭐ Rank #{userRank || '?'} | {levelName}</span>
+                  <span>⭐ {userRank ? `Rank #${userRank}` : 'No Rank'} | {levelName}</span>
                   <span>
                     {userRank === 1 
                       ? '🥇 First Place!'
@@ -1715,12 +1519,12 @@ export default function MajorityHolderDashboard() {
                 fontSize: '0.875rem'
               }}>
                 {progressMode === 'competition' 
-                  ? `Rank #${userRank || '?'} | ${levelName} | ${(userQuizPoints || 0).toLocaleString()} points`
+                  ? `${userRank ? `Rank #${userRank}` : 'No Rank'} | ${levelName} | ${(userQuizPoints || 0).toLocaleString()} points`
                   : userRank === 1 
                     ? '🥇 First Place - Champion!'
                     : tiedUsers > 1 
                       ? `Rank #${userRank} (tied with ${tiedUsers} users) | ${levelName}`
-                      : `Rank #${userRank} | ${levelName} | ${(userQuizPoints || 0).toLocaleString()} points`
+                      : `${userRank ? `Rank #${userRank}` : 'No Rank'} | ${levelName} | ${(userQuizPoints || 0).toLocaleString()} points`
                 }
               </span>
             </div>
@@ -2189,7 +1993,65 @@ export default function MajorityHolderDashboard() {
 
           {/* Quiz Tab Content */}
           {activeTab === 'quiz' && (
-            <div className="quiz-content">
+            <div className="quiz-content" style={{ position: 'relative' }}>
+              {isQuizBlocked && (
+                <div style={{
+                  position: 'absolute',
+                  inset: 0,
+                  background: '#059669',
+                  borderRadius: '12px',
+                  zIndex: 10,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  padding: '16px'
+                }}>
+                  <div style={{
+                    width: '100%',
+                    maxWidth: '720px',
+                    background: '#047857',
+                    border: '2px solid rgba(255,255,255,0.15)',
+                    borderRadius: '12px',
+                    padding: window.innerWidth <= 480 ? '12px' : '16px',
+                    marginTop: window.innerWidth <= 480 ? '16px' : '24px',
+                    textAlign: 'center',
+                    color: '#ffffff'
+                  }}>
+                    <h2 style={{
+                      margin: 0,
+                      marginBottom: window.innerWidth <= 480 ? '12px' : '16px',
+                      fontSize: window.innerWidth <= 480 ? '18px' : '22px'
+                    }}>
+                      🎮 Quiz is over
+                    </h2>
+                    <p style={{
+                      margin: 0,
+                      marginTop: '6px',
+                      marginBottom: window.innerWidth <= 480 ? '10px' : '12px',
+                      lineHeight: 1.5,
+                      fontSize: window.innerWidth <= 480 ? '12px' : '14px'
+                    }}>
+                      Thanks to everyone who played! Rewards airdrop is coming soon.
+                      Check the Rewards tab for the winners list and each winner's share of the prize pool.
+                    </p>
+                    <button
+                      onClick={() => setActiveTab('rewards')}
+                      style={{
+                        background: '#f59e0b',
+                        color: '#1f2937',
+                        border: 'none',
+                        borderRadius: '8px',
+                        padding: window.innerWidth <= 480 ? '10px 12px' : '10px 16px',
+                        fontSize: window.innerWidth <= 480 ? '12px' : '14px',
+                        fontWeight: 700,
+                        cursor: 'pointer'
+                      }}
+                    >
+                      Go to Rewards
+                    </button>
+                  </div>
+                </div>
+              )}
               <div className="quiz-header">
               </div>
 
@@ -2199,6 +2061,17 @@ export default function MajorityHolderDashboard() {
                 <div className="wallet-warning">
                   <h3>🔗 Connect Your Wallet</h3>
                   <p>Please connect your wallet to participate in the quiz competition.</p>
+                  <div className="rank-banner" style={{
+                    marginTop: '12px',
+                    background: 'rgba(255,255,255,0.05)',
+                    border: '1px solid rgba(255,255,255,0.1)',
+                    borderRadius: '8px',
+                    padding: '10px',
+                    textAlign: 'center',
+                    color: '#9ca3af'
+                  }}>
+                    No Rank | Novice | 0 points
+                  </div>
                 </div>
               ) : gameState === 'loading' ? (
                 <div className="quiz-selection">
@@ -2212,10 +2085,9 @@ export default function MajorityHolderDashboard() {
                           <div className="quiz-stats">
                               <span className="stat"><span className="stat-label">Time:</span><span className="stat-value">{quiz.time_per_question}s</span></span>
                               <span className="stat"><span className="stat-label">Points:</span><span className="stat-value">{rewardLoading ? 'Updating...' : sbtcFeePool.toLocaleString()}</span></span>
-                              <span className="stat"><span className="stat-label">Status:</span><span className="stat-value">Visible</span></span>
                           </div>
                           </div>
-                          {quiz.description && <p className="quiz-description">{quiz.description}</p>}
+                          {quiz.description && <p className="quiz-description" style={{ color: '#ffffff' }}>{quiz.description}</p>}
                           <button 
                             onClick={() => startQuiz(quiz.id)}
                             className="start-quiz-button"
@@ -2321,7 +2193,64 @@ export default function MajorityHolderDashboard() {
 
           {/* Leaderboard Tab Content */}
           {activeTab === 'leaderboard' && (
-            <div className="leaderboard-content">
+            <div className="leaderboard-content" style={{ position: 'relative', minHeight: '200px' }}>
+              {isQuizBlocked && (
+                <div style={{
+                  position: 'absolute',
+                  inset: 0,
+                  background: '#059669',
+                  borderRadius: '12px',
+                  zIndex: 10,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  padding: '16px'
+                }}>
+                  <div style={{
+                    width: '100%',
+                    maxWidth: '720px',
+                    background: '#047857',
+                    border: '2px solid rgba(255,255,255,0.15)',
+                    borderRadius: '12px',
+                    padding: window.innerWidth <= 480 ? '12px' : '16px',
+                    marginTop: window.innerWidth <= 480 ? '16px' : '24px',
+                    textAlign: 'center',
+                    color: '#ffffff'
+                  }}>
+                    <h2 style={{
+                      margin: 0,
+                      marginBottom: window.innerWidth <= 480 ? '12px' : '16px',
+                      fontSize: window.innerWidth <= 480 ? '18px' : '22px'
+                    }}>
+                      🎮 Quiz is over
+                    </h2>
+                    <p style={{
+                      margin: 0,
+                      marginTop: '6px',
+                      marginBottom: window.innerWidth <= 480 ? '10px' : '12px',
+                      lineHeight: 1.5,
+                      fontSize: window.innerWidth <= 480 ? '12px' : '14px'
+                    }}>
+                      Rewards airdrop is coming soon. View the Rewards tab for the winners and prize pool shares.
+                    </p>
+                    <button
+                      onClick={() => setActiveTab('rewards')}
+                      style={{
+                        background: '#f59e0b',
+                        color: '#1f2937',
+                        border: 'none',
+                        borderRadius: '8px',
+                        padding: window.innerWidth <= 480 ? '10px 12px' : '10px 16px',
+                        fontSize: window.innerWidth <= 480 ? '12px' : '14px',
+                        fontWeight: 700,
+                        cursor: 'pointer'
+                      }}
+                    >
+                      Go to Rewards
+                    </button>
+                  </div>
+                </div>
+              )}
               <div className="leaderboard-header">
                 <h2>🏆 Quiz Leaderboard</h2>
                 <div className="competition-status">
@@ -2333,30 +2262,32 @@ export default function MajorityHolderDashboard() {
                 </div>
               </div>
 
-              <div className="leaderboard-table">
-                <div className="table-header">
-                  <span>Rank</span>
-                  <span>Wallet Address</span>
-                  <span>Points</span>
-                  <span>Quizzes</span>
-                  <span>Perfect Scores</span>
-                </div>
-                {leaderboard.length === 0 ? (
-                  <div className="no-leaderboard">
-                    <p>No participants yet. Be the first to play!</p>
+              {!isQuizBlocked && (
+                <div className="leaderboard-table">
+                  <div className="table-header">
+                    <span>Rank</span>
+                    <span>Wallet Address</span>
+                    <span>Points</span>
+                    <span>Quizzes</span>
+                    <span>Perfect Scores</span>
                   </div>
-                ) : (
-                  leaderboard.map((user, index) => (
-                    <div key={index} className="leaderboard-row">
-                      <span className="rank">#{user.rank}</span>
-                      <span className="address">{formatAddress(user.walletAddress)}</span>
-                      <span className="points">{user.totalPoints}</span>
-                      <span className="quizzes">{user.totalQuizzesCompleted}</span>
-                      <span className="perfect">{user.perfectScores}</span>
+                  {leaderboard.length === 0 ? (
+                    <div className="no-leaderboard">
+                      <p>No participants yet. Be the first to play!</p>
                     </div>
-                  ))
-                )}
-              </div>
+                  ) : (
+                    leaderboard.map((user, index) => (
+                      <div key={index} className="leaderboard-row">
+                        <span className="rank">#{user.rank}</span>
+                        <span className="address">{formatAddress(user.walletAddress)}</span>
+                        <span className="points">{user.totalPoints}</span>
+                        <span className="quizzes">{user.totalQuizzesCompleted}</span>
+                        <span className="perfect">{user.perfectScores}</span>
+                      </div>
+                    ))
+                  )}
+                </div>
+              )}
             </div>
           )}
 
@@ -2483,6 +2414,31 @@ export default function MajorityHolderDashboard() {
                       ➕ Create New Quiz
                     </button>
                     
+                    {/* Placeholder button with no logic */}
+                    <button 
+                      className="block-quiz-button"
+                      onClick={async () => {
+                        try {
+                          const next = !isQuizBlocked;
+                          await fetch('/api/settings/quiz-block', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ blocked: next }) });
+                          setIsQuizBlocked(next);
+                        } catch {}
+                      }}
+                      style={{
+                        background: isQuizBlocked ? 'linear-gradient(135deg, #16a34a 0%, #22c55e 100%)' : 'linear-gradient(135deg, #1f2937 0%, #374151 100%)',
+                        color: 'white',
+                        border: '1px solid rgba(255, 255, 255, 0.2)',
+                        padding: '0.75rem 1.5rem',
+                        borderRadius: '8px',
+                        cursor: 'pointer',
+                        fontWeight: '600',
+                        marginLeft: '1rem',
+                        opacity: 1
+                      }}
+                    >
+                      {isQuizBlocked ? '✅ Unblock Quiz' : '🛑 Block Quiz'}
+                    </button>
+                    
                     <button 
                       onClick={toggleCompetitionStatus}
                       disabled={updatingCompetitionStatus}
@@ -2539,71 +2495,9 @@ export default function MajorityHolderDashboard() {
                       🔍 Debug End Goal
                     </button>
                     
-                    <button 
-                      onClick={updateCompetitionStatus} 
-                      className="update-status-button"
-                    >
-                      🔄 Update Competition Status
-                    </button>
                     
-                    <button 
-                      onClick={checkSettings} 
-                      className="check-settings-button"
-                    >
-                      🔍 Check Settings
-                    </button>
                     
-                    <button 
-                      onClick={initCompetitionStatus} 
-                      className="init-status-button"
-                    >
-                      🔧 Init Status
-                    </button>
                     
-                    <button 
-                      onClick={fixCompetitionActive} 
-                      className="fix-active-button"
-                    >
-                      🔧 Fix Active
-                    </button>
-                    
-                    <button 
-                      onClick={fixSchema} 
-                      className="fix-schema-button"
-                    >
-                      🔧 Fix Schema
-                    </button>
-                    
-                    <button 
-                      onClick={setStatusActive} 
-                      className="set-status-button"
-                    >
-                      ✅ Set Active
-                    </button>
-                    
-                    <button 
-                      onClick={debugDatabase} 
-                      className="debug-database-button"
-                    >
-                      🔍 Debug DB
-                    </button>
-                    
-                    <button 
-                      onClick={cleanupSettings} 
-                      className="cleanup-settings-button"
-                      style={{
-                        background: 'linear-gradient(135deg, #ff6b6b 0%, #ee5a52 100%)',
-                        color: 'white',
-                        border: 'none',
-                        padding: '0.75rem 1.5rem',
-                        borderRadius: '8px',
-                        cursor: 'pointer',
-                        fontWeight: '600',
-                        marginLeft: '1rem'
-                      }}
-                    >
-                      🧹 Cleanup Settings
-                    </button>
                   </div>
 
                   {/* End Goal Configuration */}

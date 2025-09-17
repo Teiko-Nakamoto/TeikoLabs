@@ -398,7 +398,7 @@ const UnlockProgressBar = React.memo(function UnlockProgressBar({
     console.log('🔍 handleBuy function called');
     
     // FINAL CHECKPOINT: Verify Teiko token balance before allowing transaction
-    const requiredTeikoTokens = 21000;
+    const requiredTeikoTokens = 210000; // 210k Teiko required for mainnet trading
     
     // Check wallet address FIRST to avoid race condition
     const connectedAddress = localStorage.getItem('connectedAddress');
@@ -721,7 +721,7 @@ const UnlockProgressBar = React.memo(function UnlockProgressBar({
     console.log('🔍 handleSell function called');
     
     // FINAL CHECKPOINT: Verify Teiko token balance before allowing transaction
-    const requiredTeikoTokens = 21000;
+    const requiredTeikoTokens = 210000; // 210k Teiko required for mainnet trading
     
     // Check wallet address FIRST to avoid race condition
     const connectedAddress = localStorage.getItem('connectedAddress');
@@ -1286,23 +1286,77 @@ const UnlockProgressBar = React.memo(function UnlockProgressBar({
             width: window.innerWidth <= 768 ? '100%' : 'auto'
           }}>
 
-            {/* Remaining Supply label above holdings */}
-            <div style={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              gap: '6px',
-              fontSize: window.innerWidth <= 768 ? '13px' : '15px',
-              fontWeight: '700',
-              color: '#fbbf24'
-            }}>
-              <span>Remaining Supply to Buy: {remainingSupply}</span>
-              <img 
-                src="/icons/The Mas Network.svg" 
-                alt="MAS Sats" 
-                style={{ width: window.innerWidth <= 768 ? '14px' : '16px', height: window.innerWidth <= 768 ? '14px' : '16px' }}
-              />
-            </div>
+            {/* Dummy overall supply progress (total bought out of 21,000,000) */}
+            {(() => {
+              const TOTAL_SUPPLY = 21000000; // 21M tokens
+              // remainingSupply may be a formatted string like "1,234,567"; try to parse
+              const remainingNumeric = (() => {
+                try {
+                  const raw = (remainingSupply ?? '0').toString().replace(/,/g, '');
+                  if (raw.trim() === '' || raw.includes('--') || /[^0-9]/.test(raw)) return null;
+                  const n = parseInt(raw, 10);
+                  return Number.isFinite(n) ? Math.max(0, n) : null;
+                } catch { return null; }
+              })();
+              if (remainingNumeric === null) return null; // Hide bar if we cannot parse
+              const bought = Math.max(0, TOTAL_SUPPLY - remainingNumeric);
+              const percent = Math.max(0, Math.min(100, Math.round((bought / TOTAL_SUPPLY) * 100)));
+              return (
+                <div style={{ marginBottom: window.innerWidth <= 768 ? '8px' : '10px' }}>
+                  <div style={{
+                    display: 'flex',
+                    justifyContent: 'center',
+                    alignItems: 'center',
+                    gap: '8px',
+                    fontSize: window.innerWidth <= 768 ? '12px' : '14px',
+                    color: '#fbbf24',
+                    fontWeight: 700
+                  }}>
+                    <span style={{ color: 'inherit' }}>Total Supply Bought:</span>
+                    <span style={{ color: 'inherit' }}>{bought.toLocaleString()}</span>
+                    <span style={{ color: 'inherit' }}>of</span>
+                    <span style={{ color: 'inherit' }}>{TOTAL_SUPPLY.toLocaleString()}</span>
+                    <span style={{ color: 'inherit' }}>({percent}%)</span>
+                  </div>
+                  <div style={{
+                    marginTop: 6,
+                    height: 8,
+                    borderRadius: 9999,
+                    background: 'rgba(255,255,255,0.15)',
+                    overflow: 'hidden',
+                    boxShadow: 'inset 0 0 4px rgba(0,0,0,0.3)',
+                    position: 'relative',
+                    border: '2px solid #000000'
+                  }}>
+                    <div style={{
+                      width: `${percent}%`,
+                      height: '100%',
+                      background: 'linear-gradient(90deg, #fbbf24 0%, #f59e0b 100%)'
+                    }} />
+                  </div>
+                </div>
+              );
+            })()}
+
+            {/* Remaining Supply label hidden per request; data still used elsewhere */}
+            {false && (
+              <div style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '6px',
+                fontSize: window.innerWidth <= 768 ? '13px' : '15px',
+                fontWeight: '700',
+                color: '#fbbf24'
+              }}>
+                <span>Remaining Supply to Buy: {remainingSupply}</span>
+                <img 
+                  src="/icons/The Mas Network.svg" 
+                  alt="MAS Sats" 
+                  style={{ width: window.innerWidth <= 768 ? '14px' : '16px', height: window.innerWidth <= 768 ? '14px' : '16px' }}
+                />
+              </div>
+            )}
 
             
             {/* Current Token Balance Display */}
@@ -1319,15 +1373,7 @@ const UnlockProgressBar = React.memo(function UnlockProgressBar({
               textAlign: window.innerWidth <= 768 ? 'center' : 'left'
             }}>
               <span style={{ whiteSpace: window.innerWidth <= 768 ? 'normal' : 'nowrap', color: '#fbbf24' }}>
-                {(() => {
-                  // Check if this is a mainnet token (SP address) or testnet token (ST address)
-                  if (dexInfo) {
-                    const [dexContractAddress] = dexInfo.split('.');
-                    const isMainnet = dexContractAddress.startsWith('SP');
-                    return isMainnet ? 'Holdings: ' : 'Your Token Balance: ';
-                  }
-                  return 'Your Token Balance: ';
-                })()}{userTokenBalance.toLocaleString()}
+                {'Your Holdings: '}{userTokenBalance.toLocaleString()}
               </span>
               <img 
                 src="/icons/The Mas Network.svg" 
@@ -1339,39 +1385,41 @@ const UnlockProgressBar = React.memo(function UnlockProgressBar({
               />
             </div>
             
-            {/* Current Revenue Display */}
-            <div style={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              gap: '4px',
-              marginTop: window.innerWidth <= 768 ? '6px' : '8px',
-              fontSize: window.innerWidth <= 768 ? '12px' : '14px',
-              fontWeight: '600',
-              color: '#ffa500',
-              flexWrap: window.innerWidth <= 768 ? 'wrap' : 'nowrap',
-              textAlign: window.innerWidth <= 768 ? 'center' : 'left'
-            }}>
-              <span style={{ whiteSpace: window.innerWidth <= 768 ? 'normal' : 'nowrap' }}>
-                Current Profit Available to Claim: {revenue}
-              </span>
-              <img 
-                src="/icons/sats1.svg" 
-                alt="Sats" 
-                style={{ 
-                  width: window.innerWidth <= 768 ? '14px' : '16px', 
-                  height: window.innerWidth <= 768 ? '14px' : '16px'
-                }} 
-              />
-              <img 
-                src="/icons/Vector.svg" 
-                alt="Vector" 
-                style={{ 
-                  width: window.innerWidth <= 768 ? '14px' : '16px', 
-                  height: window.innerWidth <= 768 ? '14px' : '16px'
-                }} 
-              />
-            </div>
+            {/* Current Revenue Display hidden (available in Whale Access) */}
+            {false && (
+              <div style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '4px',
+                marginTop: window.innerWidth <= 768 ? '6px' : '8px',
+                fontSize: window.innerWidth <= 768 ? '12px' : '14px',
+                fontWeight: '600',
+                color: '#ffa500',
+                flexWrap: window.innerWidth <= 768 ? 'wrap' : 'nowrap',
+                textAlign: window.innerWidth <= 768 ? 'center' : 'left'
+              }}>
+                <span style={{ whiteSpace: window.innerWidth <= 768 ? 'normal' : 'nowrap' }}>
+                  Current Profit Available to Claim: {revenue}
+                </span>
+                <img 
+                  src="/icons/sats1.svg" 
+                  alt="Sats" 
+                  style={{ 
+                    width: window.innerWidth <= 768 ? '14px' : '16px', 
+                    height: window.innerWidth <= 768 ? '14px' : '16px'
+                  }} 
+                />
+                <img 
+                  src="/icons/Vector.svg" 
+                  alt="Vector" 
+                  style={{ 
+                    width: window.innerWidth <= 768 ? '14px' : '16px', 
+                    height: window.innerWidth <= 768 ? '14px' : '16px'
+                  }} 
+                />
+              </div>
+            )}
             
             {/* Teiko Token Holdings Display - Only show for mainnet tokens */}
             {(() => {
@@ -2270,7 +2318,7 @@ const UnlockProgressBar = React.memo(function UnlockProgressBar({
           <button
             onClick={() => {
               // Check Teiko token balance for trading access (only for mainnet)
-              const requiredTeikoTokens = 21000;
+              const requiredTeikoTokens = 210000;
               const connectedAddress = localStorage.getItem('connectedAddress');
               const isTestnetWallet = connectedAddress && connectedAddress.startsWith('ST');
               const isMainnetWallet = connectedAddress && connectedAddress.startsWith('SP');
@@ -2375,6 +2423,42 @@ const UnlockProgressBar = React.memo(function UnlockProgressBar({
             }}
           >
             🐋 Whale Access
+          </button>
+
+          {/* Play-To-Earn Button */}
+          <button
+            onClick={() => {
+              try {
+                window.location.href = '/majority-holder-dashboard?tab=quiz';
+              } catch (e) {
+                console.error('Failed to navigate to majority-holder-dashboard?tab=quiz', e);
+              }
+            }}
+            style={{
+              backgroundColor: '#f59e0b',
+              color: 'white',
+              border: 'none',
+              borderRadius: '8px',
+              padding: '8px 16px',
+              fontSize: '14px',
+              fontWeight: '600',
+              cursor: 'pointer',
+              transition: 'all 0.2s ease',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '6px',
+              marginLeft: '8px'
+            }}
+            onMouseEnter={(e) => {
+              e.target.style.backgroundColor = '#d97706';
+              e.target.style.transform = 'translateY(-1px)';
+            }}
+            onMouseLeave={(e) => {
+              e.target.style.backgroundColor = '#f59e0b';
+              e.target.style.transform = 'translateY(0)';
+            }}
+          >
+            🎮 Play-To-Earn
           </button>
 
 
@@ -3314,7 +3398,11 @@ const UnlockProgressBar = React.memo(function UnlockProgressBar({
                          flexDirection: 'column',
                          alignItems: 'center',
                          gap: '4px',
-                         minWidth: '80px'
+                         minWidth: '80px',
+                         padding: '6px',
+                         borderRadius: '12px',
+                         border: '2px solid #fbbf24',
+                         boxShadow: '0 0 10px rgba(251, 191, 36, 0.6)'
                        }}>
                          <div style={{ 
                            fontSize: '24px'
@@ -3639,24 +3727,47 @@ const UnlockProgressBar = React.memo(function UnlockProgressBar({
              }}>
                Teiko Token Requirement
              </h2>
-             <p style={{
+            <p style={{
                color: '#ccc',
                fontSize: window.innerWidth <= 768 ? '14px' : '16px',
                lineHeight: '1.5',
                marginBottom: window.innerWidth <= 768 ? '20px' : '24px',
-               fontFamily: 'Arial, sans-serif'
+              fontFamily: 'Arial, sans-serif',
+              whiteSpace: 'nowrap'
              }}>
-               You need at least <strong style={{ color: '#fbbf24' }}>21,000 Teiko tokens</strong> to access trading.
+              You need at least <strong style={{ color: '#fbbf24' }}>210,000 $TEIKO</strong> to access trading.
              </p>
-             <p style={{
-               color: '#ccc',
-               fontSize: window.innerWidth <= 768 ? '12px' : '14px',
-               lineHeight: '1.5',
-               marginBottom: window.innerWidth <= 768 ? '20px' : '24px',
-               fontFamily: 'Arial, sans-serif'
-             }}>
-               <strong style={{ color: '#fbbf24' }}>Ecosystem Benefits:</strong> Trading fees from MAS Sats are used to buy back Teiko tokens weekly, creating a sustainable ecosystem where every holder contributes to mutual growth.
-             </p>
+            {/* Direct trading option on Velar (no restriction) */}
+            <a 
+              href="https://app.velar.com/swap"
+              target="_blank" 
+              rel="noopener noreferrer"
+              style={{
+                backgroundColor: '#ff6a00',
+                color: '#000000',
+                textDecoration: 'none',
+                padding: window.innerWidth <= 768 ? '10px 20px' : '12px 24px',
+                borderRadius: '8px',
+                fontSize: window.innerWidth <= 768 ? '14px' : '16px',
+                fontWeight: 'bold',
+                display: 'block',
+                width: '100%',
+                whiteSpace: 'nowrap',
+                transition: 'all 0.2s ease',
+                marginBottom: window.innerWidth <= 768 ? '12px' : '16px'
+              }}
+              onMouseEnter={(e) => {
+                e.target.style.backgroundColor = '#e65c00';
+                e.target.style.transform = 'translateY(-1px)';
+              }}
+              onMouseLeave={(e) => {
+                e.target.style.backgroundColor = '#ff6a00';
+                e.target.style.transform = 'translateY(0)';
+              }}
+            >
+              🔁 Trade $MAS with no restriction on Velar
+            </a>
+            {/* Ecosystem Benefits paragraph intentionally removed per OTC positioning */}
              <div style={{
                backgroundColor: '#374151',
                borderRadius: '8px',
@@ -3676,56 +3787,68 @@ const UnlockProgressBar = React.memo(function UnlockProgressBar({
                  fontSize: window.innerWidth <= 768 ? '16px' : '18px',
                  fontWeight: 'bold'
                }}>
-                 {loadingTeikoBalance ? 'Loading...' : teikoTokenBalance.toLocaleString()}
-                 <img 
-                   src="/logo.png" 
-                   alt="Teiko Labs" 
-                   style={{ 
-                     width: '16px', 
-                     height: '16px',
-                     verticalAlign: 'middle',
-                     marginLeft: '4px'
-                   }} 
-                 />
+                {loadingTeikoBalance ? 'Loading...' : teikoTokenBalance.toLocaleString()}
                </p>
              </div>
-             <div style={{
+            <div style={{
                marginBottom: window.innerWidth <= 768 ? '20px' : '24px'
              }}>
+              <a 
+                href="https://app.velar.com/swap"
+                target="_blank" 
+                rel="noopener noreferrer"
+                style={{
+                  backgroundColor: '#ff6a00',
+                  color: '#000000',
+                  textDecoration: 'none',
+                  padding: window.innerWidth <= 768 ? '10px 20px' : '12px 24px',
+                  borderRadius: '8px',
+                  fontSize: window.innerWidth <= 768 ? '14px' : '16px',
+                  fontWeight: 'bold',
+                  display: 'block',
+                  width: '100%',
+                  transition: 'all 0.2s ease',
+                  marginBottom: window.innerWidth <= 768 ? '12px' : '16px'
+                }}
+                onMouseEnter={(e) => {
+                  e.target.style.backgroundColor = '#e65c00';
+                  e.target.style.transform = 'translateY(-1px)';
+                }}
+                onMouseLeave={(e) => {
+                  e.target.style.backgroundColor = '#ff6a00';
+                  e.target.style.transform = 'translateY(0)';
+                }}
+              >
+                🛒 Buy $TEIKO with SBTC on Velar
+              </a>
                <a 
                  href="https://stx.city/bonding-curve/SP1T0VY3DNXRVP6HBM75DFWW0199CR0X15PC1D81B.teiko-token-stxcity-dex/SP1T0VY3DNXRVP6HBM75DFWW0199CR0X15PC1D81B.teiko-token-stxcity/SP359XMJYWRDY24H7VDYJWKPAGHN75V8M0W1NBF3P" 
                  target="_blank" 
                  rel="noopener noreferrer"
                  style={{
-                   backgroundColor: '#fbbf24',
-                   color: '#1a1a2e',
+                  backgroundColor: '#3b82f6',
+                  color: '#000000',
                    textDecoration: 'none',
                    padding: window.innerWidth <= 768 ? '10px 20px' : '12px 24px',
                    borderRadius: '8px',
                    fontSize: window.innerWidth <= 768 ? '14px' : '16px',
                    fontWeight: 'bold',
-                   display: 'inline-block',
+                  display: 'block',
+                  width: '100%',
                    transition: 'all 0.2s ease',
                    marginBottom: window.innerWidth <= 768 ? '12px' : '16px'
                  }}
                  onMouseEnter={(e) => {
-                   e.target.style.backgroundColor = '#f59e0b';
+                  e.target.style.backgroundColor = '#2563eb';
                    e.target.style.transform = 'translateY(-1px)';
                  }}
                  onMouseLeave={(e) => {
-                   e.target.style.backgroundColor = '#fbbf24';
+                  e.target.style.backgroundColor = '#3b82f6';
                    e.target.style.transform = 'translateY(0)';
-                 }}
-               >
-                 🛒 Buy Teiko Tokens on STX.CITY
+                }}
+              >
+                🛒 Buy $TEIKO with STX on STX.CITY
                </a>
-               <p style={{
-                 color: '#888',
-                 fontSize: window.innerWidth <= 768 ? '10px' : '12px',
-                 margin: 0
-               }}>
-                 Opens in STX.CITY bonding curve
-               </p>
              </div>
              <button
                onClick={() => setShowRestrictionPopup(false)}

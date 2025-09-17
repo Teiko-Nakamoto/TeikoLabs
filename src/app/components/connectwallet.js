@@ -119,6 +119,21 @@ const ConnectWallet = forwardRef((props, ref) => {
         if (onConnect) {
           onConnect(stxAddr);
         }
+
+        // Force a full page refresh on first successful connection
+        try {
+          // Avoid accidental loops using a short-lived session flag
+          if (typeof window !== 'undefined') {
+            const justReloaded = sessionStorage.getItem('wallet_connect_reloaded');
+            if (!justReloaded) {
+              sessionStorage.setItem('wallet_connect_reloaded', '1');
+              setTimeout(() => {
+                sessionStorage.removeItem('wallet_connect_reloaded');
+                window.location.reload();
+              }, 100);
+            }
+          }
+        } catch {}
       } else {
         throw new Error('Connection succeeded but no address found');
       }
@@ -155,6 +170,20 @@ const ConnectWallet = forwardRef((props, ref) => {
       setUserAddress(null);
       setConnectionRetries(0);
       console.log('🔌 Disconnected successfully');
+
+      // Force a full page refresh on disconnect
+      try {
+        if (typeof window !== 'undefined') {
+          const justReloaded = sessionStorage.getItem('wallet_disconnect_reloaded');
+          if (!justReloaded) {
+            sessionStorage.setItem('wallet_disconnect_reloaded', '1');
+            setTimeout(() => {
+              sessionStorage.removeItem('wallet_disconnect_reloaded');
+              window.location.reload();
+            }, 100);
+          }
+        }
+      } catch {}
     } catch (error) {
       console.error('❌ Disconnect error:', error);
     }

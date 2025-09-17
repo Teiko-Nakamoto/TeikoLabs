@@ -248,7 +248,7 @@ export default function DocsPage() {
           <div className="docs-header">
             <h1 className="docs-title">Welcome to Teiko Labs</h1>
             <p className="docs-description">
-              The Forever Pump Protocol - revolutionizing play-to-earn games with sustainable Bitcoin rewards and verifiable revenue streams.
+              The Forever Pump Protocol - revolutionizing Play-To-Earn games with sustainable Bitcoin rewards and verifiable revenue streams.
             </p>
           </div>
 
@@ -258,10 +258,10 @@ export default function DocsPage() {
               <div className="welcome-subsection">
                 <h2>Welcome to Teiko Labs</h2>
                 <p>
-                  The Forever Pump Protocol - revolutionizing play-to-earn games with sustainable Bitcoin rewards and verifiable revenue streams.
+                  The Forever Pump Protocol - revolutionizing Play-To-Earn games with sustainable Bitcoin rewards and verifiable revenue streams.
                 </p>
                 <p>
-                  We've created a sustainable play-to-earn platform that rewards players with Bitcoin instead of inflating tokens, 
+                  We've created a sustainable Play-To-Earn platform that rewards players with Bitcoin instead of inflating tokens, 
                   solving the fundamental problems that plague traditional P2E games.
                 </p>
               </div>
@@ -436,7 +436,7 @@ export default function DocsPage() {
               <h2>The Problem</h2>
               
               <div className="problem-intro">
-                <h3>🎮 Play-to-Earn games are broken.</h3>
+                <h3>🎮 Play-To-Earn games are broken.</h3>
               </div>
 
               <div id="token-inflation" className="problem-subsection">
@@ -477,7 +477,7 @@ export default function DocsPage() {
 
               <div className="problem-conclusion">
                 <p>
-                  There is no sustainable play-to-earn game that rewards players with the hardest asset in the world (BTC) and is backed by the most secure blockchain (Bitcoin).
+                  There is no sustainable Play-To-Earn game that rewards players with the hardest asset in the world (BTC) and is backed by the most secure blockchain (Bitcoin).
                 </p>
               </div>
 
@@ -536,7 +536,7 @@ export default function DocsPage() {
 
               <div className="solution-conclusion">
                 <p>
-                  MAS is a play-to-earn protocol that does not rely on token inflation or unsustainable rewards - just transparent trading fees and Bitcoin.
+                  MAS is a Play-To-Earn protocol that does not rely on token inflation or unsustainable rewards - just transparent trading fees and Bitcoin.
                 </p>
               </div>
               
@@ -612,7 +612,7 @@ export default function DocsPage() {
                 <h3>Development Timeline</h3>
                 <p>
                   Our roadmap outlines the key milestones and development phases for The Forever Pump Protocol, 
-                  focusing on building a sustainable play-to-earn ecosystem powered by Bitcoin.
+                  focusing on building a sustainable Play-To-Earn ecosystem powered by Bitcoin.
                 </p>
               </div>
 

@@ -99,7 +99,7 @@ export default function ClientHomePage() {
   const [showComingSoonPopup, setShowComingSoonPopup] = useState(false);
   const [showPracticeWalletPopup, setShowPracticeWalletPopup] = useState(false);
   const [showMainnetWalletPopup, setShowMainnetWalletPopup] = useState(false);
-  const [showMajorityHolderPopup, setShowMajorityHolderPopup] = useState(false);
+  
   const [accessSettings, setAccessSettings] = useState({
 
     
@@ -231,11 +231,7 @@ export default function ClientHomePage() {
         setIsConnectingWallet(false);
       }
       
-      // Check if SP address is detected and show majority holder popup
-      if (savedAddress && savedAddress.startsWith('SP') && !localStorage.getItem('majorityHolderPopupShown')) {
-        setShowMajorityHolderPopup(true);
-        localStorage.setItem('majorityHolderPopupShown', 'true');
-      }
+      
     };
 
     checkWalletConnection();
@@ -1668,140 +1664,7 @@ export default function ClientHomePage() {
         </div>
       )}
 
-      {/* Majority Holder Dashboard Popup */}
-      {showMajorityHolderPopup && (
-        <div style={{
-          position: 'fixed',
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0,
-          backgroundColor: 'rgba(0, 0, 0, 0.8)',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          zIndex: 1000
-        }}>
-          <div style={{
-            backgroundColor: '#1a1a2e',
-            border: '2px solid #FFD700',
-            borderRadius: '20px',
-            padding: window.innerWidth <= 768 ? '24px' : '40px',
-            maxWidth: window.innerWidth <= 768 ? '90vw' : '500px',
-            width: window.innerWidth <= 768 ? '90vw' : 'auto',
-            textAlign: 'center',
-            position: 'relative'
-          }}>
-            <div style={{
-              fontSize: window.innerWidth <= 768 ? '48px' : '60px',
-              marginBottom: window.innerWidth <= 768 ? '16px' : '20px'
-            }}>
-              👑
-            </div>
-            <h2 style={{
-              color: '#FFD700',
-              fontSize: '24px',
-              fontWeight: 'bold',
-              marginBottom: '16px',
-              fontFamily: 'Arial, sans-serif'
-            }}>
-              Would you like to view the majority holder dashboard?
-            </h2>
-                         <p style={{
-               color: '#ccc',
-               fontSize: '16px',
-               lineHeight: '1.5',
-               marginBottom: '24px',
-               fontFamily: 'Arial, sans-serif',
-               display: 'flex',
-               alignItems: 'center',
-               justifyContent: 'center',
-               gap: '8px',
-               flexWrap: 'wrap'
-             }}>
-               The top Majority Holder of locked{' '}
-               <img 
-                 src="/icons/The Mas Network.svg" 
-                 alt="MAS Sats" 
-                 style={{ 
-                   width: '24px', 
-                   height: '24px', 
-                   verticalAlign: 'middle'
-                 }} 
-               />
-               {' '}can claim the trading fee revenue of{' '}
-               <span style={{ color: '#FFD700', fontWeight: 'bold' }}>
-                 {mainnetTotals.totalProfitGenerated > 0 ? `${mainnetTotals.totalProfitGenerated.toLocaleString()} sats` : 'X sats'}
-               </span>{' '}
-               amount at any time.
-             </p>
-            
-            <div style={{
-              display: 'flex',
-              gap: '12px',
-              justifyContent: 'center',
-              flexWrap: 'wrap'
-            }}>
-              <button
-                onClick={() => {
-                  setShowMajorityHolderPopup(false);
-                  window.location.href = '/majority-holder-dashboard';
-                }}
-                style={{
-                  backgroundColor: '#FFD700',
-                  color: '#1a1a2e',
-                  border: 'none',
-                  borderRadius: '12px',
-                  padding: '12px 24px',
-                  fontSize: '16px',
-                  fontWeight: 'bold',
-                  cursor: 'pointer',
-                  transition: 'all 0.2s ease',
-                  minWidth: '120px'
-                }}
-                onMouseEnter={(e) => {
-                  e.target.style.backgroundColor = '#FFA500';
-                  e.target.style.transform = 'translateY(-2px)';
-                  e.target.style.boxShadow = '0 8px 20px rgba(255,215,0,0.4)';
-                }}
-                onMouseLeave={(e) => {
-                  e.target.style.backgroundColor = '#FFD700';
-                  e.target.style.transform = 'translateY(0)';
-                  e.target.style.boxShadow = 'none';
-                }}
-              >
-                Yes, View Dashboard
-              </button>
-              
-              <button
-                onClick={() => setShowMajorityHolderPopup(false)}
-                style={{
-                  backgroundColor: 'transparent',
-                  color: '#ccc',
-                  border: '2px solid #666',
-                  borderRadius: '12px',
-                  padding: '12px 24px',
-                  fontSize: '16px',
-                  fontWeight: 'bold',
-                  cursor: 'pointer',
-                  transition: 'all 0.2s ease',
-                  minWidth: '120px'
-                }}
-                onMouseEnter={(e) => {
-                  e.target.style.backgroundColor = '#374151';
-                  e.target.style.borderColor = '#999';
-                }}
-                onMouseLeave={(e) => {
-                  e.target.style.backgroundColor = 'transparent';
-                  e.target.style.borderColor = '#666';
-                }}
-              >
-                No, Thanks
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      
     </div>
   );
 }
