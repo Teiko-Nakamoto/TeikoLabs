@@ -86,7 +86,7 @@ const UnlockProgressBar = React.memo(function UnlockProgressBar({
   const [loadingMajorityHolder, setLoadingMajorityHolder] = useState(true);
   const [teikoTokenBalance, setTeikoTokenBalance] = useState(0);
   const [loadingTeikoBalance, setLoadingTeikoBalance] = useState(false);
-  const [showRestrictionPopup, setShowRestrictionPopup] = useState(false);
+  
   const [showLockModal, setShowLockModal] = useState(false);
   const [lockRiskAcknowledged, setLockRiskAcknowledged] = useState(false);
   
@@ -396,58 +396,7 @@ const UnlockProgressBar = React.memo(function UnlockProgressBar({
   // Buy function using Stacks Connect
   const handleBuy = async () => {
     console.log('🔍 handleBuy function called');
-    
-    // FINAL CHECKPOINT: Verify Teiko token balance before allowing transaction
-    const requiredTeikoTokens = 210000; // 210k Teiko required for mainnet trading
-    
-    // Check wallet address FIRST to avoid race condition
     const connectedAddress = localStorage.getItem('connectedAddress');
-    const isTestnetWallet = connectedAddress && connectedAddress.startsWith('ST');
-    const isMainnetWallet = connectedAddress && connectedAddress.startsWith('SP');
-    
-    // For testnet wallets, hardcode Teiko balance to 21000 to bypass requirement
-    let currentTeikoBalance;
-    if (isTestnetWallet) {
-      currentTeikoBalance = 21000; // Hardcode for testnet - IGNORE teikoTokenBalance state
-      console.log('✅ Testnet wallet detected - hardcoding Teiko balance to 21000 (ignoring teikoTokenBalance state)');
-    } else if (isMainnetWallet) {
-      // For mainnet wallets, check actual Teiko balance
-      currentTeikoBalance = teikoTokenBalance;
-      
-      // If we don't have valid data, fetch it fresh with API keys
-      if (!currentTeikoBalance || currentTeikoBalance === 0) {
-        console.log('🔍 No valid Teiko balance data, fetching fresh...');
-        try {
-          const response = await fetch(`/api/get-teiko-balance?principal=${connectedAddress}`);
-          const data = await response.json();
-          currentTeikoBalance = data.balance || 0;
-          console.log('🔍 Fresh Teiko balance fetched:', currentTeikoBalance);
-        } catch (error) {
-          console.error('❌ Error fetching fresh Teiko balance:', error);
-          currentTeikoBalance = 0;
-        }
-      }
-    } else {
-      // No wallet connected
-      currentTeikoBalance = 0;
-    }
-    
-    // Check if user meets Teiko requirement (only for mainnet transactions)
-    if (isMainnetWallet && currentTeikoBalance < requiredTeikoTokens) {
-      console.log('❌ Teiko balance insufficient for mainnet trading:', {
-        current: currentTeikoBalance,
-        required: requiredTeikoTokens,
-        network: 'mainnet'
-      });
-      alert(`You need at least ${requiredTeikoTokens.toLocaleString()} Teiko tokens to trade on mainnet. Current balance: ${currentTeikoBalance.toLocaleString()}`);
-      return;
-    }
-    
-    if (isTestnetWallet) {
-      console.log('✅ Teiko requirement bypassed for testnet wallet (hardcoded balance)');
-    } else if (isMainnetWallet) {
-      console.log('✅ Teiko balance check passed for mainnet:', currentTeikoBalance);
-    }
     
     // Trigger pending transaction animation
     if (typeof window !== 'undefined') {
@@ -719,58 +668,7 @@ const UnlockProgressBar = React.memo(function UnlockProgressBar({
   // Sell function using Stacks Connect
   const handleSell = async () => {
     console.log('🔍 handleSell function called');
-    
-    // FINAL CHECKPOINT: Verify Teiko token balance before allowing transaction
-    const requiredTeikoTokens = 210000; // 210k Teiko required for mainnet trading
-    
-    // Check wallet address FIRST to avoid race condition
     const connectedAddress = localStorage.getItem('connectedAddress');
-    const isTestnetWallet = connectedAddress && connectedAddress.startsWith('ST');
-    const isMainnetWallet = connectedAddress && connectedAddress.startsWith('SP');
-    
-    // For testnet wallets, hardcode Teiko balance to 21000 to bypass requirement
-    let currentTeikoBalance;
-    if (isTestnetWallet) {
-      currentTeikoBalance = 21000; // Hardcode for testnet - IGNORE teikoTokenBalance state
-      console.log('✅ Testnet wallet detected - hardcoding Teiko balance to 21000 (ignoring teikoTokenBalance state)');
-    } else if (isMainnetWallet) {
-      // For mainnet wallets, check actual Teiko balance
-      currentTeikoBalance = teikoTokenBalance;
-      
-      // If we don't have valid data, fetch it fresh with API keys
-      if (!currentTeikoBalance || currentTeikoBalance === 0) {
-        console.log('🔍 No valid Teiko balance data, fetching fresh...');
-        try {
-          const response = await fetch(`/api/get-teiko-balance?principal=${connectedAddress}`);
-          const data = await response.json();
-          currentTeikoBalance = data.balance || 0;
-          console.log('🔍 Fresh Teiko balance fetched:', currentTeikoBalance);
-        } catch (error) {
-          console.error('❌ Error fetching fresh Teiko balance:', error);
-          currentTeikoBalance = 0;
-        }
-      }
-    } else {
-      // No wallet connected
-      currentTeikoBalance = 0;
-    }
-    
-    // Check if user meets Teiko requirement (only for mainnet transactions)
-    if (isMainnetWallet && currentTeikoBalance < requiredTeikoTokens) {
-      console.log('❌ Teiko balance insufficient for mainnet trading:', {
-        current: currentTeikoBalance,
-        required: requiredTeikoTokens,
-        network: 'mainnet'
-      });
-      alert(`You need at least ${requiredTeikoTokens.toLocaleString()} Teiko tokens to trade on mainnet. Current balance: ${currentTeikoBalance.toLocaleString()}`);
-      return;
-    }
-    
-    if (isTestnetWallet) {
-      console.log('✅ Teiko requirement bypassed for testnet wallet (hardcoded balance)');
-    } else if (isMainnetWallet) {
-      console.log('✅ Teiko balance check passed for mainnet:', currentTeikoBalance);
-    }
     
     // Trigger pending transaction animation
     if (typeof window !== 'undefined') {
@@ -2317,26 +2215,7 @@ const UnlockProgressBar = React.memo(function UnlockProgressBar({
           {/* Buy/Sell Button */}
           <button
             onClick={() => {
-              // Check Teiko token balance for trading access (only for mainnet)
-              const requiredTeikoTokens = 210000;
-              const connectedAddress = localStorage.getItem('connectedAddress');
-              const isTestnetWallet = connectedAddress && connectedAddress.startsWith('ST');
-              const isMainnetWallet = connectedAddress && connectedAddress.startsWith('SP');
-              
-              if (isTestnetWallet) {
-                // Testnet wallet - always allow trading
-                console.log('✅ Testnet wallet detected - allowing trading without Teiko check');
-                setShowBuySellPanel(!showBuySellPanel);
-              } else if (isMainnetWallet && teikoTokenBalance >= requiredTeikoTokens) {
-                // Mainnet wallet with enough Teiko tokens
-                setShowBuySellPanel(!showBuySellPanel);
-              } else if (isMainnetWallet) {
-                // Mainnet wallet without enough Teiko tokens
-                setShowRestrictionPopup(true);
-              } else {
-                // No wallet connected
-                setShowBuySellPanel(!showBuySellPanel);
-              }
+              setShowBuySellPanel(!showBuySellPanel);
             }}
             style={{
               backgroundColor: showBuySellPanel ? '#dc2626' : '#059669',
@@ -3687,196 +3566,7 @@ const UnlockProgressBar = React.memo(function UnlockProgressBar({
          </div>
        )}
 
-       {/* Restriction Popup Placeholder */}
-       {showRestrictionPopup && (
-         <div style={{
-           position: 'fixed',
-           top: 0,
-           left: 0,
-           right: 0,
-           bottom: 0,
-           backgroundColor: 'rgba(0, 0, 0, 0.8)',
-           display: 'flex',
-           alignItems: 'center',
-           justifyContent: 'center',
-           zIndex: 10000,
-           padding: window.innerWidth <= 768 ? '16px' : '24px'
-         }}>
-           <div style={{
-             backgroundColor: '#1a1a2e',
-             border: '2px solid #ef4444',
-             borderRadius: '16px',
-             padding: window.innerWidth <= 768 ? '24px' : '40px',
-             maxWidth: window.innerWidth <= 768 ? '90vw' : '450px',
-             width: window.innerWidth <= 768 ? '90vw' : 'auto',
-             textAlign: 'center',
-             position: 'relative'
-           }}>
-             <div style={{
-               fontSize: window.innerWidth <= 768 ? '48px' : '60px',
-               marginBottom: window.innerWidth <= 768 ? '16px' : '20px'
-             }}>
-               🔒
-             </div>
-             <h2 style={{
-               color: '#fbbf24',
-               fontSize: window.innerWidth <= 768 ? '20px' : '24px',
-               fontWeight: 'bold',
-               marginBottom: window.innerWidth <= 768 ? '12px' : '16px',
-               fontFamily: 'Arial, sans-serif'
-             }}>
-               Teiko Token Requirement
-             </h2>
-            <p style={{
-               color: '#ccc',
-               fontSize: window.innerWidth <= 768 ? '14px' : '16px',
-               lineHeight: '1.5',
-               marginBottom: window.innerWidth <= 768 ? '20px' : '24px',
-              fontFamily: 'Arial, sans-serif',
-              whiteSpace: 'nowrap'
-             }}>
-              You need at least <strong style={{ color: '#fbbf24' }}>210,000 $TEIKO</strong> to access trading.
-             </p>
-            {/* Direct trading option on Velar (no restriction) */}
-            <a 
-              href="https://app.velar.com/swap"
-              target="_blank" 
-              rel="noopener noreferrer"
-              style={{
-                backgroundColor: '#ff6a00',
-                color: '#000000',
-                textDecoration: 'none',
-                padding: window.innerWidth <= 768 ? '10px 20px' : '12px 24px',
-                borderRadius: '8px',
-                fontSize: window.innerWidth <= 768 ? '14px' : '16px',
-                fontWeight: 'bold',
-                display: 'block',
-                width: '100%',
-                whiteSpace: 'nowrap',
-                transition: 'all 0.2s ease',
-                marginBottom: window.innerWidth <= 768 ? '12px' : '16px'
-              }}
-              onMouseEnter={(e) => {
-                e.target.style.backgroundColor = '#e65c00';
-                e.target.style.transform = 'translateY(-1px)';
-              }}
-              onMouseLeave={(e) => {
-                e.target.style.backgroundColor = '#ff6a00';
-                e.target.style.transform = 'translateY(0)';
-              }}
-            >
-              🔁 Trade $MAS with no restriction on Velar
-            </a>
-            {/* Ecosystem Benefits paragraph intentionally removed per OTC positioning */}
-             <div style={{
-               backgroundColor: '#374151',
-               borderRadius: '8px',
-               padding: window.innerWidth <= 768 ? '12px' : '16px',
-               marginBottom: window.innerWidth <= 768 ? '20px' : '24px',
-               border: '1px solid #4b5563'
-             }}>
-               <p style={{
-                 color: '#ccc',
-                 fontSize: window.innerWidth <= 768 ? '12px' : '14px',
-                 marginBottom: window.innerWidth <= 768 ? '6px' : '8px'
-               }}>
-                 Your current Teiko balance:
-               </p>
-               <p style={{
-                 color: '#fbbf24',
-                 fontSize: window.innerWidth <= 768 ? '16px' : '18px',
-                 fontWeight: 'bold'
-               }}>
-                {loadingTeikoBalance ? 'Loading...' : teikoTokenBalance.toLocaleString()}
-               </p>
-             </div>
-            <div style={{
-               marginBottom: window.innerWidth <= 768 ? '20px' : '24px'
-             }}>
-              <a 
-                href="https://app.velar.com/swap"
-                target="_blank" 
-                rel="noopener noreferrer"
-                style={{
-                  backgroundColor: '#ff6a00',
-                  color: '#000000',
-                  textDecoration: 'none',
-                  padding: window.innerWidth <= 768 ? '10px 20px' : '12px 24px',
-                  borderRadius: '8px',
-                  fontSize: window.innerWidth <= 768 ? '14px' : '16px',
-                  fontWeight: 'bold',
-                  display: 'block',
-                  width: '100%',
-                  transition: 'all 0.2s ease',
-                  marginBottom: window.innerWidth <= 768 ? '12px' : '16px'
-                }}
-                onMouseEnter={(e) => {
-                  e.target.style.backgroundColor = '#e65c00';
-                  e.target.style.transform = 'translateY(-1px)';
-                }}
-                onMouseLeave={(e) => {
-                  e.target.style.backgroundColor = '#ff6a00';
-                  e.target.style.transform = 'translateY(0)';
-                }}
-              >
-                🛒 Buy $TEIKO with SBTC on Velar
-              </a>
-               <a 
-                 href="https://stx.city/bonding-curve/SP1T0VY3DNXRVP6HBM75DFWW0199CR0X15PC1D81B.teiko-token-stxcity-dex/SP1T0VY3DNXRVP6HBM75DFWW0199CR0X15PC1D81B.teiko-token-stxcity/SP359XMJYWRDY24H7VDYJWKPAGHN75V8M0W1NBF3P" 
-                 target="_blank" 
-                 rel="noopener noreferrer"
-                 style={{
-                  backgroundColor: '#3b82f6',
-                  color: '#000000',
-                   textDecoration: 'none',
-                   padding: window.innerWidth <= 768 ? '10px 20px' : '12px 24px',
-                   borderRadius: '8px',
-                   fontSize: window.innerWidth <= 768 ? '14px' : '16px',
-                   fontWeight: 'bold',
-                  display: 'block',
-                  width: '100%',
-                   transition: 'all 0.2s ease',
-                   marginBottom: window.innerWidth <= 768 ? '12px' : '16px'
-                 }}
-                 onMouseEnter={(e) => {
-                  e.target.style.backgroundColor = '#2563eb';
-                   e.target.style.transform = 'translateY(-1px)';
-                 }}
-                 onMouseLeave={(e) => {
-                  e.target.style.backgroundColor = '#3b82f6';
-                   e.target.style.transform = 'translateY(0)';
-                }}
-              >
-                🛒 Buy $TEIKO with STX on STX.CITY
-               </a>
-             </div>
-             <button
-               onClick={() => setShowRestrictionPopup(false)}
-               style={{
-                 backgroundColor: '#ef4444',
-                 color: 'white',
-                 border: 'none',
-                 borderRadius: '8px',
-                 padding: window.innerWidth <= 768 ? '10px 20px' : '12px 24px',
-                 fontSize: window.innerWidth <= 768 ? '14px' : '16px',
-                 fontWeight: 'bold',
-                 cursor: 'pointer',
-                 transition: 'all 0.2s ease'
-               }}
-               onMouseEnter={(e) => {
-                 e.target.style.backgroundColor = '#dc2626';
-                 e.target.style.transform = 'translateY(-1px)';
-               }}
-               onMouseLeave={(e) => {
-                 e.target.style.backgroundColor = '#ef4444';
-                 e.target.style.transform = 'translateY(0)';
-               }}
-             >
-               Close
-             </button>
-           </div>
-         </div>
-       )}
+      
 
 
 
