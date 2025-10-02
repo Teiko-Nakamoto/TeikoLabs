@@ -62,9 +62,10 @@ export default function CreateTokenPage() {
     if (!contractName.trim() || !contractCode.trim() || isDeploying) {
       return;
     }
-    
+
     // Check if wallet is connected before proceeding
-    if (!connectedAddress) {
+    const currentAddress = localStorage.getItem('connectedAddress');
+    if (!currentAddress) {
       setDeploymentStatus('❌ Please connect your wallet to deploy your contract');
       return;
     }
@@ -84,7 +85,7 @@ export default function CreateTokenPage() {
       console.log('Deployment response:', response);
       
       // Generate contract address
-      const contractAddress = `${connectedAddress}.${contractName.trim()}`;
+      const contractAddress = `${currentAddress}.${contractName.trim()}`;
       
       const explorerUrl = selectedNetwork === 'mainnet' 
         ? `https://explorer.stacks.co/txid/${response.txId}`
@@ -308,7 +309,7 @@ export default function CreateTokenPage() {
               </button>
               <button 
                 onClick={handleContractDeploy}
-                disabled={isDeploying || !connectedAddress}
+                disabled={isDeploying}
                 className="btn-primary"
               >
                 {isDeploying ? '🚀 Deploying...' : '🚀 Deploy Contract'}
