@@ -24,12 +24,15 @@ export default function CreateTokenPage() {
   useEffect(() => {
     const checkWalletConnection = () => {
       const savedAddress = localStorage.getItem('connectedAddress');
+      console.log('🔍 Checking wallet connection:', savedAddress);
       if (savedAddress) {
         setConnectedAddress(savedAddress);
         setIsAdmin(savedAddress === ADMIN_ADDRESS);
+        console.log('✅ Wallet connected:', savedAddress);
       } else {
         setConnectedAddress('');
         setIsAdmin(false);
+        console.log('❌ No wallet connected');
       }
     };
 
@@ -52,7 +55,9 @@ export default function CreateTokenPage() {
 
   // Redirect to home if no wallet connected (except for step 1)
   useEffect(() => {
+    console.log('🔍 Wallet check - connectedAddress:', connectedAddress, 'currentStep:', currentStep);
     if (!connectedAddress && currentStep > 1) {
+      console.log('❌ Redirecting to home - no wallet connected');
       window.location.href = '/';
     }
   }, [connectedAddress, currentStep]);
@@ -164,6 +169,11 @@ export default function CreateTokenPage() {
         <div className="header">
           <h1>🚀 Deploy Smart Contract</h1>
           <p>Deploy your custom Clarity smart contract to the Stacks blockchain</p>
+          {connectedAddress && (
+            <div className="wallet-status">
+              <span>Connected: {connectedAddress}</span>
+            </div>
+          )}
         </div>
 
         {/* Progress Bar */}
@@ -257,7 +267,7 @@ export default function CreateTokenPage() {
                     <li>Fast deployment</li>
                   </ul>
                 </div>
-              </div>
+                  </div>
               <div 
                 className={`network-option ${selectedNetwork === 'mainnet' ? 'selected' : ''}`}
                 onClick={handleMainnetSelection}
@@ -387,6 +397,15 @@ export default function CreateTokenPage() {
         .header p {
           font-size: 1.2rem;
           opacity: 0.9;
+        }
+
+        .wallet-status {
+          margin-top: 1rem;
+          padding: 0.5rem 1rem;
+          background: rgba(255,255,255,0.2);
+               border-radius: 8px;
+          font-size: 0.9rem;
+          font-family: monospace;
         }
 
         .progress-bar {
