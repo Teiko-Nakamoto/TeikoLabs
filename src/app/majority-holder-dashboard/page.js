@@ -2263,30 +2263,30 @@ export default function MajorityHolderDashboard() {
               </div>
 
               {!isQuizBlocked && (
-                <div className="leaderboard-table">
-                  <div className="table-header">
-                    <span>Rank</span>
-                    <span>Wallet Address</span>
-                    <span>Points</span>
-                    <span>Quizzes</span>
-                    <span>Perfect Scores</span>
-                  </div>
-                  {leaderboard.length === 0 ? (
-                    <div className="no-leaderboard">
-                      <p>No participants yet. Be the first to play!</p>
-                    </div>
-                  ) : (
-                    leaderboard.map((user, index) => (
-                      <div key={index} className="leaderboard-row">
-                        <span className="rank">#{user.rank}</span>
-                        <span className="address">{formatAddress(user.walletAddress)}</span>
-                        <span className="points">{user.totalPoints}</span>
-                        <span className="quizzes">{user.totalQuizzesCompleted}</span>
-                        <span className="perfect">{user.perfectScores}</span>
-                      </div>
-                    ))
-                  )}
+              <div className="leaderboard-table">
+                <div className="table-header">
+                  <span>Rank</span>
+                  <span>Wallet Address</span>
+                  <span>Points</span>
+                  <span>Quizzes</span>
+                  <span>Perfect Scores</span>
                 </div>
+                {leaderboard.length === 0 ? (
+                  <div className="no-leaderboard">
+                    <p>No participants yet. Be the first to play!</p>
+                  </div>
+                ) : (
+                  leaderboard.map((user, index) => (
+                    <div key={index} className="leaderboard-row">
+                      <span className="rank">#{user.rank}</span>
+                      <span className="address">{formatAddress(user.walletAddress)}</span>
+                      <span className="points">{user.totalPoints}</span>
+                      <span className="quizzes">{user.totalQuizzesCompleted}</span>
+                      <span className="perfect">{user.perfectScores}</span>
+                    </div>
+                  ))
+                )}
+              </div>
               )}
             </div>
           )}

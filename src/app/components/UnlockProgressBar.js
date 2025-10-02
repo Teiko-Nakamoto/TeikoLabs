@@ -1238,22 +1238,22 @@ const UnlockProgressBar = React.memo(function UnlockProgressBar({
 
             {/* Remaining Supply label hidden per request; data still used elsewhere */}
             {false && (
-              <div style={{
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: '6px',
-                fontSize: window.innerWidth <= 768 ? '13px' : '15px',
-                fontWeight: '700',
-                color: '#fbbf24'
-              }}>
-                <span>Remaining Supply to Buy: {remainingSupply}</span>
-                <img 
-                  src="/icons/The Mas Network.svg" 
-                  alt="MAS Sats" 
-                  style={{ width: window.innerWidth <= 768 ? '14px' : '16px', height: window.innerWidth <= 768 ? '14px' : '16px' }}
-                />
-              </div>
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '6px',
+              fontSize: window.innerWidth <= 768 ? '13px' : '15px',
+              fontWeight: '700',
+              color: '#fbbf24'
+            }}>
+              <span>Remaining Supply to Buy: {remainingSupply}</span>
+              <img 
+                src="/icons/The Mas Network.svg" 
+                alt="MAS Sats" 
+                style={{ width: window.innerWidth <= 768 ? '14px' : '16px', height: window.innerWidth <= 768 ? '14px' : '16px' }}
+              />
+            </div>
             )}
 
             
@@ -1285,38 +1285,38 @@ const UnlockProgressBar = React.memo(function UnlockProgressBar({
             
             {/* Current Revenue Display hidden (available in Whale Access) */}
             {false && (
-              <div style={{
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: '4px',
-                marginTop: window.innerWidth <= 768 ? '6px' : '8px',
-                fontSize: window.innerWidth <= 768 ? '12px' : '14px',
-                fontWeight: '600',
-                color: '#ffa500',
-                flexWrap: window.innerWidth <= 768 ? 'wrap' : 'nowrap',
-                textAlign: window.innerWidth <= 768 ? 'center' : 'left'
-              }}>
-                <span style={{ whiteSpace: window.innerWidth <= 768 ? 'normal' : 'nowrap' }}>
-                  Current Profit Available to Claim: {revenue}
-                </span>
-                <img 
-                  src="/icons/sats1.svg" 
-                  alt="Sats" 
-                  style={{ 
-                    width: window.innerWidth <= 768 ? '14px' : '16px', 
-                    height: window.innerWidth <= 768 ? '14px' : '16px'
-                  }} 
-                />
-                <img 
-                  src="/icons/Vector.svg" 
-                  alt="Vector" 
-                  style={{ 
-                    width: window.innerWidth <= 768 ? '14px' : '16px', 
-                    height: window.innerWidth <= 768 ? '14px' : '16px'
-                  }} 
-                />
-              </div>
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '4px',
+              marginTop: window.innerWidth <= 768 ? '6px' : '8px',
+              fontSize: window.innerWidth <= 768 ? '12px' : '14px',
+              fontWeight: '600',
+              color: '#ffa500',
+              flexWrap: window.innerWidth <= 768 ? 'wrap' : 'nowrap',
+              textAlign: window.innerWidth <= 768 ? 'center' : 'left'
+            }}>
+              <span style={{ whiteSpace: window.innerWidth <= 768 ? 'normal' : 'nowrap' }}>
+                Current Profit Available to Claim: {revenue}
+              </span>
+              <img 
+                src="/icons/sats1.svg" 
+                alt="Sats" 
+                style={{ 
+                  width: window.innerWidth <= 768 ? '14px' : '16px', 
+                  height: window.innerWidth <= 768 ? '14px' : '16px'
+                }} 
+              />
+              <img 
+                src="/icons/Vector.svg" 
+                alt="Vector" 
+                style={{ 
+                  width: window.innerWidth <= 768 ? '14px' : '16px', 
+                  height: window.innerWidth <= 768 ? '14px' : '16px'
+                }} 
+              />
+            </div>
             )}
             
             {/* Teiko Token Holdings Display - Only show for mainnet tokens */}
@@ -2215,7 +2215,7 @@ const UnlockProgressBar = React.memo(function UnlockProgressBar({
           {/* Buy/Sell Button */}
           <button
             onClick={() => {
-              setShowBuySellPanel(!showBuySellPanel);
+                setShowBuySellPanel(!showBuySellPanel);
             }}
             style={{
               backgroundColor: showBuySellPanel ? '#dc2626' : '#059669',
