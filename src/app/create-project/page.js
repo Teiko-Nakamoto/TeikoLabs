@@ -24,15 +24,12 @@ export default function CreateTokenPage() {
   useEffect(() => {
     const checkWalletConnection = () => {
       const savedAddress = localStorage.getItem('connectedAddress');
-      console.log('🔍 Checking wallet connection:', savedAddress);
       if (savedAddress) {
         setConnectedAddress(savedAddress);
         setIsAdmin(savedAddress === ADMIN_ADDRESS);
-        console.log('✅ Wallet connected:', savedAddress);
       } else {
         setConnectedAddress('');
         setIsAdmin(false);
-        console.log('❌ No wallet connected');
       }
     };
 
@@ -53,14 +50,8 @@ export default function CreateTokenPage() {
     };
   }, []);
 
-  // Redirect to home if no wallet connected (except for step 1)
-  useEffect(() => {
-    console.log('🔍 Wallet check - connectedAddress:', connectedAddress, 'currentStep:', currentStep);
-    if (!connectedAddress && currentStep > 1) {
-      console.log('❌ Redirecting to home - no wallet connected');
-      window.location.href = '/';
-    }
-  }, [connectedAddress, currentStep]);
+  // Note: Removed automatic redirect to allow users to proceed through steps
+  // Wallet connection will be checked only when actually deploying
 
   // Handle mainnet selection - now enabled
   const handleMainnetSelection = () => {
