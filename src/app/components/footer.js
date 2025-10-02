@@ -81,6 +81,9 @@ export default function Footer() {
                 <img src="/icons/github.svg" alt="GitHub" className="invert-icon" style={{ width: '16px', height: '16px', marginRight: '8px' }} />
                 GitHub
               </a>
+              <a href="/create-project">
+                Deploy Smart Contract
+              </a>
             </div>
           </div>
           
