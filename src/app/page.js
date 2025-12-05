@@ -2,7 +2,7 @@ import Image from "next/image";
 
 export default function Home() {
   return (
-    <div className="min-h-screen bg-sky-100 font-sans">
+    <div className="min-h-screen font-sans" style={{ backgroundColor: '#4A7BA7' }}>
       <main className="w-full">
         {/* Hero Section with Scientist on Left */}
         <section className="w-full py-12 px-4 sm:px-6 lg:px-8">
@@ -22,10 +22,11 @@ export default function Home() {
 
               {/* Content - Right Side */}
               <div className="flex-1 text-center lg:text-left lg:pl-8">
-                <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold leading-tight tracking-tight text-black mb-4">
-                  The #1 Token on Stacks— Bitcoin Layer 2!
+                <h1 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold leading-tight tracking-tight text-black mb-4">
+                  The #1 Token on Stacks,<br />
+                  Bitcoin Layer 2!
                 </h1>
-                <p className="text-xl sm:text-2xl md:text-3xl font-semibold text-zinc-800 mb-8">
+                <p className="text-xl sm:text-2xl md:text-3xl font-semibold text-black mb-8">
                   $TEIKO = Where There's Always an Opportunity to Earn Bitcoin! ⚡
                 </p>
                 <div className="mt-8">

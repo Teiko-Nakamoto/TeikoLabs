@@ -21,36 +21,14 @@ export default function Navbar() {
           </Link>
 
           {/* Navigation Links */}
-          <div className="hidden md:flex items-center space-x-8">
+          <div className="flex items-center space-x-6">
             <Link
-              href="/"
-              className="text-zinc-700 dark:text-zinc-300 hover:text-black dark:hover:text-white transition-colors"
+              href="/whitepaper"
+              className="text-black dark:text-zinc-50 hover:text-zinc-700 dark:hover:text-zinc-300 transition-colors font-medium"
             >
-              Home
-            </Link>
-            <Link
-              href="#about"
-              className="text-zinc-700 dark:text-zinc-300 hover:text-black dark:hover:text-white transition-colors"
-            >
-              About
-            </Link>
-            <Link
-              href="#tokenomics"
-              className="text-zinc-700 dark:text-zinc-300 hover:text-black dark:hover:text-white transition-colors"
-            >
-              Tokenomics
+              White Paper
             </Link>
           </div>
-
-          {/* Buy Button */}
-          <a
-            href="https://stx.city/bonding-curve/SP1T0VY3DNXRVP6HBM75DFWW0199CR0X15PC1D81B.teiko-token-stxcity-dex/SP1T0VY3DNXRVP6HBM75DFWW0199CR0X15PC1D81B.teiko-token-stxcity/SP359XMJYWRDY24H7VDYJWKPAGHN75V8M0W1NBF3P"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="px-6 py-2 bg-black dark:bg-white text-white dark:text-black rounded-full font-semibold hover:bg-zinc-800 dark:hover:bg-zinc-200 transition-colors"
-          >
-            Buy $TEIKO
-          </a>
         </div>
       </div>
     </nav>

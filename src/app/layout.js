@@ -14,7 +14,10 @@ const geistMono = Geist_Mono({
 
 export const metadata = {
   title: "Teiko Labs - The #1 Token on Stacks",
-  description: "The #1 Token on Stacks— Bitcoin Layer 2! $TEIKO = Where There's Always an Opportunity to Earn Bitcoin!",
+  description: "The #1 Token on Stacks, Bitcoin Layer 2! $TEIKO = Where There's Always an Opportunity to Earn Bitcoin!",
+  icons: {
+    icon: '/logo.png',
+  },
 };
 
 export default function RootLayout({ children }) {
